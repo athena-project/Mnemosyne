@@ -1,0 +1,59 @@
+# depslib dependency file v1.0
+1396715072 source:/home/severus/Bureau/Mnemosyne/main.cpp
+	<iostream>
+
+1396714752 source:/home/severus/Bureau/Mnemosyne/Revision.cpp
+	"Revision.h"
+
+1396714492 /home/severus/Bureau/Mnemosyne/Revision.h
+	<vector>
+	<string>
+	<stdint.h>
+
+1396714653 source:/home/severus/Bureau/Mnemosyne/RevisionHandler.cpp
+	"RevisionHandler.h"
+
+1396714554 /home/severus/Bureau/Mnemosyne/RevisionHandler.h
+	<vector>
+	<string>
+	<stdint.h>
+
+1396715072 source:/media/severus/Database1/Mnemosyne/main.cpp
+	<iostream>
+
+1396714752 source:/media/severus/Database1/Mnemosyne/Revision.cpp
+	"Revision.h"
+
+1396716160 /media/severus/Database1/Mnemosyne/Revision.h
+	<vector>
+	<string>
+	<stdint.h>
+
+1396775786 source:/home/severus/Desktop/Mnemosyne/main.cpp
+	<iostream>
+	<fstream>
+	<bitset>
+	<stdint.h>
+	<vector>
+	"RevisionHandler.h"
+
+1396714752 source:/home/severus/Desktop/Mnemosyne/Revision.cpp
+	"Revision.h"
+
+1396771563 /home/severus/Desktop/Mnemosyne/Revision.h
+	<vector>
+	<string>
+	<stdint.h>
+
+1396776346 source:/home/severus/Desktop/Mnemosyne/RevisionHandler.cpp
+	"RevisionHandler.h"
+	<iostream>
+
+1396775366 /home/severus/Desktop/Mnemosyne/RevisionHandler.h
+	<vector>
+	<string>
+	<stdint.h>
+	<cmath>
+	<fstream>
+	"Revision.h"
+
