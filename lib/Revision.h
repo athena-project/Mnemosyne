@@ -11,11 +11,8 @@ namespace Athena{
     namespace Mnemosyne{
 
         class Revision{
-            public :
-                const int REVISION_SIZE = 0; // origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(uint16_t)
-                const uint8_t INSERT=0b00;
-                const uint8_t DELETE=0b01;
-                const uint8_t UPDATE=0b10;
+
+
             protected :
                 int n;                  //N° de la révision, -1 si représente la racine
                 uint64_t idBeginning;   //Id du premier caractère de la révision
@@ -29,12 +26,16 @@ namespace Athena{
                 Revision* last;         //Dernière révision ajoutée : nmax
 
             public :
+                const int REVISION_SIZE = 160; // origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(uint16_t)
+
                 Revision();
                 Revision(int num) : n(num){};
                 Revision(int num, uint64_t id, uint64_t s, uint32_t d) : n(num), idBeginning(id), size(s), diff(d){};
                 ~Revision();
 
                 int getN(){ return n; }
+                uint64_t getIdBeginning(){ return idBeginning; }
+                uint64_t getSize(){ return size; }
                 uint32_t getDiff(){ return diff; }
 
                 void setParent( Revision* rev ){ parent=rev; }

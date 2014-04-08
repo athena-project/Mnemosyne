@@ -122,15 +122,18 @@ namespace Athena{
         /**
          *  Diff functions
         **/
-        void RevisionHandler::write( vector<bool>& data, unsigned int pos, unsigned length, ifstream& stream){
+        //Write révision
+        void RevisionHandler::write( vector<bool>& data, unsigned int pos, unsigned length, ofstream& stream){
             uint8_t buffer(0);
-            for(uint64_t j=0; j<length; j+=8){ //Only byte can be write in a file
+            cout<<length<<endl;
+            cout<<length/8<<endl;
+            for(uint64_t j=0; j<(length/8); j+=8){ //Only byte can be write in a file
                 buffer=0;
                 for(int k=0; k<8; k++){
-                    buffer+= data[j-k];
+                    buffer+= data[j*8+k];
                     buffer<<1;
                 }
-                str<<buffer;
+                stream<<buffer;
             }
 
             int mod=length % 8;
@@ -141,7 +144,7 @@ namespace Athena{
                     buffer+= data[lastPos+k];
                     buffer<<1;
                 }
-                str<<buffer;
+                stream<<buffer;
             }
         }
 
@@ -186,34 +189,108 @@ namespace Athena{
         }
 
         void RevisionHandler::createdMutations( vector<bool>& origine, vector<bool>& data, ofstream& stream, uint64_t pos){
-            stream.seekd(pos, stream.beg);
+            stream.seekp(pos, stream.beg);
 
             //Update first
             uint64_t i(0);
             uint64_t n = min( origine.size(), data.size() );
 
-            uint64_t lenght(0);
+            uint64_t length(0);
             while( i<n ){
                 if( origine[i] !=  data[i] ){
                     length++;
-                }else if(lenght != 0){
-                    stream<<Revision::UPDATE << (i-length) << lenght; //type(uint8_t)beginning(uint64_t)size(uint64_t)
+                }else if(length != 0){
+                    stream<<Mutation::UPDATE << (i-length) << length; //type(uint8_t)beginning(uint64_t)size(uint64_t)
                     write(data, i-length, length, stream);
                     length=0;
                 }
+                i++;
             }
 
             //Delete
             if( origine.size()>data.size() )
-                stream<<Revision::DELETE << data.size() << origine.size() - data.size(); //type(uint8_t)beginning(uint64_t)size(uint64_t)
+                stream<<Mutation::DELETE << data.size() << origine.size() - data.size(); //type(uint8_t)beginning(uint64_t)size(uint64_t)
 
             //Insert
             if( origine.size()<data.size() ){
-                stream<<Revision::INSERT << origine.size() << data.size() - origine.size();
+                stream<<Mutation::INSERT << origine.size() << data.size() - origine.size();
                 write(data, origine.size(), data.size()-origine.size(), stream);
             }
         }
 
-        void RevisionHandler::applyMutations
+
+        /**
+         *  Apply mutations
+        **/
+        //Place le curseur au début des données de la mutation après le header
+        Mutation RevisionHandler::readMutation( ifstream& stream ){
+            char c; bitset<8> buffer;
+            uint8_t type(0);
+            uint64_t idBegining(0);
+            uint64_t size(0);
+
+            stream.get( c );
+            type = uint8_t(c);
+
+            //idBegining
+            for(int i=0; i<8; i++){//8bytes <=>uint64_t
+                stream.get( c );
+                buffer = bitset<8>(c);
+                for(int j=0; j<8; j++){//8bit by byte
+                    idBegining+=buffer[j];
+                    idBegining<<1;
+                }
+            }
+
+            //size
+            for(int i=0; i<8; i++){//8bytes <=>uint64_t
+                stream.get( c );
+                buffer = bitset<8>(c);
+                for(int j=0; j<8; j++){//8bit by byte
+                    size+=buffer[j];
+                    size<<1;
+                }
+            }
+
+            Mutation m( type, idBegining, size);
+            return m;
+        }
+
+        //Relative pos correspond à la position équivalente du début du flux(0) si on ne charge que des bouts de fichiers par défaut à 0
+        void RevisionHandler::applyMutations( vector<bool>& data, Revision* rev, ifstream& stream, uint64_t fileSize, uint64_t relativePos){
+            stream.seekg( rev->getIdBeginning() - relativePos, stream.beg );
+
+            while( stream.tellg() < fileSize ){
+                Mutation m=readMutation( stream );
+                m.apply(data, stream);
+            }
+        }
+
+        void RevisionHandler::recopy( ifstream& data, ofstream& newStream, uint64_t size){
+            char c;
+            for(uint64_t i=0; i< size;  i++){
+                data.get(c);
+                newStream<<c;
+            }
+        }
+
+        void RevisionHandler::applyMutations( ifstream& data, ofstream& newStream, Revision* rev, ifstream& stream, uint64_t fileSize, uint64_t relativePos){
+            stream.seekg( rev->getIdBeginning() - relativePos, stream.beg );
+
+            while( stream.tellg() < fileSize ){
+                Mutation m=readMutation( stream );
+                if( m.getIdBeginning() != data.tellg() )
+                    recopy( data, newStream, m.getIdBeginning() - data.tellg() );
+                m.apply(newStream, data, stream);
+            }
+        }
+
+        /**
+         * Search for the best origine
+        **/
+
+
+
+
     }
 }

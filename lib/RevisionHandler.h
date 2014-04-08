@@ -8,6 +8,7 @@
 #include <fstream>
 
 #include "Revision.h"
+#include "Mutation.h"
 using namespace std;
 
 namespace Athena{
@@ -37,6 +38,11 @@ namespace Athena{
                 Revision* build( vector<bool>& table );
 
 
+
+
+
+                void write( vector<bool>& data, unsigned int pos, unsigned length, ofstream& stream);
+                void createdMutations( vector<bool>& origine, vector<bool>& data, ofstream& stream, uint64_t pos);
                 /**
                  * Calcul the difference(%) between  origin and data, if we keep the result in RAM
                  * @param origin     -
@@ -49,6 +55,12 @@ namespace Athena{
                  * @param data     -
                 **/
                 float diff( ifstream& origin, ifstream& data );
+
+
+                Mutation readMutation( ifstream& stream );
+                void applyMutations( vector<bool>& data, Revision* rev, ifstream& stream, uint64_t fileSize, uint64_t relativePos);
+                void recopy( ifstream& data, ofstream& newStream, uint64_t size);
+                void applyMutations( ifstream& data, ofstream& newStream, Revision* rev, ifstream& stream, uint64_t fileSize, uint64_t relativePos);
         };
     }
 }

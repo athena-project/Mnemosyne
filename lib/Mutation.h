@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <vector>
 #include <fstream>
+#include <bitset>
 using namespace std;
 
 namespace Athena{
@@ -11,23 +12,28 @@ namespace Athena{
 
         class Mutation{
             protected :
-                int type;
-                uint64_t idBegining;
+                uint8_t type;
+                uint64_t idBeginning;
                 uint64_t size;
             public :
-                enum type{ INSERT, DELETE, UPDATE };
+                static const uint8_t INSERT=0b00;
+                static const uint8_t DELETE=0b01;
+                static const uint8_t UPDATE=0b10;
 
-                Mutation( int t, uint64_t id, uint64_t s) : type(t), idBegining(id), size(s){};
+                Mutation( uint8_t t, uint64_t id, uint64_t s) : type(t), idBeginning(id), size(s){};
 
-                void applyInsert(vector<bool>& data);
+                uint64_t getIdBeginning(){ return idBeginning; }
+                uint64_t getSize(){ return size; }
+
+                void applyInsert(vector<bool>& data, ifstream& stream);
                 void applyDelete(vector<bool>& data);
-                void applyUpdate(vector<bool>& data);
-                void applyInsert(ofstream& data);
-                void applyDelete(ofstream& data);
-                void applyUpdate(ofstream& data);
+                void applyUpdate(vector<bool>& data, ifstream& stream);
+                void applyInsert(ofstream& newStream, ifstream& stream);
+                void applyDelete(ifstream& data);
+                void applyUpdate(ofstream& newStream, ifstream& data, ifstream& stream);
 
-                void apply( vector<bool>& data);
-                void apply( ofstream& data);
+                void apply( vector<bool>& data, ifstream& stream);
+                void apply( ofstream& newStream, ifstream& data, ifstream& stream);
 
         };
     }

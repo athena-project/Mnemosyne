@@ -1,29 +1,53 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
 	<ActiveTarget name="Debug" />
-	<File name="RevisionHandler.h" open="1" top="1" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Mutation.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="148" topLine="4" />
+			<Cursor1 position="489" topLine="11" />
 		</Cursor>
 	</File>
-	<File name="Revision.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Revision.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="655" topLine="11" />
+			<Cursor1 position="904" topLine="40" />
 		</Cursor>
 	</File>
-	<File name="Revision.cpp" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Mutation.cpp" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="6" topLine="0" />
+			<Cursor1 position="1254" topLine="50" />
 		</Cursor>
 	</File>
 	<File name="main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="153" topLine="0" />
+			<Cursor1 position="686" topLine="9" />
 		</Cursor>
 	</File>
-	<File name="RevisionHandler.cpp" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="RevisionHandler.cpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1667" topLine="44" />
+			<Cursor1 position="5999" topLine="88" />
+		</Cursor>
+		<Folding>
+			<Collapse line="46" />
+			<Collapse line="56" />
+			<Collapse line="65" />
+			<Collapse line="73" />
+			<Collapse line="125" />
+			<Collapse line="150" />
+			<Collapse line="161" />
+			<Collapse line="190" />
+			<Collapse line="225" />
+			<Collapse line="259" />
+			<Collapse line="268" />
+			<Collapse line="276" />
+		</Folding>
+	</File>
+	<File name="Revision.cpp" open="1" top="1" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="289" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="RevisionHandler.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1579" topLine="39" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>
