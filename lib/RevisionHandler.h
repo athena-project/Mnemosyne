@@ -1,4 +1,4 @@
-#ifndef REVISIONHANDLER_H_INCLUDED
+ #ifndef REVISIONHANDLER_H_INCLUDED
 #define REVISIONHANDLER_H_INCLUDED
 
 #include <vector>
@@ -44,23 +44,40 @@ namespace Athena{
                 void write( vector<bool>& data, unsigned int pos, unsigned length, ofstream& stream);
                 void createdMutations( vector<bool>& origine, vector<bool>& data, ofstream& stream, uint64_t pos);
                 /**
-                 * Calcul the difference(%) between  origin and data, if we keep the result in RAM
+                 * Calcul the difference between  origin and data, if we keep the result in RAM
                  * @param origin     -
                  * @param data     -
                 **/
-                float diff( vector<bool>& origine, vector<bool>& data );
+                uint64_t diff( vector<bool>& origine, vector<bool>& data );
                 /**
-                 * Calcul the difference(%) between  origin and data, if we keep the result on hard disk
+                 * Calcul the difference between  origin and data, if we keep the result on hard disk
                  * @param origin     -
                  * @param data     -
                 **/
-                float diff( ifstream& origin, ifstream& data );
+                uint64_t diff( ifstream& origin, ifstream& data );
 
-
+                /**
+                 *  Return a mutation, the stream cursor is at the begining of the body of the mutation the header
+                 *  has been already read
+                 *  @param stream - location of the mutations' instructions
+                **/
                 Mutation readMutation( ifstream& stream );
+
                 void applyMutations( vector<bool>& data, Revision* rev, ifstream& stream, uint64_t fileSize, uint64_t relativePos);
-                void recopy( ifstream& data, ofstream& newStream, uint64_t size);
-                void applyMutations( ifstream& data, ofstream& newStream, Revision* rev, ifstream& stream, uint64_t fileSize, uint64_t relativePos);
+
+                /**
+                 *  Recopy a part of the old file to the new
+                 *  @param idBeginning  - first caracter of the old file which must be write
+                 *  @param size         -
+                **/
+                void recopy( ifstream& oldFile, ofstream& newFile, uint64_t  idBeginning, uint64_t size);
+
+                /**
+                 * @param oldFile   -
+                 * @param newFile   -
+                 * @param rev       -
+                **/
+                void applyMutations( ifstream& oldFile, ofstream& newFile, Revision* rev);
         };
     }
 }

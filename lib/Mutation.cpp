@@ -31,29 +31,31 @@ namespace Athena{
             }
         }
 
-        void Mutation::applyInsert(ofstream& newStream, ifstream& stream){
+
+        void Mutation::applyInsert(ofstream& newFile, ifstream& stream){
             char c;
-            for(uint64_t i=0; i< size;  i++){
+            for(uint64_t i=0; i< size; i++){
                 stream.get(c);
-                newStream<<c;
+                newFile<<c;
             }
         }
 
-        void Mutation::applyDelete(ifstream& data){
-            data.seekg( size, ios::cur);
-            //Nothing to do
+        void Mutation::applyDelete(){
         }
 
-        void Mutation::applyUpdate(ofstream& newStream, ifstream& data, ifstream& stream){
-            data.seekg( size, ios::cur);
+        void Mutation::applyUpdate( ofstream& newFile, ifstream& stream){
             char c;
-            for(uint64_t i=0; i< size;  i++){
+            for(uint64_t i=0; i< size; i++){
                 stream.get(c);
-                newStream<<c;
+                newFile<<c;
             }
         }
+
+
 
         void Mutation::apply( vector<bool>& data, ifstream& stream){
+            stream.seekg( idBeginning, stream.beg );
+
             if( type == INSERT )
                 applyInsert( data, stream );
             else if( type == DELETE )
@@ -62,13 +64,18 @@ namespace Athena{
                 applyUpdate( data, stream );
         }
 
-        void Mutation::apply( ofstream& newStream, ifstream& data, ifstream& stream){
+        void Mutation::apply(ifstream& oldFile, ofstream& newFile, ifstream& stream){
+            stream.seekg( idBeginning, stream.beg );
+
             if( type == INSERT )
-                applyInsert( newStream, stream );
-            else if( type == DELETE )
-                applyDelete( data );
-            else
-                applyUpdate( newStream, data, stream );
+                applyInsert( newFile, stream );
+            else if( type == DELETE ){
+                applyDelete( );
+                oldFile.seekg( size, oldFile.cur );
+            }else{
+                applyUpdate( newFile, stream );
+                oldFile.seekg( size, oldFile.cur );
+            }
         }
     }
 }

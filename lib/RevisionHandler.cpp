@@ -127,7 +127,7 @@ namespace Athena{
             uint8_t buffer(0);
             cout<<length<<endl;
             cout<<length/8<<endl;
-            for(uint64_t j=0; j<(length/8); j+=8){ //Only byte can be write in a file
+            for(uint64_t j=pos; j<(length/8); j+=8){ //Only byte can be write in a file
                 buffer=0;
                 for(int k=0; k<8; k++){
                     buffer+= data[j*8+k];
@@ -148,23 +148,23 @@ namespace Athena{
             }
         }
 
-        float RevisionHandler::diff( vector<bool>& origine, vector<bool>& data ){
+        uint64_t RevisionHandler::diff( vector<bool>& origine, vector<bool>& data ){
             unsigned int num= min( origine.size(), data.size() );
-            float diff = (num - origine.size()) + (num - data.size());
+            uint64_t diff = max( origine.size(), data.size() ) - num;
 
             for(unsigned int i=0; i<num; i++){
                 if( origine[i] != data[i] )
                     diff++;
             }
-            return diff/origine.size();
+            return diff;
         }
 
-        float RevisionHandler::diff( ifstream& origine, ifstream& data ){ //We work with bytes
+        uint64_t RevisionHandler::diff( ifstream& origine, ifstream& data ){ //We work with bytes
             if(!origine && !data )
                 throw "";
 
             uint64_t origineSize=1; //Avoid division by zero
-            float diff=1;
+            uint64_t diff=1;
             char b1,b2;
 
             origine.seekg( 0, origine.beg );
@@ -184,7 +184,7 @@ namespace Athena{
                     diff++;
             }
 
-            return diff/origineSize;
+            return diff;
 
         }
 
@@ -257,37 +257,72 @@ namespace Athena{
         }
 
         //Relative pos correspond à la position équivalente du début du flux(0) si on ne charge que des bouts de fichiers par défaut à 0
-        void RevisionHandler::applyMutations( vector<bool>& data, Revision* rev, ifstream& stream, uint64_t fileSize, uint64_t relativePos){
-            stream.seekg( rev->getIdBeginning() - relativePos, stream.beg );
+        void RevisionHandler::applyMutations( vector<bool>& data, Revision* rev){
+            ifstream* stream = (rev->getStream());
+            Mutation m;
+            uint64_t i =0;
+            stream->seekg( rev->getIdBeginning() - rev->getRelativeO(), stream->beg );
 
-            while( stream.tellg() < fileSize ){
+
+            while( i < rev->getSize() ){
                 Mutation m=readMutation( stream );
                 m.apply(data, stream);
+                i++;
             }
         }
 
-        void RevisionHandler::recopy( ifstream& data, ofstream& newStream, uint64_t size){
+        void RevisionHandler::recopy( ifstream& oldFile, ofstream& newFile, uint64_t  idBeginning, uint64_t size){
+            oldFile.seekg( idBeginning, oldFile.beg );
             char c;
-            for(uint64_t i=0; i< size;  i++){
-                data.get(c);
-                newStream<<c;
+            uint64_t i=0;
+
+            while( oldFile.get(c) && i<size ){
+                newFile<<c;
+                i++;
             }
         }
 
-        void RevisionHandler::applyMutations( ifstream& data, ofstream& newStream, Revision* rev, ifstream& stream, uint64_t fileSize, uint64_t relativePos){
-            stream.seekg( rev->getIdBeginning() - relativePos, stream.beg );
+        void RevisionHandler::applyMutations( ifstream& oldFile, ofstream& newFile, Revision* rev ){
+            ifstream* stream = (rev->getStream());
+            Mutation m;
+            uint64_t i =0;
+            stream->seekg( rev->getIdBeginning() - rev->getRelativeO(), stream->beg );
+            oldFile.seekg( 0, oldFile.beg);
 
-            while( stream.tellg() < fileSize ){
-                Mutation m=readMutation( stream );
-                if( m.getIdBeginning() != data.tellg() )
-                    recopy( data, newStream, m.getIdBeginning() - data.tellg() );
-                m.apply(newStream, data, stream);
+            while( i < rev->getSize() ){
+                m=readMutation( *stream );
+
+                if( m.getIdBeginning() != oldFile.tellg() )
+                    recopy( oldFile, newFile, oldFile.tellg(), m.getIdBeginning() - oldFile.tellg() );
+
+                m.apply(oldFile, newFile, *stream);
+                i++;
             }
         }
 
         /**
          * Search for the best origine
         **/
+        /**
+         * @return vector order by n° of revision
+        */
+        vector< uint64_t > calculDifferences( Revision* rev,  vector<bool>& data ){
+            vector< bool > tmpData;
+            vector< uint64_t > differences;
+            Revision* tmp = rev->getRoot()->getNext();
+
+            while( tmp != NULL ){
+                differences.push_back( applyMutations( tmpData, tmp) );
+                tmp = tmp->getNext();
+            }
+            return differences;
+        }
+
+        Revision* bestOrgin( Revision* rev,  vector<bool>& data ){
+            vector< uint64_t > differences = calculDifferences( rev, data);
+            //on en extrait le min
+        }
+
 
 
 
