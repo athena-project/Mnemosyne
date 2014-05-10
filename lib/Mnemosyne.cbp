@@ -32,8 +32,17 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="Block.cpp" />
+		<Unit filename="Block.h" />
+		<Unit filename="Chunk.cpp" />
+		<Unit filename="Chunk.h" />
 		<Unit filename="Mutation.cpp" />
 		<Unit filename="Mutation.h" />
+		<Unit filename="Ressource.cpp">
+			<Option compile="0" />
+			<Option link="0" />
+		</Unit>
+		<Unit filename="Ressource.h" />
 		<Unit filename="Revision.cpp" />
 		<Unit filename="Revision.h" />
 		<Unit filename="RevisionHandler.cpp" />

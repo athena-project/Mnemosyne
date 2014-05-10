@@ -3,7 +3,7 @@
 namespace Athena{
     namespace Mnemosyne{
 
-        void Mutation::applyInsert(vector<bool>& data, ifstream& stream){
+        void Mutation::applyInsert(vector<char>& data, ifstream& stream){
             char c;
             bitset<8> buffer;
             for(uint64_t i=0; i<(size/8); i++){ //travail sur des octets
@@ -15,11 +15,11 @@ namespace Athena{
             }
         }
 
-        void Mutation::applyDelete(vector<bool>& data){
+        void Mutation::applyDelete(vector<char>& data){
             data.erase( data.begin()+idBeginning, data.begin()+idBeginning + size);
         }
 
-        void Mutation::applyUpdate(vector<bool>& data, ifstream& stream){
+        void Mutation::applyUpdate(vector<char>& data, ifstream& stream){
             char c;
             bitset<8> buffer;
             for(uint64_t i=0; i<(size/8); i++){ // /8 car on travail sur des octets
@@ -32,28 +32,7 @@ namespace Athena{
         }
 
 
-        void Mutation::applyInsert(ofstream& newFile, ifstream& stream){
-            char c;
-            for(uint64_t i=0; i< size; i++){
-                stream.get(c);
-                newFile<<c;
-            }
-        }
-
-        void Mutation::applyDelete(){
-        }
-
-        void Mutation::applyUpdate( ofstream& newFile, ifstream& stream){
-            char c;
-            for(uint64_t i=0; i< size; i++){
-                stream.get(c);
-                newFile<<c;
-            }
-        }
-
-
-
-        void Mutation::apply( vector<bool>& data, ifstream& stream){
+        void Mutation::apply( vector<char>& data, ifstream& stream){
             stream.seekg( idBeginning, stream.beg );
 
             if( type == INSERT )
@@ -62,20 +41,6 @@ namespace Athena{
                 applyDelete( data );
             else
                 applyUpdate( data, stream );
-        }
-
-        void Mutation::apply(ifstream& oldFile, ofstream& newFile, ifstream& stream){
-            stream.seekg( idBeginning, stream.beg );
-
-            if( type == INSERT )
-                applyInsert( newFile, stream );
-            else if( type == DELETE ){
-                applyDelete( );
-                oldFile.seekg( size, oldFile.cur );
-            }else{
-                applyUpdate( newFile, stream );
-                oldFile.seekg( size, oldFile.cur );
-            }
         }
     }
 }

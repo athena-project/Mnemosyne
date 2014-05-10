@@ -36,7 +36,7 @@ namespace Athena{
                 uint64_t relativeO = 0;     //Origine relative du flux ie debut de la rev
 
             public :
-                const int REVISION_SIZE = 160; // origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(uint16_t)
+                static const uint32_t REVISION_SIZE_TABLE = 20; // octets , origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(uint16_t)
 
                 Revision(){ root=this; }
                 Revision(int num) : n(num){ root = (n == -1 ) ? this : NULL; }
@@ -50,6 +50,8 @@ namespace Athena{
                 ifstream* getStream(){      return stream; }
                 uint64_t getRelativeO(){    return relativeO; }
                 Revision* getRoot(){        return root; }
+                Revision* getNext(){        return next; }
+
 
                 void setParent( Revision* rev ){    parent=rev; }
                 void setPrevious( Revision* rev ){  previous=rev; }
@@ -62,7 +64,7 @@ namespace Athena{
                 void addChild( Revision* child ){ child->setRoot( root ); children.push_back(child); }
 
                 /**
-                 *
+                 *  @return parents of the current revision order by n asc ie root first
                 **/
                 list< Revision* > getParents(){
                     if( n != -1 ){
@@ -107,11 +109,6 @@ namespace Athena{
                  * @param data     -
                  */
                 void hydrate( vector<bool>& data );
-                /*
-                 * Build the current revision(data) in the argument, if we keep the result on hard disk
-                 * @param stream     -
-                 */
-                void hydrate( ofstream& stream );
 
         };
 

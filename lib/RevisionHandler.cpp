@@ -4,6 +4,8 @@
 namespace Athena{
     namespace Mnemosyne{
 
+//        vect<bool> to vect<char>
+
         RevisionHandler::RevisionHandler(){
 
         }
@@ -14,19 +16,40 @@ namespace Athena{
         /**
          *      Building functions
         **/
-        int RevisionHandler::getNumber( vector<bool>& table, vector<bool>::iterator& it  ){
-            int n=0b0;
-            for(int i=16; i>-1; i--){
-                n+= *it;
-                n<<1;
-                it++;
-            }
-            return n;
+        uint32_t RevisionHandler::extractSizeTable( ifstream& stream ){
+            uint16_t number = 0;
+            vector< uint8_t > table;
+            char c;
+            stream.seekg(-2, stream.end );//revision number is a uint16_t
+
+            stream.get(c);
+            number = uint16_t(c);
+            number << 8;
+
+            stream.get(c);
+            number +=  uint16_t(c);
+
+            return uint32_t(number) * Revision::REVISION_SIZE_TABLE;
         }
 
-        uint16_t RevisionHandler::getOrigine( vector<bool>& table, vector<bool>::iterator& it ){
+        vector<char> RevisionHandler::extractTable(ifstream& stream){
+            uint32_t sizeTable = extractSizeTable( stream );
+            uint32_t beginningTable = -1 * ( sizeTable +2);
+            vector< char > table;
+            char c;
+
+            for( uint32_t i=0; i<sizeTable; i++){
+                stream.get(c);
+                table.push_back( c );
+            }
+
+            stream.seekg (-2, stream.beg );
+            return table;
+        }
+
+        uint16_t RevisionHandler::getOrigine( vector<char>& table, vector<char>::iterator& it ){
             uint16_t n=0b0;
-            for(int i=16; i>-1; i--){
+            for(int i=0; i<2; i++){
                 n+= *it;
                 n<<1;
                 it++;
@@ -34,9 +57,9 @@ namespace Athena{
             return n;
         }
 
-        uint64_t RevisionHandler::getIdBeginning( vector<bool>& table, vector<bool>::iterator& it ){
+        uint64_t RevisionHandler::getIdBeginning( vector<char>& table, vector<char>::iterator& it ){
             uint64_t n=0b0;
-            for(int i=64; i>-1; i--){
+            for(int i=0; i<8; i++){
                 n+= *it;
                 n<<1;
                 it++;
@@ -44,9 +67,9 @@ namespace Athena{
             return n;
         }
 
-        uint64_t RevisionHandler::getSize( vector<bool>& table, vector<bool>::iterator& it ){
+        uint64_t RevisionHandler::getSize( vector<char>& table, vector<char>::iterator& it ){
             uint64_t n=0b0;
-            for(int i=64; i>-1; i--){
+            for(int i=0; i<8; i++){
                 n+= *it;
                 n<<1;
                 it++;
@@ -54,9 +77,9 @@ namespace Athena{
             return n;
         }
 
-        uint16_t RevisionHandler::getDiff( vector<bool>& table, vector<bool>::iterator& it ){
+        uint16_t RevisionHandler::getDiff( vector<char>& table, vector<char>::iterator& it ){
             uint16_t n=0b0;
-            for(int i=16; i>-1; i--){
+            for(int i=0; i<2; i++){
                 n+= *it;
                 n<<1;
                 it++;
@@ -94,12 +117,11 @@ namespace Athena{
             }
         }
 
-        Revision* RevisionHandler::build( vector<bool>& table ){
-            vector<bool>::iterator it = table.begin();
+        Revision* RevisionHandler::buildStructure( vector<char>& table ){
+            vector<char>::iterator it = table.begin();
             if( it == table.end() )
                 return NULL;
 
-            int number = getNumber( table, it);
             vector< int > origines;
             vector< Revision* > revisions; // pair< begin, size >
 
@@ -119,77 +141,39 @@ namespace Athena{
             root;
         }
 
+        void RevisionHandler::writeTable( vector<char>& table, ofstream& stream){
+            stream.seekp( -1, stream.end );
+            for( uint64_t i=0; i<table.size(); i++){
+                stream<<table[i];
+            }
+        }
+
         /**
          *  Diff functions
         **/
         //Write révision
-        void RevisionHandler::write( vector<bool>& data, unsigned int pos, unsigned length, ofstream& stream){
-            uint8_t buffer(0);
-            cout<<length<<endl;
-            cout<<length/8<<endl;
-            for(uint64_t j=pos; j<(length/8); j+=8){ //Only byte can be write in a file
-                buffer=0;
-                for(int k=0; k<8; k++){
-                    buffer+= data[j*8+k];
-                    buffer<<1;
-                }
-                stream<<buffer;
-            }
-
-            int mod=length % 8;
-            if(  mod != 0 ){
-                uint64_t lastPos=pos+length-mod;
-                buffer=0;
-                for(int k=0; k<mod ; k++){
-                    buffer+= data[lastPos+k];
-                    buffer<<1;
-                }
-                stream<<buffer;
-            }
+        void RevisionHandler::write( vector<char>& data, uint64_t pos, uint64_t length, ofstream& stream){
+            for(uint64_t j=pos; j<length; j++)
+                stream<<data[j];
         }
 
-        uint64_t RevisionHandler::diff( vector<bool>& origine, vector<bool>& data ){
-            unsigned int num= min( origine.size(), data.size() );
+        uint64_t RevisionHandler::diff( vector<char>& origine, vector<char>& data ){
+            uint64_t num= min( origine.size(), data.size() );
             uint64_t diff = max( origine.size(), data.size() ) - num;
 
-            for(unsigned int i=0; i<num; i++){
+            for(uint64_t i=0; i<num; i++){
                 if( origine[i] != data[i] )
                     diff++;
             }
             return diff;
         }
 
-        uint64_t RevisionHandler::diff( ifstream& origine, ifstream& data ){ //We work with bytes
-            if(!origine && !data )
-                throw "";
 
-            uint64_t origineSize=1; //Avoid division by zero
-            uint64_t diff=1;
-            char b1,b2;
 
-            origine.seekg( 0, origine.beg );
-            data.seekg( 0, data.beg );
-            while( origine.get( b1 ) && data.get( b2 ) ){
-                if( b1 != b2 )
-                    diff++;
-                origineSize++;
-            }
 
-            if( origine.get(b1) ){
-                while( origine.get( b1 ) ){
-                    diff++; origineSize++;
-                }
-            }else if( data.get(b1) ){
-                while( data.get( b1 ) )
-                    diff++;
-            }
-
-            return diff;
-
-        }
-
-        void RevisionHandler::createdMutations( vector<bool>& origine, vector<bool>& data, ofstream& stream, uint64_t pos){
-            stream.seekp(pos, stream.beg);
+        //pos position a partir de la fin du fichier
+        void RevisionHandler::createdMutations( vector<char>& origine, vector<char>& data, ofstream& stream, uint64_t pos){
+            stream.seekp(pos, stream.end);
 
             //Update first
             uint64_t i(0);
@@ -218,7 +202,6 @@ namespace Athena{
             }
         }
 
-
         /**
          *  Apply mutations
         **/
@@ -235,21 +218,15 @@ namespace Athena{
             //idBegining
             for(int i=0; i<8; i++){//8bytes <=>uint64_t
                 stream.get( c );
-                buffer = bitset<8>(c);
-                for(int j=0; j<8; j++){//8bit by byte
-                    idBegining+=buffer[j];
-                    idBegining<<1;
-                }
+                idBegining+=c;
+                idBegining << 8;
             }
 
             //size
             for(int i=0; i<8; i++){//8bytes <=>uint64_t
                 stream.get( c );
-                buffer = bitset<8>(c);
-                for(int j=0; j<8; j++){//8bit by byte
-                    size+=buffer[j];
-                    size<<1;
-                }
+                size+=c;
+                size << 8;
             }
 
             Mutation m( type, idBegining, size);
@@ -257,7 +234,7 @@ namespace Athena{
         }
 
         //Relative pos correspond à la position équivalente du début du flux(0) si on ne charge que des bouts de fichiers par défaut à 0
-        void RevisionHandler::applyMutations( vector<bool>& data, Revision* rev){
+        void RevisionHandler::applyMutations( vector<char>& data, Revision* rev){
             ifstream* stream = (rev->getStream());
             Mutation m;
             uint64_t i =0;
@@ -265,37 +242,8 @@ namespace Athena{
 
 
             while( i < rev->getSize() ){
-                Mutation m=readMutation( stream );
-                m.apply(data, stream);
-                i++;
-            }
-        }
-
-        void RevisionHandler::recopy( ifstream& oldFile, ofstream& newFile, uint64_t  idBeginning, uint64_t size){
-            oldFile.seekg( idBeginning, oldFile.beg );
-            char c;
-            uint64_t i=0;
-
-            while( oldFile.get(c) && i<size ){
-                newFile<<c;
-                i++;
-            }
-        }
-
-        void RevisionHandler::applyMutations( ifstream& oldFile, ofstream& newFile, Revision* rev ){
-            ifstream* stream = (rev->getStream());
-            Mutation m;
-            uint64_t i =0;
-            stream->seekg( rev->getIdBeginning() - rev->getRelativeO(), stream->beg );
-            oldFile.seekg( 0, oldFile.beg);
-
-            while( i < rev->getSize() ){
-                m=readMutation( *stream );
-
-                if( m.getIdBeginning() != oldFile.tellg() )
-                    recopy( oldFile, newFile, oldFile.tellg(), m.getIdBeginning() - oldFile.tellg() );
-
-                m.apply(oldFile, newFile, *stream);
+                Mutation m=readMutation( *stream );
+                m.apply(data, *stream);
                 i++;
             }
         }
@@ -306,21 +254,39 @@ namespace Athena{
         /**
          * @return vector order by n° of revision
         */
-        vector< uint64_t > calculDifferences( Revision* rev,  vector<bool>& data ){
-            vector< bool > tmpData;
+        vector< uint64_t > RevisionHandler::calculDifferences( Revision* rev,  vector<char>& data ){
+            vector< char > tmpData(data);
             vector< uint64_t > differences;
-            Revision* tmp = rev->getRoot()->getNext();
+            Revision* tmp = (rev->getRoot()); //Diff with racine <=> rev origine
 
             while( tmp != NULL ){
-                differences.push_back( applyMutations( tmpData, tmp) );
+                applyMutations( tmpData, tmp);
+                differences.push_back( diff(tmpData, data) );
                 tmp = tmp->getNext();
             }
             return differences;
         }
 
-        Revision* bestOrgin( Revision* rev,  vector<bool>& data ){
+
+        /**
+         *
+         *  Update : not to calcul all differences ??
+        **/
+        Revision* RevisionHandler::bestOrgin( Revision* rev,  vector<char>& data ){
+            if( rev->getN() == -1 )//root
+                return rev;
+
             vector< uint64_t > differences = calculDifferences( rev, data);
-            //on en extrait le min
+            uint64_t tmpDiff=differences[0];
+            Revision* tmpRev = rev->getRoot();
+
+            for( int i=1; i<differences.size(); i++){
+                if( tmpDiff > differences[i] ){
+                    tmpDiff = differences[i];
+                    tmpRev    = tmpRev->getNext();
+                }
+            }
+            return tmpRev;
         }
 
 

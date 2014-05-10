@@ -21,16 +21,20 @@ namespace Athena{
                 /**  Extraction function
                  *  @param it   -   current position of the cursor of table
                 **/
-                int getNumber( vector<bool>& table, vector<bool>::iterator& it  );
-                uint16_t getOrigine( vector<bool>& table, vector<bool>::iterator& it );
-                uint64_t getIdBeginning( vector<bool>& table, vector<bool>::iterator& it );
-                uint64_t getSize( vector<bool>& table, vector<bool>::iterator& it );
-                uint16_t getDiff( vector<bool>& table, vector<bool>::iterator& it );
+                int getNumber( vector<char>& table, vector<char>::iterator& it  );
+                uint16_t getOrigine( vector<char>& table, vector<char>::iterator& it );
+
+                uint64_t getIdBeginning( vector<char>& table, vector<char>::iterator& it );
+                uint64_t getSize( vector<char>& table, vector<char>::iterator& it );
+                uint16_t getDiff( vector<char>& table, vector<char>::iterator& it );
+
+                uint32_t extractSizeTable( ifstream& stream );
 
 
                 vector<int> extractChildren( vector< int >& origines, int parent );
                 void buildChildren( vector<int>& origines, vector< Revision* > revisions, Revision* current);
 
+                vector<char> extractTable(ifstream& stream);
                 /**
                  * Build the structur(ie no data)
                  * @param table     - number(uint16_t) origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(float)...
@@ -41,20 +45,16 @@ namespace Athena{
 
 
 
-                void write( vector<bool>& data, unsigned int pos, unsigned length, ofstream& stream);
-                void createdMutations( vector<bool>& origine, vector<bool>& data, ofstream& stream, uint64_t pos);
+                void write( vector<char>& data, uint64_t pos, uint64_t length, ofstream& stream);
+                void writeTable( vector<char>& table, ofstream& stream);
+                void createdMutations( vector<char>& origine, vector<char>& data, ofstream& stream, uint64_t pos);
+
                 /**
                  * Calcul the difference between  origin and data, if we keep the result in RAM
                  * @param origin     -
                  * @param data     -
                 **/
-                uint64_t diff( vector<bool>& origine, vector<bool>& data );
-                /**
-                 * Calcul the difference between  origin and data, if we keep the result on hard disk
-                 * @param origin     -
-                 * @param data     -
-                **/
-                uint64_t diff( ifstream& origin, ifstream& data );
+                uint64_t diff( vector<char>& origine, vector<char>& data  );
 
                 /**
                  *  Return a mutation, the stream cursor is at the begining of the body of the mutation the header
@@ -63,21 +63,13 @@ namespace Athena{
                 **/
                 Mutation readMutation( ifstream& stream );
 
-                void applyMutations( vector<bool>& data, Revision* rev, ifstream& stream, uint64_t fileSize, uint64_t relativePos);
+                void applyMutations( vector<char>& data, Revision* rev);
+                vector< uint64_t > calculDifferences( Revision* rev,  vector<char>& data );
+                Revision* bestOrgin( Revision* rev,  vector<char>& data );
 
-                /**
-                 *  Recopy a part of the old file to the new
-                 *  @param idBeginning  - first caracter of the old file which must be write
-                 *  @param size         -
-                **/
-                void recopy( ifstream& oldFile, ofstream& newFile, uint64_t  idBeginning, uint64_t size);
+                void newRevision( Revision* currentRev, vector<bool>& data);
 
-                /**
-                 * @param oldFile   -
-                 * @param newFile   -
-                 * @param rev       -
-                **/
-                void applyMutations( ifstream& oldFile, ofstream& newFile, Revision* rev);
+                Revision* buildStructure( vector<char>& table );
         };
     }
 }

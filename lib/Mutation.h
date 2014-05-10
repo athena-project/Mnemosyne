@@ -29,37 +29,12 @@ namespace Athena{
                 /**
                  * Binary vect functions
                 **/
-                void applyInsert(vector<bool>& data, ifstream& stream);
-                void applyDelete(vector<bool>& data);
-                void applyUpdate(vector<bool>& data, ifstream& stream);
+                void applyInsert(vector<char>& data, ifstream& stream);
+                void applyDelete(vector<char>& data);
+                void applyUpdate(vector<char>& data, ifstream& stream);
 
-            /**
-            * File functions
-            **/
-                /**
-                 * @param newFile   - the file where the mutation must be applied
-                 * @param stream    - location of the mutation's instructions
-                **/
-                void applyInsert(ofstream& newFile, ifstream& stream);
 
-                /**
-                 *  Nothing to do, except not to recopy the data
-                **/
-                void applyDelete();
-
-                /**
-                 * @param newFile   - the file where the mutation must be applied
-                 * @param stream    - location of the mutation's instructions
-                **/
-                void applyUpdate(ofstream& newFile, ifstream& stream);
-
-                /**
-                 *
-                 * @param newFile   - the file where the mutation must be applied
-                 * @param stream    - the file of the whole revisions
-                **/
-                void apply( vector<bool>& data, ifstream& stream);
-                void apply( ifstream& oldFile, ofstream& newFile, ifstream& stream);
+                void apply( vector<char>& data, ifstream& stream);
 
         };
     }

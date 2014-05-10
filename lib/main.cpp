@@ -28,10 +28,10 @@ int main(){
     s2.push_back(true);
     RevisionHandler* handler= new RevisionHandler();
     ofstream stream("/home/severus/test1", ios::app);
-    handler->createdMutations(s1 , s2, stream, 0);
+//    handler->createdMutations(s1 , s2, stream, 0);
 //    ifstream s1( "/home/severus/s1", ios::binary);
 //    ifstream s2 ("/home/severus/s2", ios::binary);
-    cout<<handler->diff(s1,s2)<<endl;
+//    cout<<handler->diff(s1,s2)<<endl;
     delete handler;
 
     return 0;
