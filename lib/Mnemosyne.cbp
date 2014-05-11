@@ -49,6 +49,8 @@
 		<Unit filename="Revision.h" />
 		<Unit filename="RevisionHandler.cpp" />
 		<Unit filename="RevisionHandler.h" />
+		<Unit filename="SQLFactory.cpp" />
+		<Unit filename="SQLFactory.h" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<envvars />

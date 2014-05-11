@@ -1,18 +1,22 @@
 #ifndef MANAGER_H_INCLUDED
 #define MANAGER_H_INCLUDED
 
-//#include <mysql++.h>
-//#include <mysql/mysql.h>
-//#include <mysql++/mysql++.h>
+#include <mysql++/mysql++.h>
+
+#include "SQLFactory.h"
 
 using namespace std;
 
 namespace Athena{
     namespace Mnemosyne{
         class Manager{
+            protected :
+                mysqlpp::Connection conn;
             public :
                 Manager();
                 virtual ~Manager();
+
+                virtual get( string queryStr ) = 0;
         };
     }
 }

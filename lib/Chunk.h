@@ -18,10 +18,11 @@ namespace Athena{
                 uint64_t block_id;
                 uint32_t size;
             public :
-                const uint32_t SIZE_MAX = 64*1024; //octect
+                static const uint32_t CHUNK_SIZE_MAX = 64*1024; //octect
 
                 Chunk();
                 Chunk( uint64_t id, uint64_t block_id);
+                Chunk( uint64_t id, uint64_t block_id, uint32_t size);
 
                 uint64_t getId(){ return id; }
                 uint64_t getBlock_id(){ return block_id; }
