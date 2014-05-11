@@ -36,6 +36,8 @@
 		<Unit filename="Block.h" />
 		<Unit filename="Chunk.cpp" />
 		<Unit filename="Chunk.h" />
+		<Unit filename="Manager.cpp" />
+		<Unit filename="Manager.h" />
 		<Unit filename="Mutation.cpp" />
 		<Unit filename="Mutation.h" />
 		<Unit filename="Ressource.cpp">
