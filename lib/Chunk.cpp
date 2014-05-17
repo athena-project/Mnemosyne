@@ -18,7 +18,9 @@ namespace Athena{
         /**
          *  ChunckManager
         **/
-        ChunkManager::ChunkManager() : Manager(){}
+        ChunkManager::ChunkManager(){}
+        ChunkManager::~ChunkManager(){}
+
 
         void ChunkManager::insert( Chunk chunk){
             mysqlpp::Query query = conn.query();
@@ -26,7 +28,9 @@ namespace Athena{
             query<<","<<chunk.getBlock_id()<<","<<chunk.getSize()<< ");";
             query.execute();
 
-            if (mysqlpp::StoreQueryResult res != query.store()) {
+            if (mysqlpp::StoreQueryResult res = query.store())
+                return;
+            else{
                 cerr << "Failed to get item list: " << query.error() << endl;
                 throw "";
             }
@@ -38,29 +42,66 @@ namespace Athena{
 
             for(vector<Chunk>::iterator it=chunks.begin(); it!=chunks.end(); it++){
                 query << (it==chunks.begin()) ? "" : ",";
-                query<<"("<<it->getId()<<","<<it->getBlock_id()<<","<<it->getSize()<<") ";
+                query<<"("<<it->getBlock_id()<<","<<it->getSize()<<") ";
             }
 
             query.execute();
 
-            if (mysqlpp::StoreQueryResult res != query.store()) {
+            if (mysqlpp::StoreQueryResult res = query.store())
+                return;
+            else{
                 cerr << "Failed to get item list: " << query.error() << endl;
                 throw "";
             }
         }
 
 
-        vector<Chunk> ChunckManager::get( string fieldsNeeded, string where, string order, string limit){
+        vector<Chunk> ChunkManager::get( string fieldsNeeded, string where, string order, string limit){
             vector<mysqlpp::Row> v;
             vector< Chunk > chunks;
             mysqlpp::Query query = conn.query();
             query << "SELECT " << fieldsNeeded <<" FROM chunck "<< where <<" "<< order<< " "<<limit;
-            query.storein(v);
+            mysqlpp::StoreQueryResult res = query.store();
 
-            for (vector<mysqlpp::Row>::iterator it = v.begin(); it != v.end(); ++it)
-                chunks.push_back( Chunk( (uint64_t)it->at("id"), (uint64_t)it->at("block_id"), (uint64_t)it->at("size") ) );
+            for(size_t i = 0; i < res.num_rows(); ++i)
+                chunks.push_back( Chunk( (uint64_t)res[i]["id"], (uint64_t)res[i]["block_id"], (uint64_t)res[i]["size"] ) );
 
             return chunks;
+        }
+
+        vector<Chunk> ChunkManager::get(vector<uint64_t>& ids){
+            string where = "id INTO (";
+
+            for(vector<uint64_t>::iterator it; it != ids.end(); it++){
+                where += (it != ids.begin() ) ? "," : "";
+                where += (*it);
+            }
+            return get( "*", where, "id", "");
+        }
+        Chunk ChunkManager::get(uint64_t id){
+            vector<Chunk> vect = get( "*", "id := "+id, "id", "");
+            if( vect.size() == 1 )
+                return vect[0];
+            else
+                throw "chunk not found";
+        }
+
+
+        /**
+          * ChunkHandler
+        **/
+        ChunkHandler::ChunkHandler(){}
+
+        ChunkHandler::~ChunkHandler(){
+            for( int i=0; i<files.size(); i++)
+                remove( files[i].c_str() );
+        }
+
+        string ChunkHandler::getFile( Chunk& chunk){
+            BlockManager bManager;
+            Block currentBlock = bManager.get( chunk.getBlock_id() );
+            A faire .....
+            return "";
         }
 
     }

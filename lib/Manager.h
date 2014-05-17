@@ -14,9 +14,10 @@ namespace Athena{
                 mysqlpp::Connection conn;
             public :
                 Manager();
+                Manager( mysqlpp::Connection& co );
                 virtual ~Manager();
 
-                virtual get( string queryStr ) = 0;
+                //virtual get( string queryStr ) = 0;
         };
     }
 }

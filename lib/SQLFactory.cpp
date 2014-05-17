@@ -3,10 +3,10 @@
 namespace Athena{
     namespace Mnemosyne{
 
-        mysqlpp::Connection getSQLConnexion(){
+        mysqlpp::Connection SQLFactory::getSQLConnexion(){
             const char* host="localhost";
             const char* login="root";
-            const char* password="root";
+            const char* password="rj7@kAv;8d7_e(E6:m4-w&";
             const char* dbname="mnemosyne";
 
             mysqlpp::Connection conn(false);

@@ -269,10 +269,10 @@ namespace Athena{
 
 
         /**
-         *
+         *  @param rev      - previous revision
          *  Update : not to calcul all differences ??
         **/
-        Revision* RevisionHandler::bestOrgin( Revision* rev,  vector<char>& data ){
+        Revision* RevisionHandler::bestOrigin( Revision* rev,  vector<char>& data ){
             if( rev->getN() == -1 )//root
                 return rev;
 

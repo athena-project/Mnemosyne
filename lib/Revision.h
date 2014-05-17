@@ -38,7 +38,7 @@ namespace Athena{
             public :
                 static const uint32_t REVISION_SIZE_TABLE = 20; // octets , origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(uint16_t)
 
-                Revision(){ root=this; }
+                Revision(){ root=this; n=-1;}
                 Revision(int num) : n(num){ root = (n == -1 ) ? this : NULL; }
                 Revision(int num, uint64_t id, uint64_t s, uint32_t d) : n(num), idBeginning(id), size(s), diff(d){ root = (n == -1 ) ? this : NULL; }
                 ~Revision();

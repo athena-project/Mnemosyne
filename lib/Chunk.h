@@ -4,8 +4,10 @@
 #include <list>
 #include <vector>
 #include <stdint.h>
+#include <fstream>
 
 #include "Manager.h"
+#include "Block.h"
 
 using namespace std;
 
@@ -36,8 +38,28 @@ namespace Athena{
         class ChunkManager : public Manager{
             public :
                 ChunkManager();
-                vector<Chunk > get( list<uint64_t> ids );
+                ~ChunkManager();
 
+                void insert( Chunk chunk);
+                void insert( vector< Chunk > chunks );
+                vector<Chunk> get( string fieldsNeeded, string where, string order, string limit);
+
+                /**
+                 * Order by id
+                **/
+                vector<Chunk> get(vector<uint64_t>& ids);
+                Chunk get(uint64_t id);
+
+        };
+
+        class ChunkHandler {
+            protected :
+                list< string > files; ///All the tmpFiles which was created by this instance
+            public :
+                ChunkHandler();
+                ~ChunkHandler();
+
+                string getFile( Chunk& chunk );
         };
     }
 }

@@ -28,6 +28,9 @@ namespace Athena{
                 uint64_t getSize( vector<char>& table, vector<char>::iterator& it );
                 uint16_t getDiff( vector<char>& table, vector<char>::iterator& it );
 
+                /**
+                 * @return size of the table in bytes
+                **/
                 uint32_t extractSizeTable( ifstream& stream );
 
 
@@ -65,7 +68,7 @@ namespace Athena{
 
                 void applyMutations( vector<char>& data, Revision* rev);
                 vector< uint64_t > calculDifferences( Revision* rev,  vector<char>& data );
-                Revision* bestOrgin( Revision* rev,  vector<char>& data );
+                Revision* bestOrigin( Revision* rev,  vector<char>& data );
 
                 void newRevision( Revision* currentRev, vector<bool>& data);
 
