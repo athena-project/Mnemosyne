@@ -9,6 +9,7 @@
 #include <sstream>
 
 #include "RevisionHandler.h"
+//#include "RessourceHandler.h"
 #include "Revision.h"
 #include "Chunk.h"
 
@@ -18,7 +19,7 @@ using namespace std;
 namespace Athena{
     namespace Mnemosyne{
 
-         class Ressource{
+        class Ressource{
             protected :
                 int type;
 
@@ -28,17 +29,18 @@ namespace Athena{
                 uint32_t currentRevision; //numero, 0 => no revision yet
                // string time; //last revision
                 uint32_t size;
-                string contentType; //last revision
+                string contentType; // [nbrRevConcernées:contentType;charset...][nbrRevConcernées:contentType2;charset...]
                 vector<uint64_t> chunks; //ids of chunks
 
-                string content; //
-                Revision* rev;
+                string content; // current data if needed
+                Revision* rev;  // current revision if needed
             public :
                 enum type{
                     PAGE, CSS, JS, DEFAULT
                 };
 
                 static string TMP_DIR(){ return "/home/severus/Desktop"; }
+                static int contentTypeToType(string contentType){ return 0; /*à faire*/ }
 
                 Ressource();
                 Ressource(string url, string contentType, unsigned int size, string content, unsigned int modified);
@@ -54,6 +56,8 @@ namespace Athena{
                 vector<uint64_t> getChunks();
                 unsigned int getModified();
 
+                Revision* getRevision(){ return rev; }
+
                 void setId(int param);
                 virtual void setUrl(string param);
                 void setContentType(string param);
@@ -63,8 +67,8 @@ namespace Athena{
 
                 bool empty();
 
-                string buildRevision( uint32_t n );
-                void newRevision( string dataStr );
+//                string buildRevision( uint32_t n );
+//                void newRevision( string dataStr );
             /*
 
 
@@ -75,6 +79,15 @@ namespace Athena{
                 virtual void fetchLinks(GumboNode* node, list<string>& links);
                 virtual list< string > urlFromLinks(list<string>& links);
             */
+        };
+
+        class RessourceHandler{
+            protected :
+
+            public :
+                string buildRevision( Ressource& r, uint32_t n );
+                Revision* buildAllRevisions(Ressource& r);
+                void newRevision( Ressource* rev, string dataStr );
         };
     }
 }

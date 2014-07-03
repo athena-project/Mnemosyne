@@ -69,7 +69,7 @@ namespace Athena{
             return chunks;
         }
 
-        vector<Chunk> ChunkManager::get(vector<uint64_t>& ids){
+        vector<Chunk> ChunkManager::get(vector<uint64_t> ids){
             string where = "id INTO (";
 
             for(vector<uint64_t>::iterator it; it != ids.end(); it++){
@@ -86,6 +86,15 @@ namespace Athena{
                 throw "chunk not found";
         }
 
+        uint64_t ChunkManager::count( string where, string order, string limit ){
+            vector<mysqlpp::Row> v;
+            mysqlpp::Query query = conn.query();
+            query << "SELECT COUNT(*) AS number FROM chunck "<< where <<" "<< order<< " "<<limit;
+            mysqlpp::StoreQueryResult res = query.store();
+
+            return res[0]["number"];
+
+        }
 
         /**
           * ChunkHandler
@@ -97,11 +106,22 @@ namespace Athena{
                 remove( files[i].c_str() );
         }
 
-        string ChunkHandler::getFile( Chunk& chunk){
+        string ChunkHandler::getFile( uint64_t id){
+            ChunkManager cManager;
+            Chunk currentChunk = cManager.get( id );
+            std::ostringstream chunckId;
+            chunckId<<id;
+
             BlockManager bManager;
-            Block currentBlock = bManager.get( chunk.getBlock_id() );
-            A faire .....
-            return "";
+            BlockHandler bHandler;
+            Block currentBlock = bManager.get( currentChunk.getBlock_id() );
+
+            string chunkLocation1 = bHandler.getChunk( currentBlock, id );
+            string chunkLocation2 = ChunkHandler::TMP_DIR()+"/"+chunckId.str();
+
+            boost::filesystem::copy_file( chunkLocation1, chunkLocation2);
+            files.push_back(chunkLocation2);
+            return chunkLocation2;
         }
 
     }

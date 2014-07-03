@@ -68,7 +68,7 @@ namespace Athena{
 
                 void applyMutations( vector<char>& data, Revision* rev);
                 vector< uint64_t > calculDifferences( Revision* rev,  vector<char>& data );
-                Revision* bestOrigin( Revision* rev,  vector<char>& data );
+                    Revision* bestOrigin( Revision* rev,  vector<char>& data );
 
                 void newRevision( Revision* currentRev, vector<bool>& data);
 

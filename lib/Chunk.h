@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <fstream>
 
+#include <boost/filesystem.hpp>
+
 #include "Manager.h"
 #include "Block.h"
 
@@ -44,22 +46,27 @@ namespace Athena{
                 void insert( vector< Chunk > chunks );
                 vector<Chunk> get( string fieldsNeeded, string where, string order, string limit);
 
+                uint64_t count( string where="", string order="", string limit="" );
                 /**
                  * Order by id
                 **/
-                vector<Chunk> get(vector<uint64_t>& ids);
+                vector<Chunk> get(vector<uint64_t> ids);
                 Chunk get(uint64_t id);
 
         };
 
         class ChunkHandler {
             protected :
-                list< string > files; ///All the tmpFiles which was created by this instance
+                vector< string > files; ///All the tmpFiles which was created by this instance
             public :
                 ChunkHandler();
                 ~ChunkHandler();
 
-                string getFile( Chunk& chunk );
+                static string TMP_DIR(){ return ""; }
+// cree un tmp file et renvoit le chemin
+                string getFile( uint64_t id );
+
+
         };
     }
 }

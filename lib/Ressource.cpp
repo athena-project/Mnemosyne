@@ -29,7 +29,7 @@ namespace Athena{
         uint32_t Ressource::getCurrentRevision(){ return currentRevision; }
         string Ressource::getContentType(){ return contentType; }
         uint32_t Ressource::getSize(){ return size; }
-        vector<uint64_t> Reccource::getChunks(){ return chunks; }
+        vector<uint64_t> Ressource::getChunks(){ return chunks; }
         string Ressource::getContent(){ return content; }
 //        unsigned int Ressource::getModified(){ return modified; }
 
@@ -44,6 +44,10 @@ namespace Athena{
         bool Ressource::empty(){
             return (content == "");
         }
+
+        /**
+            RessourceHandler
+        **/
 
         string RessourceHandler::buildRevision( Ressource& r, uint32_t n ){
             if( n > r.getCurrentRevision() )
@@ -60,27 +64,27 @@ namespace Athena{
 
             // Table building, from the last chunks which host the end of the table
             vector<uint64_t> chunks = r.getChunks();
-            ifstream lastChunkStream(chHandler.getFile( .size()-1 ).c_str() , ios::binary);
+            ifstream lastChunkStream( chHandler.getFile( chunks[chunks.size()-1] ) .c_str() , ios::binary);
             uint32_t sizeTable = revHandler.extractSizeTable( lastChunkStream );
-            uint32_t nbrChuncksTable = ceil(  float(sizeTable) / float(CHUNKS::SIZE_MAX) );
+            uint32_t nbrChuncksTable = ceil( (float)sizeTable / (float)(Chunk::CHUNK_SIZE_MAX) );
             vector< uint32_t > idChuncksTable;
-            for(uint32_t i = chunks.size()-nbrChuncksTable-1, i<chunks.size()  ; i++ )
+            for(uint32_t i = (chunks.size()-nbrChuncksTable-1); i<chunks.size()  ; i++ )
                 idChuncksTable.push_back( chunks[i] );
             vector<Chunk> chuncksTable = chManager.get( chunks );
 
 
             // Building the tmpFile, which will store the revision data, from the chunks
             std::ostringstream tmpId;
-            tmpId << this->id;
+            tmpId << r.getId();
             string location ="";
 
             if( chuncksTable.size() == 1 )
-                location = chHandler.getFile( chuncksTable[0] );
+                location = chHandler.getFile( chuncksTable[0].getId() );
             else{
                 ofstream tmpFile( (Ressource::TMP_DIR()+"/"+tmpId.str()).c_str() );
                 char(c);
                 for(int i=0; i< chuncksTable.size(); i++){
-                    ifstream tmpStream(chHandler.getFile( chuncksTable[i] ).c_str() , ios::binary);
+                    ifstream tmpStream(chHandler.getFile( chuncksTable[i].getId() ).c_str() , ios::binary);
                     while( tmpStream.get(c) ){
                         tmpFile << c;
                     }
@@ -108,29 +112,31 @@ namespace Athena{
                 value<<data[j];
 
             if( location !="" )
-                remove( location );
+                remove( location.c_str() );
             return value.str();
         }
         /**
          *  @return ifstream* - is the stream use by each revision
         **/
-        pair<Revision*, ifstream*> RessourceHandler::buildAllRevisions(Ressource& r){
+        Revision* RessourceHandler::buildAllRevisions(Ressource& r){
             if( r.getCurrentRevision() == 0 )
                 return new Revision();
 
-            ChunkHandler chHandler();
-            Revision rev = new Revision();
-            vector<Chunk> chuncksTable = chManager.get( r.getChunks );
+            ChunkManager* chManager= new ChunkManager();
+            ChunkHandler* chHandler=new ChunkHandler();
+            RevisionHandler* revHandler= new RevisionHandler();
+            Revision* rev = new Revision();
+            vector<Chunk> chuncksTable = chManager->get( r.getChunks() );
 
 
             // Building the tmpFile, which will store the revision data, from the chunks
             std::ostringstream tmpId;
-            tmpId << this->id;
+            tmpId << r.getId();
             string location ="";
             ofstream tmpFile( (Ressource::TMP_DIR()+"/"+tmpId.str()).c_str() );
                 char(c);
             for(int i=0; i< chuncksTable.size(); i++){
-                ifstream tmpStream(chHandler.getFile( chuncksTable[i] ).c_str() , ios::binary);
+                ifstream tmpStream( chHandler->getFile( chuncksTable[i].getId() ).c_str() , ios::binary);
                 while( tmpStream.get(c) ){
                     tmpFile << c;
                 }
@@ -138,36 +144,44 @@ namespace Athena{
             ifstream* stream = new ifstream( Ressource::TMP_DIR()+"/"+tmpId.str() );
 
 
-             vector< char> table = revHandler.extractTable( *stream );
-
+            vector< char> table = revHandler->extractTable( *stream );
+            delete chManager;
+            delete chHandler;
+            delete revHandler;
 
             //Body building
-            Revision* rev = revHandler.buildStructure( table ); //Root
-            while( rev->next() != NULL ){
+            rev = revHandler->buildStructure( table ); //Root
+            while( rev->getNext() != NULL ){
                 rev->setStream( stream );
-                rev = rev->next();
+                rev = rev->getNext();
             }
 
+            return rev;
 
         }
         //Input is the ressource content
-        void RessourceHandler::newRevision( Ressource& r, string dataStr ){
+        void RessourceHandler::newRevision( Ressource* r, string dataStr ){
             vector< char > data;
             for(uint64_t i=0; i<dataStr.size(); i++)
                 data.push_back( dataStr[i] );
 
-            RevisionHandler revHandler();
-            Revision* origin = revHandler.bestOrigin( rev, data );
-            uint32_t tableSize = revHandler.extractSizeTable( rev.getStream() );
+            Revision* rev = r->getRevision();
+            RevisionHandler* revHandler =new RevisionHandler();
+            Revision* origin = revHandler->bestOrigin( rev, data );
+            uint32_t tableSize = revHandler->extractSizeTable( *rev->getStream() );
 
             vector<char> tmpData;
-            list< Revision* > parents = rev->getParents();
+            list< Revision* > parents = origin->getParents();
             for( list< Revision* >::iterator it = parents.begin() ; it!=parents.end() ; it++ )
-                revHandler.applyMutations( tmpData, *it);
+                revHandler->applyMutations( tmpData, *it);
 
-            revHandler.applyMutations( tmpData, rev); //Data is now hydrate
+            revHandler->applyMutations( tmpData, origin); //Data is now hydrate
+            revHandler->newRevision( origin, tmpData, data );
 
-            revHandler.createdMutations(tmpData, data, rev.getStream(), -1*tableSize);
+            ///Maj de l'instance courrante
+            currentRevision ++;
+
+            delete revHandler;
         }
     }
 }

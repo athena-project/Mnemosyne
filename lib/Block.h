@@ -5,6 +5,8 @@
 #include <mysql++/mysql++.h>
 #include <vector>
 
+#include <boost/filesystem.hpp>
+
 #include "Manager.h"
 
 using namespace std;
@@ -36,11 +38,28 @@ namespace Athena{
                 void insert( vector< Block > block );
                 vector<Block> get( string fieldsNeeded, string where, string order, string limit );
 
+                uint64_t count( string where="", string order="", string limit="" );
+
                 /**
                  * Order by id
                 **/
                 vector<Block> get( vector<uint64_t>& ids );
                 Block get( uint64_t id );
+        };
+
+        class BlockHandler{
+            protected :
+                vector<string> files;
+            public :
+                BlockHandler();
+                ~BlockHandler();
+
+                static string DIR(){ return ""; }
+                static string TMP_DIR(){ return ""; }
+
+                string getChunk( Block& block, uint64_t idChunk );
+
+                void makeBlocks();//Build blocks
         };
     }
 }

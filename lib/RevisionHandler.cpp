@@ -50,8 +50,12 @@ namespace Athena{
         uint16_t RevisionHandler::getOrigine( vector<char>& table, vector<char>::iterator& it ){
             uint16_t n=0b0;
             for(int i=0; i<2; i++){
-                n+= *it;
-                n<<1;
+               bitset<8> ca( *it );
+               for(int j =7 ; j>-1; j--){
+                    n=n<<1;
+                    n+=ca[j];
+
+                }
                 it++;
             }
             return n;
@@ -60,8 +64,12 @@ namespace Athena{
         uint64_t RevisionHandler::getIdBeginning( vector<char>& table, vector<char>::iterator& it ){
             uint64_t n=0b0;
             for(int i=0; i<8; i++){
-                n+= *it;
-                n<<1;
+               bitset<8> ca( *it );
+               for(int j =7 ; j>-1; j--){
+                    n=n<<1;
+                    n+=ca[j];
+
+                }
                 it++;
             }
             return n;
@@ -70,8 +78,12 @@ namespace Athena{
         uint64_t RevisionHandler::getSize( vector<char>& table, vector<char>::iterator& it ){
             uint64_t n=0b0;
             for(int i=0; i<8; i++){
-                n+= *it;
-                n<<1;
+               bitset<8> ca( *it );
+               for(int j =7 ; j>-1; j--){
+                    n=n<<1;
+                    n+=ca[j];
+
+                }
                 it++;
             }
             return n;
@@ -80,8 +92,12 @@ namespace Athena{
         uint16_t RevisionHandler::getDiff( vector<char>& table, vector<char>::iterator& it ){
             uint16_t n=0b0;
             for(int i=0; i<2; i++){
-                n+= *it;
-                n<<1;
+               bitset<8> ca( *it );
+               for(int j =7 ; j>-1; j--){
+                    n=n<<1;
+                    n+=ca[j];
+
+                }
                 it++;
             }
         }
@@ -289,9 +305,97 @@ namespace Athena{
             return tmpRev;
         }
 
+        void RevisionHandler::addTableElement( vector<char> table, uint64_t id, uint64_t size, uint16_t diff, uint16_t o){
+            ///ID
+            bitset<64> b1(id);
+            for(int i=7; i>-1; i--){
+                char t=0;
+                for(int j=7; j>-1; j--){
+                    t=t<<1;
+                    t+=b1[i*8+j];
+                }
+                table.push_back(t);
+            }
+
+            ///Size
+            bitset<64> b2(size);
+            for(int i=7; i>-1; i--){
+                char t=0;
+                for(int j=7; j>-1; j--){
+                    t=t<<1;
+                    t+=b2[i*8+j];
+                }
+                table.push_back(t);
+            }
+
+            ///Diff
+            bitset<16> b3(diff);
+            for(int i=1; i>-1; i--){
+                char t=0;
+                for(int j=7; j>-1; j--){
+                    t=t<<1;
+                    t+=b3[i*8+j];
+                }
+                table.push_back(t);
+            }
+
+            ///Diff
+            bitset<16> b4(o);
+            for(int i=1; i>-1; i--){
+                char t=0;
+                for(int j=7; j>-1; j--){
+                    t=t<<1;
+                    t+=b4[i*8+j];
+                }
+                table.push_back(t);
+            }
+        }
+
+        //Accroche la nouvelle révision à la fin
+        void RevisionHandler::newRevision( Revision* rev,  vector<char>newData){
+            rev = rev->getLast();
+
+            ChunkHandler* cHandler;
+            Revision* origin = bestOrigin( rev, newData );
+            uint32_t tableSize = extractSizeTable( *rev->getStream() );
+            vector<char> table = extractTable( *rev->getStream() );
+
+            ///Building of origin
+            vector<char> tmpData;
+            list< Revision* > parents = origin->getParents();
+            for( list< Revision* >::iterator it = parents.begin() ; it!=parents.end() ; it++ )
+                applyMutations( tmpData, *it);
+
+            applyMutations( tmpData, origin); //Data is now hydrate
+
+            ///Rev creation, size will be hydrate later
+            Revision* newRev= new Revision( rev->getN()+1, rev->getIdBeginning()+rev->getSize(), 0, diff( tmpData, newData) );
+            rev->addChild( newRev );
+            rev->setPrevious( rev );
+            rev->setParent( origin );
+            rev->setRoot( rev->getRoot() );
+            newRev->setStream( rev->getStream() );
+
+            createdMutations( tmpData, newData, rev->getStream(), tableSize);
+
+            ///Size
+            rev->getStream()->seekg (0, rev->getStream().end);
+            newRev->setSize( rev->getStream().tellg() - rev->getIdBeginning()+rev->getSize() )
+
+            ///Maj of the table
+            addTableElement( table, newRev->getIdBeginning(), newRev->getSize(), newRev->getDiff(), origin->getN());
+            writeTable( table, rev->getStream().end );
+
+            ///Création des nv chunk
+            cHandler->updateData();
+            cHandler->makeChunks( stream, idEndLastChunk)
+
+        }
 
 
 
+            delete cHandler;
+        }
 
     }
 }

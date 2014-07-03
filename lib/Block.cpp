@@ -51,5 +51,80 @@ namespace Athena{
             else
                 throw "Block not found";
         }
+
+
+        uint64_t BlockManager::count( string where, string order, string limit ){
+            vector<mysqlpp::Row> v;
+            mysqlpp::Query query = conn.query();
+            query << "SELECT COUNT(*) AS number FROM block "<< where <<" "<< order<< " "<<limit;
+            mysqlpp::StoreQueryResult res = query.store();
+
+            return res[0]["number"];
+
+        }
+
+        /**
+            Block Handler
+        **/
+
+        BlockHandler::BlockHandler(){}
+        BlockHandler::~BlockHandler(){
+            for( int i=0; i<files.size(); i++)
+                remove( files[i].c_str() );
+        }
+
+        string BlockHandler::getChunk( Block& block, uint64_t idChunk ){
+            std::ostringstream blockId;
+            std::ostringstream chunckId;
+            blockId << block.getId();
+            chunckId << idChunk;
+
+
+            string firstLocation = blockId.str()+"/"+chunckId.str() ; //Relative
+            string newLocation   =  BlockHandler::TMP_DIR()+"/"+chunckId.str(); //Absolue
+            string cmd = "tar -Jxvf "+BlockHandler::DIR()+"/"+blockId.str()+".tar.xz "+firstLocation;
+            system( cmd.c_str() );
+
+            boost::filesystem::copy_file( BlockHandler::DIR()+"/"+firstLocation, newLocation);
+            remove( (BlockHandler::DIR()+"/"+firstLocation).c_str() );
+
+            return newLocation;
+        }
+
+        void BlockHandler::makeBlocks(){
+            ChunkManager cManager();
+            BlockManager bManager();
+
+            uint64_t nbrChunks = cManager.count();
+            uint64_t nbrBlocks = bManager.count();
+
+            uint64_t nbrNeeded = nbrChunks/(Chunk::CHUNK_SIZE_MAX) - nbrBlocks;
+
+            vector<Block> blocks;
+            for( uint64_t i = 0; i<nbrNeeded; i++)
+                blocks.push_back( Block() );
+
+            bManager.insert( blocks );
+
+            string tmpBlockLocation = BlockHandler::TMP_DIR()+"/"+tmpId;
+            string blockLocation    = BlockHandler::DIR()+"/"+tmpId;
+            for( uint64_t i = 0; i<nbrNeeded; i++){
+                std::ostringstream tmpId;
+                tmpId<< blocks[i].getId();
+                boost::filesystem::create_directory( tmpBlockLocation );
+
+                for(uint64_t i=(nbrBlocks+i)*(Chunk::CHUNK_SIZE_MAX); <(nbrBlocks+i+1)*(Chunk::CHUNK_SIZE_MAX) ; i++){
+                    std::ostringstream tmpId2;
+                    tmpId2<<i;
+                    if( boost::filesystem::copy_file( ChunkManager::TMP_DIR()+"/"+tmpId2.str(), tmpBlockLocation+"/"+tmpId2.str() ) )
+                        remove( ChunkManager::TMP_DIR()+"/"+tmpId2.str() );
+                }
+                system( "tar -Jcvf "+blockLocation+".tar.xz "+tmpBlockLocation );
+                boost::filesystem::remove_all( tmpBlockLocation );
+
+            }
+
+
+        }
     }
 }
