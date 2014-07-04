@@ -352,7 +352,7 @@ namespace Athena{
         }
 
         //Accroche la nouvelle révision à la fin
-        void RevisionHandler::newRevision( Revision* rev,  vector<char>newData){
+        void RevisionHandler::newRevision( Revision* rev,  vector<char>&newData){
             rev = rev->getLast();
 
             ChunkHandler* cHandler;

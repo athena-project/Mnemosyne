@@ -2,12 +2,14 @@
 #define BLOCK_H_INCLUDED
 
 #include <stdint.h>
+#include <stdio.h> // remove file
 #include <mysql++/mysql++.h>
 #include <vector>
 
 #include <boost/filesystem.hpp>
 
 #include "Manager.h"
+#include "Chunk.h"
 
 using namespace std;
 

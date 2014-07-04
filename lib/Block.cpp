@@ -92,11 +92,11 @@ namespace Athena{
         }
 
         void BlockHandler::makeBlocks(){
-            ChunkManager cManager();
-            BlockManager bManager();
+            ChunkManager* cManager = new ChunkManager();
+            BlockManager* bManager = new BlockManager();
 
-            uint64_t nbrChunks = cManager.count();
-            uint64_t nbrBlocks = bManager.count();
+            uint64_t nbrChunks = cManager->count();
+            uint64_t nbrBlocks = bManager->count();
 
             uint64_t nbrNeeded = nbrChunks/(Chunk::CHUNK_SIZE_MAX) - nbrBlocks;
 
@@ -104,26 +104,36 @@ namespace Athena{
             for( uint64_t i = 0; i<nbrNeeded; i++)
                 blocks.push_back( Block() );
 
-            bManager.insert( blocks );
+            bManager->insert( blocks );
 
-            string tmpBlockLocation = BlockHandler::TMP_DIR()+"/"+tmpId;
-            string blockLocation    = BlockHandler::DIR()+"/"+tmpId;
+            string tmpBlockLocation = BlockHandler::TMP_DIR()+"/";
+            string blockLocation    = BlockHandler::DIR()+"/";
             for( uint64_t i = 0; i<nbrNeeded; i++){
                 std::ostringstream tmpId;
                 tmpId<< blocks[i].getId();
                 boost::filesystem::create_directory( tmpBlockLocation );
 
-                for(uint64_t i=(nbrBlocks+i)*(Chunk::CHUNK_SIZE_MAX); <(nbrBlocks+i+1)*(Chunk::CHUNK_SIZE_MAX) ; i++){
+                for(uint64_t j=(nbrBlocks+i)*(Chunk::CHUNK_SIZE_MAX); j<(nbrBlocks+i+1)*(Chunk::CHUNK_SIZE_MAX) ; j++){
                     std::ostringstream tmpId2;
-                    tmpId2<<i;
-                    if( boost::filesystem::copy_file( ChunkManager::TMP_DIR()+"/"+tmpId2.str(), tmpBlockLocation+"/"+tmpId2.str() ) )
-                        remove( ChunkManager::TMP_DIR()+"/"+tmpId2.str() );
-                }
-                system( "tar -Jcvf "+blockLocation+".tar.xz "+tmpBlockLocation );
-                boost::filesystem::remove_all( tmpBlockLocation );
+                    tmpId2<<j;
 
+                    string sourceChunk = ChunkHandler::TMP_DIR()+"/"+tmpId2.str();
+                    string destChunk = tmpBlockLocation+"/"+tmpId2.str();
+                    boost::filesystem::path pathSource = boost::filesystem::path(sourceChunk.c_str());
+                    boost::filesystem::path pathDest = boost::filesystem::path(destChunk.c_str());
+
+                    boost::filesystem::copy_file( pathSource, pathDest );
+                    remove( sourceChunk.c_str() );
+                }
+
+                string cmd = "tar -Jcvf "+blockLocation+".tar.xz "+tmpBlockLocation;
+                system( cmd.c_str() );
+                boost::filesystem::remove_all( tmpBlockLocation );
             }
 
+            //Free memory
+            delete cManager;
+            delete bManager;
 
         }
     }

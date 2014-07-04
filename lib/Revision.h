@@ -32,7 +32,8 @@ namespace Athena{
                 Revision* last;         //Dernière révision ajoutée : nmax
                 Revision* root;
 
-                ifstream* stream;       //mutations's instructions
+                ifstream* iStream;       //mutations's instructions
+                ofstream* oStream;
                 uint64_t relativeO = 0;     //Origine relative du flux ie debut de la rev
 
             public :
@@ -50,6 +51,7 @@ namespace Athena{
                 ifstream* getStream(){      return stream; }
                 uint64_t getRelativeO(){    return relativeO; }
                 Revision* getRoot(){        return root; }
+                Revision* getLast(){        return last; }
                 Revision* getNext(){        return next; }
 
 

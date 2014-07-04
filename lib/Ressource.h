@@ -61,6 +61,7 @@ namespace Athena{
                 void setId(int param);
                 virtual void setUrl(string param);
                 void setContentType(string param);
+                void setCurrentRevision( uint32_t re ){ currentRevision = re; }
                 void setSize(unsigned int param);
                 void setContent(string param);
                 void setModified(unsigned int param);

@@ -9,6 +9,8 @@
 
 #include "Revision.h"
 #include "Mutation.h"
+#include "Chunk.h"
+
 using namespace std;
 
 namespace Athena{
@@ -70,9 +72,11 @@ namespace Athena{
                 vector< uint64_t > calculDifferences( Revision* rev,  vector<char>& data );
                     Revision* bestOrigin( Revision* rev,  vector<char>& data );
 
-                void newRevision( Revision* currentRev, vector<bool>& data);
+                void newRevision( Revision* currentRev, vector<char>& newData);
 
                 Revision* buildStructure( vector<char>& table );
+
+                void addTableElement( vector<char> table, uint64_t id, uint64_t size, uint16_t diff, uint16_t o);
         };
     }
 }

@@ -358,33 +358,44 @@
 	<string>
 	<stdint.h>
 
-1399824576 source:/home/toor/Github/Mnemosyne/trunk/lib/Block.cpp
+1404403574 source:/home/toor/Github/Mnemosyne/trunk/lib/Block.cpp
 	"Block.h"
 
-1399824576 /home/toor/Github/Mnemosyne/trunk/lib/Block.h
+1404402432 /home/toor/Github/Mnemosyne/trunk/lib/Block.h
 	<stdint.h>
-
-1399824576 source:/home/toor/Github/Mnemosyne/trunk/lib/Chunk.cpp
+	<stdio.h>
+	<mysql++/mysql++.h>
+	<vector>
+	<boost/filesystem.hpp>
+	"Manager.h"
 	"Chunk.h"
 
-1399824940 /home/toor/Github/Mnemosyne/trunk/lib/Chunk.h
+1404402027 source:/home/toor/Github/Mnemosyne/trunk/lib/Chunk.cpp
+	"Chunk.h"
+
+1404402027 /home/toor/Github/Mnemosyne/trunk/lib/Chunk.h
 	<list>
 	<vector>
 	<stdint.h>
+	<fstream>
+	<boost/filesystem.hpp>
 	"Manager.h"
+	"Block.h"
 
-1399824960 /home/toor/Github/Mnemosyne/trunk/lib/Manager.h
+1404402027 /home/toor/Github/Mnemosyne/trunk/lib/Manager.h
 	<mysql++/mysql++.h>
+	"SQLFactory.h"
 
-1399824576 source:/home/toor/Github/Mnemosyne/trunk/lib/main.cpp
+1404402027 source:/home/toor/Github/Mnemosyne/trunk/lib/main.cpp
 	<iostream>
 	<fstream>
 	<bitset>
 	<stdint.h>
 	<vector>
+	"Ressource.h"
 	"RevisionHandler.h"
 
-1399824576 /home/toor/Github/Mnemosyne/trunk/lib/RevisionHandler.h
+1404403985 /home/toor/Github/Mnemosyne/trunk/lib/RevisionHandler.h
 	<vector>
 	<string>
 	<stdint.h>
@@ -392,8 +403,9 @@
 	<fstream>
 	"Revision.h"
 	"Mutation.h"
+	"Chunk.h"
 
-1399824576 /home/toor/Github/Mnemosyne/trunk/lib/Revision.h
+1404403966 /home/toor/Github/Mnemosyne/trunk/lib/Revision.h
 	<vector>
 	<list>
 	<string>
@@ -407,7 +419,7 @@
 	<fstream>
 	<bitset>
 
-1399824576 source:/home/toor/Github/Mnemosyne/trunk/lib/Manager.cpp
+1404402027 source:/home/toor/Github/Mnemosyne/trunk/lib/Manager.cpp
 	"Manager.h"
 
 1399824576 source:/home/toor/Github/Mnemosyne/trunk/lib/Mutation.cpp
@@ -438,5 +450,22 @@
 	"Chunk.h"
 
 1400146319 source:/home/severus/Github/Mnemosyne/trunk/lib/Ressource.cpp
+	"Ressource.h"
+
+1399825845 /home/toor/Github/Mnemosyne/trunk/lib/SQLFactory.h
+	<mysql++/mysql++.h>
+
+1404403794 /home/toor/Github/Mnemosyne/trunk/lib/Ressource.h
+	<vector>
+	<string>
+	<stdint.h>
+	<cmath>
+	<fstream>
+	<sstream>
+	"RevisionHandler.h"
+	"Revision.h"
+	"Chunk.h"
+
+1404403746 source:/home/toor/Github/Mnemosyne/trunk/lib/Ressource.cpp
 	"Ressource.h"
 

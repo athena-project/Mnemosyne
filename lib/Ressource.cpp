@@ -141,7 +141,7 @@ namespace Athena{
                     tmpFile << c;
                 }
             }
-            ifstream* stream = new ifstream( Ressource::TMP_DIR()+"/"+tmpId.str() );
+            ifstream* stream = new ifstream( (Ressource::TMP_DIR()+"/"+tmpId.str()).c_str() );
 
 
             vector< char> table = revHandler->extractTable( *stream );
@@ -176,10 +176,10 @@ namespace Athena{
                 revHandler->applyMutations( tmpData, *it);
 
             revHandler->applyMutations( tmpData, origin); //Data is now hydrate
-            revHandler->newRevision( origin, tmpData, data );
+            revHandler->newRevision( origin,  data );
 
             ///Maj de l'instance courrante
-            currentRevision ++;
+            r->setCurrentRevision( r->getCurrentRevision() + 1 );
 
             delete revHandler;
         }
