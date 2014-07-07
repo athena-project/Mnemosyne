@@ -152,7 +152,7 @@ namespace Athena{
             //Body building
             rev = revHandler->buildStructure( table ); //Root
             while( rev->getNext() != NULL ){
-                rev->setStream( stream );
+                rev->setIStream( stream );
                 rev = rev->getNext();
             }
 
@@ -168,7 +168,7 @@ namespace Athena{
             Revision* rev = r->getRevision();
             RevisionHandler* revHandler =new RevisionHandler();
             Revision* origin = revHandler->bestOrigin( rev, data );
-            uint32_t tableSize = revHandler->extractSizeTable( *rev->getStream() );
+            uint32_t tableSize = revHandler->extractSizeTable( *rev->getIStream() );
 
             vector<char> tmpData;
             list< Revision* > parents = origin->getParents();

@@ -66,6 +66,20 @@ namespace Athena{
 // cree un tmp file et renvoit le chemin
                 string getFile( uint64_t id );
 
+                /**
+				 * Update data of chunk
+				 * @param c             - current chunk
+				 */
+                void updateData(Chunk c);
+
+                /**
+                 * Make a vector chunks from a stream, this vect represents the stream data
+                 * @param stream        - data stream
+                 * @param idBeginning   - relativ origin of the stream
+                 * @return vector of new chunks
+                 */
+                vector<Chunk> makeChunks(ifstream stream, uint64_t idBeginning);
+
 
         };
     }

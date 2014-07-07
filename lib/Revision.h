@@ -34,6 +34,7 @@ namespace Athena{
 
                 ifstream* iStream;       //mutations's instructions
                 ofstream* oStream;
+
                 uint64_t relativeO = 0;     //Origine relative du flux ie debut de la rev
 
             public :
@@ -48,18 +49,20 @@ namespace Athena{
                 uint64_t getIdBeginning(){  return idBeginning; }
                 uint64_t getSize(){         return size; }
                 uint32_t getDiff(){         return diff; }
-                ifstream* getStream(){      return stream; }
+                ifstream* getIStream(){      return iStream; }
+                ofstream* getOStream(){      return oStream; }
                 uint64_t getRelativeO(){    return relativeO; }
                 Revision* getRoot(){        return root; }
                 Revision* getLast(){        return last; }
                 Revision* getNext(){        return next; }
 
-
+                void setSize( uint64_t s ){         size=s; }
                 void setParent( Revision* rev ){    parent=rev; }
                 void setPrevious( Revision* rev ){  previous=rev; }
                 void setNext( Revision* rev ){      next=rev; }
                 void setLast( Revision* rev ){      last=rev; }
-                void setStream( ifstream* s ){      stream=s; }
+                void setIStream( ifstream* s ){      iStream=s; }
+                void setOStream( ofstream* s ){      oStream=s; }
                 void setRelativeO( uint64_t n ){    relativeO=n; }
                 void setRoot( Revision* r ){        root = r; }
 

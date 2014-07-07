@@ -5,8 +5,10 @@ namespace Athena{
             Revision::~Revision(){
                 for(int i=0; i<children.size(); i++)
                     delete children[i];
-                if( stream != NULL )
-                    delete stream;
+                if( iStream != NULL )
+                    delete iStream;
+                if( oStream != NULL )
+                    delete oStream;
             }
 
 //            vector<bool> Revision::applyTo(){}

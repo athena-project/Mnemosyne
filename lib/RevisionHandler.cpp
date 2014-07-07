@@ -251,7 +251,7 @@ namespace Athena{
 
         //Relative pos correspond à la position équivalente du début du flux(0) si on ne charge que des bouts de fichiers par défaut à 0
         void RevisionHandler::applyMutations( vector<char>& data, Revision* rev){
-            ifstream* stream = (rev->getStream());
+            ifstream* stream = (rev->getIStream());
             Mutation m;
             uint64_t i =0;
             stream->seekg( rev->getIdBeginning() - rev->getRelativeO(), stream->beg );
@@ -357,8 +357,8 @@ namespace Athena{
 
             ChunkHandler* cHandler;
             Revision* origin = bestOrigin( rev, newData );
-            uint32_t tableSize = extractSizeTable( *rev->getStream() );
-            vector<char> table = extractTable( *rev->getStream() );
+            uint32_t tableSize = extractSizeTable( *rev->getIStream() );
+            vector<char> table = extractTable( *rev->getIStream() );
 
             ///Building of origin
             vector<char> tmpData;
@@ -374,17 +374,17 @@ namespace Athena{
             rev->setPrevious( rev );
             rev->setParent( origin );
             rev->setRoot( rev->getRoot() );
-            newRev->setStream( rev->getStream() );
+            newRev->setIStream( rev->getIStream() );
 
-            createdMutations( tmpData, newData, rev->getStream(), tableSize);
+            createdMutations( tmpData, newData, *(rev->getOStream()), tableSize);
 
             ///Size
-            rev->getStream()->seekg (0, rev->getStream().end);
-            newRev->setSize( rev->getStream().tellg() - rev->getIdBeginning()+rev->getSize() )
+            rev->getIStream()->seekg (0, rev->getIStream()->end);
+            newRev->setSize( rev->getIStream()->tellg() - rev->getIdBeginning()+rev->getSize() );
 
             ///Maj of the table
-            addTableElement( table, newRev->getIdBeginning(), newRev->getSize(), newRev->getDiff(), origin->getN());
-            writeTable( table, rev->getStream().end );
+            addTableElement( table, newRev->getIdBeginning(), newRev->getSize(), newRev->getDiff(), origin->getN() );
+            writeTable( table, *(rev->getOStream()) );
 
             ///Création des nv chunk
             cHandler->updateData();

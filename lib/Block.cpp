@@ -91,6 +91,28 @@ namespace Athena{
             return newLocation;
         }
 
+        void BlockHandler::updateChunk( Block& block, uint64_t idChunk, string location ){
+            std::ostringstream blockId;
+            std::ostringstream chunckId;
+            blockId << block.getId();
+            chunckId << idChunk;
+
+            //Temporary directory creation
+            string blockLocation = BlockHandler::DIR()+"/"+blockId;
+            string tmpDir = BlockHandler::TMP_DIR()+"/"+blockId;
+            boost::filesystem::mkdir( tmpDir );
+            boost::filesystem::copy_file( blockLocation, tmpDir );
+
+            //Unxz archive
+            string cmd = "tar -Jxvf "+tmpDir+".tar.xz ";
+            system( cmd.c_str() );
+
+            //update of the chunk
+            boost::filesystem::copy_file( BlockHandler::DIR()+"/"+firstLocation, newLocation);
+            remove( (BlockHandler::DIR()+"/"+firstLocation).c_str() );
+
+            //Compression
+        }
         void BlockHandler::makeBlocks(){
             ChunkManager* cManager = new ChunkManager();
             BlockManager* bManager = new BlockManager();

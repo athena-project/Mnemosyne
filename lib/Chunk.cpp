@@ -124,5 +124,36 @@ namespace Athena{
             return chunkLocation2;
         }
 
+        //Not in a block yet
+        void ChunkHandler::writeChunk(Chunk c, ifstream stream, uint64_t idBeginning, uint64_t size){
+            std::ostringstream strId;
+            strId<<c.getId();
+
+            string location = ChunkHandler::TMP_DIR()+"/"+strId;
+            ofstream oStream( location.c_str(), ios::trunc );
+
+            stream.seekg( idBeginning );
+
+            char tmpChar="";
+            uint64_t i=0;
+
+            while( i<size & stream.get(tmpChar) )
+                oStream<<tmpChar;
+        }
+
+        void ChunkHandler::updateData(Chunk c, ifstream stream, uint64_t idBeginning, uint64_t size){
+            BlockManager* bManager = new BlocManager();
+            uint64_t tmpIdBlock = ceil( (float)c.getId() / (float)(Block::CHUNKS) );
+            if( tmpIdBlock>=bManager->count() )
+                writeChunk( c, stream, idBeginning, size);
+            else{ //In a block
+
+
+
+            }
+
+        }
+
+
     }
 }
