@@ -76,7 +76,7 @@
 	"Ressource.h"
 	"RevisionHandler.h"
 
-1404575389 /home/severus/Github/Mnemosyne/trunk/lib/RevisionHandler.h
+1404813674 /home/severus/Github/Mnemosyne/trunk/lib/RevisionHandler.h
 	<vector>
 	<string>
 	<stdint.h>
@@ -119,10 +119,10 @@
 	<algorithm>
 	<stdlib.h>
 
-1404574760 source:/home/severus/Github/Mnemosyne/trunk/lib/Block.cpp
+1404811729 source:/home/severus/Github/Mnemosyne/trunk/lib/Block.cpp
 	"Block.h"
 
-1404574760 /home/severus/Github/Mnemosyne/trunk/lib/Block.h
+1404806412 /home/severus/Github/Mnemosyne/trunk/lib/Block.h
 	<stdint.h>
 	<stdio.h>
 	<mysql++/mysql++.h>
@@ -131,10 +131,10 @@
 	"Manager.h"
 	"Chunk.h"
 
-1401355399 source:/home/severus/Github/Mnemosyne/trunk/lib/Chunk.cpp
+1404812425 source:/home/severus/Github/Mnemosyne/trunk/lib/Chunk.cpp
 	"Chunk.h"
 
-1401355426 /home/severus/Github/Mnemosyne/trunk/lib/Chunk.h
+1404812340 /home/severus/Github/Mnemosyne/trunk/lib/Chunk.h
 	<list>
 	<vector>
 	<stdint.h>
@@ -143,8 +143,9 @@
 	"Manager.h"
 	"Block.h"
 
-1400142850 /home/severus/Github/Mnemosyne/trunk/lib/Manager.h
+1404806865 /home/severus/Github/Mnemosyne/trunk/lib/Manager.h
 	<mysql++/mysql++.h>
+	<mysql++/ssqls.h>
 	"SQLFactory.h"
 
 1400142976 source:/home/severus/Github/Mnemosyne/trunk/lib/Manager.cpp

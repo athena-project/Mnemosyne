@@ -181,6 +181,11 @@ namespace Athena{
             ///Maj de l'instance courrante
             r->setCurrentRevision( r->getCurrentRevision() + 1 );
 
+
+            //Création des nv chunk
+            cHandler->updateData( newRev->getC, newRev->getIStream(), newRev->getIdBeginning(), newRev->getSize());
+            cHandler->makeChunks( stream, idEndLastChunk);
+
             delete revHandler;
         }
     }

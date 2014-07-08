@@ -36,8 +36,8 @@ namespace Athena{
                 BlockManager();
                 ~BlockManager();
 
-                void insert( Block block);
-                void insert( vector< Block > block );
+                uint64_t insert( Block block );
+                vector<uint64_t> insert( vector< Block > block );
                 vector<Block> get( string fieldsNeeded, string where, string order, string limit );
 
                 uint64_t count( string where="", string order="", string limit="" );
@@ -61,6 +61,8 @@ namespace Athena{
 
                 string getChunk( Block& block, uint64_t idChunk );
 
+                string extract( Block& block );
+                void make(Block& block, string location);
                 void makeBlocks();//Build blocks
         };
     }

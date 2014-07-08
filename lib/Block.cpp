@@ -9,12 +9,12 @@ namespace Athena{
         BlockManager::BlockManager(){}
         BlockManager::~BlockManager(){}
 
-        void BlockManager::insert( Block Block){
+        uint64_t BlockManager::insert( Block Block){
             mysqlpp::Query query = conn.query();
             query<<"INSERT INTO block";
-            query.execute();
-            if (mysqlpp::StoreQueryResult res = query.store())
-                return;
+
+            if (mysqlpp::SimpleResult res = query.execute())
+                return (uint64_t)res.insert_id();
             else{
                 cerr << "Failed to get item list: " << query.error() << endl;
                 throw "";
@@ -91,28 +91,33 @@ namespace Athena{
             return newLocation;
         }
 
-        void BlockHandler::updateChunk( Block& block, uint64_t idChunk, string location ){
+        //Return location of the dir
+        string BlockHandler::extract( Block& block ){
             std::ostringstream blockId;
-            std::ostringstream chunckId;
             blockId << block.getId();
-            chunckId << idChunk;
 
             //Temporary directory creation
-            string blockLocation = BlockHandler::DIR()+"/"+blockId;
-            string tmpDir = BlockHandler::TMP_DIR()+"/"+blockId;
-            boost::filesystem::mkdir( tmpDir );
+            string blockLocation = BlockHandler::DIR()+"/"+blockId.str();
+            string tmpDir = BlockHandler::TMP_DIR()+"/"+blockId.str();
+            boost::filesystem::create_directory( boost::filesystem::path( tmpDir.c_str() ) );
             boost::filesystem::copy_file( blockLocation, tmpDir );
 
             //Unxz archive
             string cmd = "tar -Jxvf "+tmpDir+".tar.xz ";
             system( cmd.c_str() );
 
-            //update of the chunk
-            boost::filesystem::copy_file( BlockHandler::DIR()+"/"+firstLocation, newLocation);
-            remove( (BlockHandler::DIR()+"/"+firstLocation).c_str() );
-
-            //Compression
+            return tmpDir;
         }
+        // location => of the tmpDir(cf.extract)
+        void BlockHandler::make(Block& block, string location){
+            std::ostringstream blockId;
+            blockId << block.getId();
+            string blockLocation    = BlockHandler::DIR()+"/"+blockId.str();
+
+            string cmd = "tar -Jcvf "+blockLocation+".tar.xz "+location;
+            system( cmd.c_str() );
+        }
+
         void BlockHandler::makeBlocks(){
             ChunkManager* cManager = new ChunkManager();
             BlockManager* bManager = new BlockManager();

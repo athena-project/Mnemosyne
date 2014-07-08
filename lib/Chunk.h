@@ -16,6 +16,12 @@ using namespace std;
 namespace Athena{
     namespace Mnemosyne{
 
+        sql_create_3(SqlChunk, 1, 3,
+            mysqlpp::sql_bigint, id,
+            mysqlpp::sql_bigint, block_id,
+            mysqlpp::sql_int, size
+        )
+
         class Chunk{
             protected :
                 uint64_t id;
@@ -25,12 +31,14 @@ namespace Athena{
                 static const uint32_t CHUNK_SIZE_MAX = 64*1024; //octect
 
                 Chunk();
+                Chunk( uint32_t size );
                 Chunk( uint64_t id, uint64_t block_id);
                 Chunk( uint64_t id, uint64_t block_id, uint32_t size);
 
                 uint64_t getId(){ return id; }
                 uint64_t getBlock_id(){ return block_id; }
                 uint32_t getSize(){ return size; }
+                SqlChunk* getSqlChunk();
 
                 void setId( uint64_t i){ id=i; }
                 void setBlock_id( uint64_t i){ block_id=i; }
@@ -42,8 +50,8 @@ namespace Athena{
                 ChunkManager();
                 ~ChunkManager();
 
-                void insert( Chunk chunk);
-                void insert( vector< Chunk > chunks );
+                uint64_t insert( Chunk chunk);
+                vector<uint64_t> insert( vector< Chunk > chunks );
                 vector<Chunk> get( string fieldsNeeded, string where, string order, string limit);
 
                 uint64_t count( string where="", string order="", string limit="" );
@@ -70,7 +78,7 @@ namespace Athena{
 				 * Update data of chunk
 				 * @param c             - current chunk
 				 */
-                void updateData(Chunk c);
+                void updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size);
 
                 /**
                  * Make a vector chunks from a stream, this vect represents the stream data
@@ -78,7 +86,9 @@ namespace Athena{
                  * @param idBeginning   - relativ origin of the stream
                  * @return vector of new chunks
                  */
-                vector<Chunk> makeChunks(ifstream stream, uint64_t idBeginning);
+                vector<Chunk> makeChunks(ifstream& stream, uint64_t idBeginning, uint64_t size);
+
+                void writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginning, uint64_t size, string dir="");
 
 
         };

@@ -72,7 +72,7 @@ namespace Athena{
                 vector< uint64_t > calculDifferences( Revision* rev,  vector<char>& data );
                     Revision* bestOrigin( Revision* rev,  vector<char>& data );
 
-                void newRevision( Revision* currentRev, vector<char>& newData);
+                Revision* newRevision( Revision* currentRev, vector<char>& newData);
 
                 Revision* buildStructure( vector<char>& table );
 

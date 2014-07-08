@@ -2,6 +2,7 @@
 #define MANAGER_H_INCLUDED
 
 #include <mysql++/mysql++.h>
+#include <mysql++/ssqls.h>
 
 #include "SQLFactory.h"
 

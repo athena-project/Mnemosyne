@@ -352,7 +352,7 @@ namespace Athena{
         }
 
         //Accroche la nouvelle révision à la fin
-        void RevisionHandler::newRevision( Revision* rev,  vector<char>&newData){
+        Revision* RevisionHandler::newRevision( Revision* rev,  vector<char>&newData){
             rev = rev->getLast();
 
             ChunkHandler* cHandler;
@@ -375,8 +375,9 @@ namespace Athena{
             rev->setParent( origin );
             rev->setRoot( rev->getRoot() );
             newRev->setIStream( rev->getIStream() );
+            newRev->setOStream( rev->getOStream() );
 
-            createdMutations( tmpData, newData, *(rev->getOStream()), tableSize);
+            createdMutations( tmpData, newData, *(newRev->getOStream()), tableSize);
 
             ///Size
             rev->getIStream()->seekg (0, rev->getIStream()->end);
@@ -386,15 +387,8 @@ namespace Athena{
             addTableElement( table, newRev->getIdBeginning(), newRev->getSize(), newRev->getDiff(), origin->getN() );
             writeTable( table, *(rev->getOStream()) );
 
-            ///Création des nv chunk
-            cHandler->updateData();
-            cHandler->makeChunks( stream, idEndLastChunk)
-
-        }
-
-
-
             delete cHandler;
+            return newRev;
         }
 
     }
