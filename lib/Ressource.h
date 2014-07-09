@@ -30,8 +30,9 @@ namespace Athena{
                // string time; //last revision
                 uint32_t size;
                 string contentType; // [nbrRevConcernées:contentType;charset...][nbrRevConcernées:contentType2;charset...]
-                vector<uint64_t> chunks; //ids of chunks
+                vector<uint64_t> chunkIds; //ids of chunks
 
+                vector<Chunk> chunks;
                 string content; // current data if needed
                 Revision* rev;  // current revision if needed
             public :
@@ -53,7 +54,8 @@ namespace Athena{
                 string getContentType();
                 uint32_t getSize();
                 string getContent();
-                vector<uint64_t> getChunks();
+                vector<uint64_t> getChunkIds();
+                vector<Chunk> getChunks();
                 unsigned int getModified();
 
                 Revision* getRevision(){ return rev; }
@@ -65,6 +67,7 @@ namespace Athena{
                 void setSize(unsigned int param);
                 void setContent(string param);
                 void setModified(unsigned int param);
+                void setChunkIds( vector<uint64_t> ids);
 
                 bool empty();
 

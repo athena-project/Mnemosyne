@@ -29,7 +29,7 @@ namespace Athena{
         uint32_t Ressource::getCurrentRevision(){ return currentRevision; }
         string Ressource::getContentType(){ return contentType; }
         uint32_t Ressource::getSize(){ return size; }
-        vector<uint64_t> Ressource::getChunks(){ return chunks; }
+        vector<uint64_t> Ressource::getChunkIds(){ return chunkIds; }
         string Ressource::getContent(){ return content; }
 //        unsigned int Ressource::getModified(){ return modified; }
 
@@ -38,6 +38,13 @@ namespace Athena{
         void Ressource::setContentType(string param){ contentType = param; }
         void Ressource::setSize(unsigned int param){ size = param; }
         void Ressource::setContent(string param){ content = param; }
+        void Ressource::setChunkIds( vector<uint64_t> ids){
+            chunkIds=ids;
+
+            ChunkManager chManager;
+            chunks = chManager.get( chunkIds );
+
+        }
   //      void Ressource::setModified(unsigned int param){ modified = param; }
 
 
@@ -63,17 +70,17 @@ namespace Athena{
             stringstream value;
 
             // Table building, from the last chunks which host the end of the table
-            vector<uint64_t> chunks = r.getChunks();
-            ifstream lastChunkStream( chHandler.getFile( chunks[chunks.size()-1] ) .c_str() , ios::binary);
+            vector<uint64_t> chunkIds = r.getChunkIds();
+            ifstream lastChunkStream( chHandler.getFile( chunkIds[chunkIds.size()-1] ) .c_str() , ios::binary);
             uint32_t sizeTable = revHandler.extractSizeTable( lastChunkStream );
             uint32_t nbrChuncksTable = ceil( (float)sizeTable / (float)(Chunk::CHUNK_SIZE_MAX) );
             vector< uint32_t > idChuncksTable;
-            for(uint32_t i = (chunks.size()-nbrChuncksTable-1); i<chunks.size()  ; i++ )
-                idChuncksTable.push_back( chunks[i] );
-            vector<Chunk> chuncksTable = chManager.get( chunks );
+            for(uint32_t i = (chunkIds.size()-nbrChuncksTable-1); i<chunkIds.size()  ; i++ )
+                idChuncksTable.push_back( chunkIds[i] );
+            vector<Chunk> chuncksTable = chManager.get( chunkIds );
 
 
-            // Building the tmpFile, which will store the revision data, from the chunks
+            // Building the tmpFile, which will store the revision data, from the chunkIds
             std::ostringstream tmpId;
             tmpId << r.getId();
             string location ="";
@@ -126,7 +133,7 @@ namespace Athena{
             ChunkHandler* chHandler=new ChunkHandler();
             RevisionHandler* revHandler= new RevisionHandler();
             Revision* rev = new Revision();
-            vector<Chunk> chuncksTable = chManager->get( r.getChunks() );
+            vector<Chunk> chuncksTable = chManager->get( r.getChunkIds() );
 
 
             // Building the tmpFile, which will store the revision data, from the chunks
@@ -176,15 +183,22 @@ namespace Athena{
                 revHandler->applyMutations( tmpData, *it);
 
             revHandler->applyMutations( tmpData, origin); //Data is now hydrate
-            revHandler->newRevision( origin,  data );
+            Revision* newRev = revHandler->newRevision( origin,  data );
 
             ///Maj de l'instance courrante
             r->setCurrentRevision( r->getCurrentRevision() + 1 );
 
 
-            //Création des nv chunk
-            cHandler->updateData( newRev->getC, newRev->getIStream(), newRev->getIdBeginning(), newRev->getSize());
-            cHandler->makeChunks( stream, idEndLastChunk);
+            ///Création des nv chunk
+            vector< Chunk > chunks = r->getChunks();
+            ChunkHandler* cHandler = new ChunkHandler();
+            uint64_t sizeUpdate = min(newRev->getSize(), (uint64_t)Chunk::CHUNK_SIZE_MAX);
+            ifstream* currentStream = newRev->getIStream();
+
+            currentStream->seekg(newRev->getIdBeginning());
+            cHandler->updateData( chunks[ chunks.size()-1 ], *currentStream, newRev->getIdBeginning(), sizeUpdate);
+            currentStream->seekg(newRev->getIdBeginning()+sizeUpdate);
+            cHandler->makeChunks( *currentStream, newRev->getIdBeginning()+sizeUpdate, newRev->getSize()-sizeUpdate);
 
             delete revHandler;
         }

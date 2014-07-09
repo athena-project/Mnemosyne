@@ -2,9 +2,11 @@
 
 namespace Athena{
     namespace Mnemosyne{
+        Block::Block(){
 
+        }
         /**
-         *  ChunckManager
+         *  BlockManager
         **/
         BlockManager::BlockManager(){}
         BlockManager::~BlockManager(){}
@@ -19,6 +21,15 @@ namespace Athena{
                 cerr << "Failed to get item list: " << query.error() << endl;
                 throw "";
             }
+        }
+
+        vector<uint64_t> BlockManager::insert( vector< Block > blocks ){
+             vector<uint64_t> ids;
+
+            for(vector<Block>::iterator it=blocks.begin(); it!=blocks.end(); it++)
+                ids.push_back( insert( *it ) );
+
+            return ids;
         }
 
         vector<Block> BlockManager::get( string fieldsNeeded, string where, string order, string limit){
