@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <vector>
 
+#include <boost/filesystem.hpp>
+
 #include "Ressource.h"
 #include "RevisionHandler.h"
 using namespace std;

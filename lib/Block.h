@@ -12,6 +12,7 @@
 #include "Chunk.h"
 
 using namespace std;
+namespace fs = boost::filesystem;
 
 namespace Athena{
     namespace Mnemosyne{

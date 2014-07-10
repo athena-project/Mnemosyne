@@ -96,7 +96,7 @@ namespace Athena{
             string cmd = "tar -Jxvf "+BlockHandler::DIR()+"/"+blockId.str()+".tar.xz "+firstLocation;
             system( cmd.c_str() );
 
-            boost::filesystem::copy_file( BlockHandler::DIR()+"/"+firstLocation, newLocation);
+            fs::copy_file( BlockHandler::DIR()+"/"+firstLocation, newLocation);
             remove( (BlockHandler::DIR()+"/"+firstLocation).c_str() );
 
             return newLocation;
@@ -110,8 +110,8 @@ namespace Athena{
             //Temporary directory creation
             string blockLocation = BlockHandler::DIR()+"/"+blockId.str();
             string tmpDir = BlockHandler::TMP_DIR()+"/"+blockId.str();
-            boost::filesystem::create_directory( boost::filesystem::path( tmpDir.c_str() ) );
-            boost::filesystem::copy_file( blockLocation, tmpDir );
+            fs::create_directory( fs::path( tmpDir.c_str() ) );
+            fs::copy_file( blockLocation, tmpDir );
 
             //Unxz archive
             string cmd = "tar -Jxvf "+tmpDir+".tar.xz ";
@@ -149,7 +149,7 @@ namespace Athena{
             for( uint64_t i = 0; i<nbrNeeded; i++){
                 std::ostringstream tmpId;
                 tmpId<< blocks[i].getId();
-                boost::filesystem::create_directory( tmpBlockLocation );
+                fs::create_directory( tmpBlockLocation );
 
                 for(uint64_t j=(nbrBlocks+i)*(Chunk::CHUNK_SIZE_MAX); j<(nbrBlocks+i+1)*(Chunk::CHUNK_SIZE_MAX) ; j++){
                     std::ostringstream tmpId2;
@@ -157,16 +157,17 @@ namespace Athena{
 
                     string sourceChunk = ChunkHandler::TMP_DIR()+"/"+tmpId2.str();
                     string destChunk = tmpBlockLocation+"/"+tmpId2.str();
-                    boost::filesystem::path pathSource = boost::filesystem::path(sourceChunk.c_str());
-                    boost::filesystem::path pathDest = boost::filesystem::path(destChunk.c_str());
+                    fs::path pathSource = fs::path(sourceChunk.c_str());
+                    fs::path pathDest = fs::path(destChunk.c_str());
 
-                    boost::filesystem::copy_file( pathSource, pathDest );
+                    fs::copy_file( pathSource, pathDest );
                     remove( sourceChunk.c_str() );
                 }
 
                 string cmd = "tar -Jcvf "+blockLocation+".tar.xz "+tmpBlockLocation;
                 system( cmd.c_str() );
-                boost::filesystem::remove_all( tmpBlockLocation );
+                fs::remove_all( fs::path(tmpBlockLocation) );
+
             }
 
             //Free memory

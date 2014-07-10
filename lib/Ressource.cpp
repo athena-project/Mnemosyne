@@ -30,6 +30,7 @@ namespace Athena{
         string Ressource::getContentType(){ return contentType; }
         uint32_t Ressource::getSize(){ return size; }
         vector<uint64_t> Ressource::getChunkIds(){ return chunkIds; }
+        vector<Chunk> Ressource::getChunks(){ return chunks; }
         string Ressource::getContent(){ return content; }
 //        unsigned int Ressource::getModified(){ return modified; }
 

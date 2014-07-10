@@ -20,10 +20,6 @@ namespace Athena{
             this->size = size;
         }
 
-        SqlChunk* Chunk::getSqlChunk(){
-            return new SqlChunk(id, block_id, size);
-        }
-
         /**
          *  ChunckManager
         **/
@@ -32,11 +28,10 @@ namespace Athena{
 
 
         uint64_t ChunkManager::insert( Chunk chunk){
-            SqlChunk* row = chunk.getSqlChunk();
             mysqlpp::Query query = conn.query();
-            query.insert( *row );
+            query<<"INSERT INTO chunk (block_id, size) VALUES ("<<chunk.getId();
+            query<<","<<chunk.getBlock_id()<<","<<chunk.getSize()<< ");";
 
-            delete row;
             if (mysqlpp::SimpleResult res = query.execute())
                 return (uint64_t)res.insert_id();
             else{
@@ -118,7 +113,7 @@ namespace Athena{
             string chunkLocation1 = bHandler.getChunk( currentBlock, id );
             string chunkLocation2 = ChunkHandler::TMP_DIR()+"/"+chunckId.str();
 
-            boost::filesystem::copy_file( chunkLocation1, chunkLocation2);
+            fs::copy_file( chunkLocation1, chunkLocation2);
             files.push_back(chunkLocation2);
             return chunkLocation2;
         }
@@ -179,7 +174,7 @@ namespace Athena{
                 std::ostringstream strId;
                 strId<<ids[i];
                 string location = ChunkHandler::TMP_DIR()+"/"+strId.str();
-                ofstream tmpStream( location );
+                ofstream tmpStream( location.c_str() );
 
                 char tmpChar;
                 for(uint64_t j=0; j<Chunk::CHUNK_SIZE_MAX; j++){

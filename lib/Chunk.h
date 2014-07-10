@@ -8,19 +8,15 @@
 
 #include <boost/filesystem.hpp>
 
+
 #include "Manager.h"
 #include "Block.h"
 
 using namespace std;
+namespace fs = boost::filesystem;
 
 namespace Athena{
     namespace Mnemosyne{
-
-        sql_create_3(SqlChunk, 1, 3,
-            mysqlpp::sql_bigint, id,
-            mysqlpp::sql_bigint, block_id,
-            mysqlpp::sql_int, size
-        )
 
         class Chunk{
             protected :
@@ -38,7 +34,6 @@ namespace Athena{
                 uint64_t getId(){ return id; }
                 uint64_t getBlock_id(){ return block_id; }
                 uint32_t getSize(){ return size; }
-                SqlChunk* getSqlChunk();
 
                 void setId( uint64_t i){ id=i; }
                 void setBlock_id( uint64_t i){ block_id=i; }
