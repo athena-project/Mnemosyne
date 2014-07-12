@@ -6,7 +6,9 @@ namespace Athena{
             conn = SQLFactory::getSQLConnexion();
         }
 
-        Manager::Manager( mysqlpp::Connection& co ){ conn=co; }
+        Manager::Manager( mysqlpp::Connection& co ){
+            conn=co;
+        }
 
         Manager::~Manager(){}
 

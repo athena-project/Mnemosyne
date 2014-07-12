@@ -2,6 +2,11 @@
 
 namespace Athena{
     namespace Mnemosyne{
+
+        /**
+         * Chunk
+         */
+
         Chunk::Chunk(){}
 
         Chunk::Chunk( uint32_t size){
@@ -10,7 +15,7 @@ namespace Athena{
             this->size = size;
         }
 
-        Chunk::Chunk( uint64_t id, uint64_t block_id) {
+        Chunk::Chunk( uint64_t id, uint64_t block_id){
             this->id = id;
             this->block_id = block_id;
             size=0;
@@ -20,12 +25,15 @@ namespace Athena{
             this->size = size;
         }
 
+
+
         /**
          *  ChunckManager
-        **/
-        ChunkManager::ChunkManager(){}
-        ChunkManager::~ChunkManager(){}
+         */
 
+        ChunkManager::ChunkManager(){}
+
+        ChunkManager::~ChunkManager(){}
 
         uint64_t ChunkManager::insert( Chunk chunk){
             mysqlpp::Query query = conn.query();
@@ -43,12 +51,21 @@ namespace Athena{
         vector<uint64_t> ChunkManager::insert( vector< Chunk > chunks ){
             vector<uint64_t> ids;
 
-            for(vector<Chunk>::iterator it=chunks.begin(); it!=chunks.end(); it++)
-                ids.push_back( insert( *it ) );
+            for(vector<Chunk>::iterator it=chunks.begin(); it!=chunks.end(); it++){
+                it->setId( insert( *it ) );
+                ids.push_back( it->getId() );
+            }
 
             return ids;
         }
 
+        Chunk ChunkManager::get(uint64_t id){
+            vector<Chunk> vect = get( "*", "id := "+id, "id", "");
+            if( vect.size() == 1 )
+                return vect[0];
+            else
+                throw "chunk not found";
+        }
 
         vector<Chunk> ChunkManager::get( string fieldsNeeded, string where, string order, string limit){
             vector<mysqlpp::Row> v;
@@ -72,13 +89,6 @@ namespace Athena{
             }
             return get( "*", where, "id", "");
         }
-        Chunk ChunkManager::get(uint64_t id){
-            vector<Chunk> vect = get( "*", "id := "+id, "id", "");
-            if( vect.size() == 1 )
-                return vect[0];
-            else
-                throw "chunk not found";
-        }
 
         uint64_t ChunkManager::count( string where, string order, string limit ){
             vector<mysqlpp::Row> v;
@@ -90,24 +100,30 @@ namespace Athena{
 
         }
 
+
+
         /**
           * ChunkHandler
-        **/
-        ChunkHandler::ChunkHandler(){}
+          */
+        ChunkHandler::ChunkHandler(){
+            cManager = new ChunkManager();
+        }
 
         ChunkHandler::~ChunkHandler(){
+            delete cManager;
+
             for( int i=0; i<files.size(); i++)
                 remove( files[i].c_str() );
         }
 
         string ChunkHandler::getFile( uint64_t id){
-            ChunkManager cManager;
-            Chunk currentChunk = cManager.get( id );
+            BlockHandler bHandler;
+            BlockManager bManager;
+
+            Chunk currentChunk = cManager->get( id );
             std::ostringstream chunckId;
             chunckId<<id;
 
-            BlockManager bManager;
-            BlockHandler bHandler;
             Block currentBlock = bManager.get( currentChunk.getBlock_id() );
 
             string chunkLocation1 = bHandler.getChunk( currentBlock, id );
@@ -118,7 +134,6 @@ namespace Athena{
             return chunkLocation2;
         }
 
-        //Not in a block yet
         void ChunkHandler::writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginning, uint64_t size, string dir){
             std::ostringstream strId;
             strId<<id;
@@ -136,25 +151,23 @@ namespace Athena{
         }
 
         void ChunkHandler::updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size){
-            BlockManager* bManager = new BlockManager();
+            BlockManager bManager;
             uint64_t tmpIdBlock = ceil( (float)c.getId() / (float)(Block::CHUNKS) );
-            if( tmpIdBlock>=bManager->count() )
+
+            if( tmpIdBlock >= bManager.count() )
                 writeChunk( c.getId(), stream, idBeginning, size);
             else{ //In a block
-                BlockHandler* bHandler = new BlockHandler();
-                Block currentBlock = bManager->get( tmpIdBlock );
-                string blockLocation = bHandler->extract( currentBlock );
+                BlockHandler bHandler;
+                Block currentBlock = bManager.get( tmpIdBlock );
+                string blockLocation = bHandler.extract( currentBlock );
 
                 writeChunk( c.getId(), stream, idBeginning, size, blockLocation );
-                bHandler->make( currentBlock, blockLocation);
-
-                delete bHandler;
+                bHandler.make( currentBlock, blockLocation);
             }
-            delete bManager;
         }
 
         vector<Chunk> ChunkHandler::makeChunks( ifstream& stream, uint64_t idBeginning, uint64_t size ){
-            ChunkManager* cManager = new ChunkManager();
+            ChunkManager cManager;
             uint64_t nbrNeeded = ceil( (float)size / (float)(Chunk::CHUNK_SIZE_MAX) );
             stream.seekg( idBeginning );
 
@@ -166,24 +179,17 @@ namespace Athena{
                     chunks.push_back( size-(nbrNeeded-1)*(Chunk::CHUNK_SIZE_MAX) );//Size less than max
             }
 
-            vector<uint64_t> ids = cManager->insert( chunks );
+            vector<uint64_t> ids = cManager.insert( chunks );
+            uint32_t chunkSize = Chunk::CHUNK_SIZE_MAX;
             for( uint64_t i=0; i<ids.size(); i++){
                 chunks[i].setId( ids[i] );
 
-                //Write the new chunk
-                std::ostringstream strId;
-                strId<<ids[i];
-                string location = ChunkHandler::TMP_DIR()+"/"+strId.str();
-                ofstream tmpStream( location.c_str() );
+                if( i=ids.size()-1 )
+                    chunkSize = min( (uint64_t)Chunk::CHUNK_SIZE_MAX, size-(ids.size()-1)*(Chunk::CHUNK_SIZE_MAX) );
 
-                char tmpChar;
-                for(uint64_t j=0; j<Chunk::CHUNK_SIZE_MAX; j++){
-                    stream.get( tmpChar );
-                    tmpStream<<tmpChar;
-                }
+                writeChunk( ids[i], stream, idBeginning+i*(Chunk::CHUNK_SIZE_MAX), Chunk::CHUNK_SIZE_MAX);
             }
 
-            delete cManager;
             return chunks;
         }
 

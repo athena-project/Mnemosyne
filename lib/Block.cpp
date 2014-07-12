@@ -2,13 +2,12 @@
 
 namespace Athena{
     namespace Mnemosyne{
-        Block::Block(){
 
-        }
         /**
          *  BlockManager
-        **/
+         */
         BlockManager::BlockManager(){}
+
         BlockManager::~BlockManager(){}
 
         uint64_t BlockManager::insert( Block Block){
@@ -26,10 +25,21 @@ namespace Athena{
         vector<uint64_t> BlockManager::insert( vector< Block > blocks ){
              vector<uint64_t> ids;
 
-            for(vector<Block>::iterator it=blocks.begin(); it!=blocks.end(); it++)
-                ids.push_back( insert( *it ) );
+            for(vector<Block>::iterator it=blocks.begin(); it!=blocks.end(); it++){
+                it->setId( insert( *it ) );
+                ids.push_back( it->getId() );
+            }
 
             return ids;
+        }
+
+        Block BlockManager::get(uint64_t id){
+            vector<Block> vect = get( "*", "id :="+id, "id", "");
+
+            if(vect.size() == 1)
+                return vect[0];
+            else
+                throw "Block not found";
         }
 
         vector<Block> BlockManager::get( string fieldsNeeded, string where, string order, string limit){
@@ -51,18 +61,9 @@ namespace Athena{
                 where += (it != ids.begin() ) ? "," : "";
                 where += (*it);
             }
+
             return get( "*", where, "id", "");
         }
-
-        Block BlockManager::get(uint64_t id){
-            vector<Block> vect = get( "*", "id :="+id, "id", "");
-
-            if(vect.size() == 1)
-                return vect[0];
-            else
-                throw "Block not found";
-        }
-
 
         uint64_t BlockManager::count( string where, string order, string limit ){
             vector<mysqlpp::Row> v;
@@ -71,17 +72,20 @@ namespace Athena{
             mysqlpp::StoreQueryResult res = query.store();
 
             return res[0]["number"];
-
         }
 
         /**
-            Block Handler
-        **/
+         * Block Handler
+         */
 
         BlockHandler::BlockHandler(){}
+
         BlockHandler::~BlockHandler(){
             for( int i=0; i<files.size(); i++)
                 remove( files[i].c_str() );
+
+            for( int i=0; i<directories.size(); i++)
+                fs::remove_all( fs::path(directories[i].c_str()) );
         }
 
         string BlockHandler::getChunk( Block& block, uint64_t idChunk ){
@@ -102,7 +106,6 @@ namespace Athena{
             return newLocation;
         }
 
-        //Return location of the dir
         string BlockHandler::extract( Block& block ){
             std::ostringstream blockId;
             blockId << block.getId();
@@ -117,9 +120,10 @@ namespace Athena{
             string cmd = "tar -Jxvf "+tmpDir+".tar.xz ";
             system( cmd.c_str() );
 
+            directories.push_back(tmpDir);
             return tmpDir;
         }
-        // location => of the tmpDir(cf.extract)
+
         void BlockHandler::make(Block& block, string location){
             std::ostringstream blockId;
             blockId << block.getId();
@@ -130,11 +134,12 @@ namespace Athena{
         }
 
         void BlockHandler::makeBlocks(){
-            ChunkManager* cManager = new ChunkManager();
-            BlockManager* bManager = new BlockManager();
+            ChunkManager cManager;
+            BlockManager bManager;
 
-            uint64_t nbrChunks = cManager->count();
-            uint64_t nbrBlocks = bManager->count();
+            ///Creation if the block (sql)
+            uint64_t nbrChunks = cManager.count();
+            uint64_t nbrBlocks = bManager.count();
 
             uint64_t nbrNeeded = nbrChunks/(Chunk::CHUNK_SIZE_MAX) - nbrBlocks;
 
@@ -142,10 +147,11 @@ namespace Athena{
             for( uint64_t i = 0; i<nbrNeeded; i++)
                 blocks.push_back( Block() );
 
-            bManager->insert( blocks );
+            bManager.insert( blocks );
 
+
+            ///Creations of the files
             string tmpBlockLocation = BlockHandler::TMP_DIR()+"/";
-            string blockLocation    = BlockHandler::DIR()+"/";
             for( uint64_t i = 0; i<nbrNeeded; i++){
                 std::ostringstream tmpId;
                 tmpId<< blocks[i].getId();
@@ -164,16 +170,9 @@ namespace Athena{
                     remove( sourceChunk.c_str() );
                 }
 
-                string cmd = "tar -Jcvf "+blockLocation+".tar.xz "+tmpBlockLocation;
-                system( cmd.c_str() );
-                fs::remove_all( fs::path(tmpBlockLocation) );
-
+                make( blocks[i], tmpBlockLocation );
             }
-
-            //Free memory
-            delete cManager;
-            delete bManager;
-
         }
+
     }
 }

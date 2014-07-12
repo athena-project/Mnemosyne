@@ -10,6 +10,7 @@ namespace Athena{
             const char* dbname="mnemosyne";
 
             mysqlpp::Connection conn(false);
+
             if(conn.connect(dbname, host, login, password))
                 return conn;
             else{
@@ -17,5 +18,6 @@ namespace Athena{
                 throw "";
             }
         }
+
     }
 }
