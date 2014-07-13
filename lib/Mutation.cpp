@@ -3,7 +3,7 @@
 namespace Athena{
     namespace Mnemosyne{
 
-        void Mutation::applyInsert(vector<char>& data, ifstream& stream){s
+        void Mutation::applyInsert(vector<char>& data, ifstream& stream){
             char c;
             for(uint64_t i=0; i<size; i++){
                 stream.get(c);

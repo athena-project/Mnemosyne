@@ -17,10 +17,12 @@
  * @autor Severus21
  */
 
+
 #ifndef SQLFACTORY_H_INCLUDED
 #define SQLFACTORY_H_INCLUDED
 
 #include <mysql++/mysql++.h>
+
 
 using namespace std;
 

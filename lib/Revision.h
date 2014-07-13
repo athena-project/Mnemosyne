@@ -1,16 +1,37 @@
+/*
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ *
+ * @autor Severus21
+ */
+
+
 #ifndef REVISION_CPP_INCLUDED
 #define REVISION_CPP_INCLUDED
+
 
 #include <vector>
 #include <list>
 #include <string>
 #include <fstream>
 #include <stdint.h>
-
-
 #include <algorithm>
 
+
 using namespace std;
+
 
 namespace Athena{
     namespace Mnemosyne{
@@ -19,26 +40,27 @@ namespace Athena{
 
 
             protected :
-                int n;                  //N° de la révision, -1 si représente la racine
-                uint64_t idBeginning;   //Id du premier caractère de la révision
-                uint64_t size;          //Taille de la révision
-                uint32_t diff;          //E[%*10000] de différence avec l'origine(abstract)
+                int n;                  ///N° of the current revision, -1 if this revision is a root
+                uint64_t idBeginning;   ///Index of the first char of this revision in iStream
+                uint64_t size;          ///Size of the data of the current revision
+                uint32_t diff;          ///E[%*10000] diff with the origin, which is relative to the current rev
 
 
                 Revision* parent;
                 vector< Revision* > children;
-                Revision* previous;     //révision n-1
-                Revision* next;         //révision n+1
-                Revision* last;         //Dernière révision ajoutée : nmax
+                Revision* previous;     ///revision n-1, if exists
+                Revision* next;         ///revision n+1, if exists
+                Revision* last;         ///Last revision added ie nmax
                 Revision* root;
 
-                ifstream* iStream;       //mutations's instructions
-                ofstream* oStream;
+                ifstream* iStream;      ///mutations's instructions
+                ofstream* oStream;      ///mutations's instructions
 
-                uint64_t relativeO = 0;     //Origine relative du flux ie debut de la rev
+                uint64_t relativeO = 0;     ///Origine relative du flux ie debut de la rev
+                utilité a cherchée
 
             public :
-                static const uint32_t REVISION_SIZE_TABLE = 20; // octets , origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(uint16_t)
+                static const uint32_t REVISION_SIZE_TABLE = 20; /// Bits , origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(uint16_t)
 
                 Revision(){ root=this; n=-1;}
                 Revision(int num) : n(num){ root = (n == -1 ) ? this : NULL; }
@@ -49,12 +71,19 @@ namespace Athena{
                 uint64_t getIdBeginning(){  return idBeginning; }
                 uint64_t getSize(){         return size; }
                 uint32_t getDiff(){         return diff; }
-                ifstream* getIStream(){      return iStream; }
-                ofstream* getOStream(){      return oStream; }
-                uint64_t getRelativeO(){    return relativeO; }
+
+
+                /**
+                 *  @return parents of the current revision order by n asc ie root first
+                 */
+                list< Revision* > getParents();
                 Revision* getRoot(){        return root; }
                 Revision* getLast(){        return last; }
                 Revision* getNext(){        return next; }
+
+                ifstream* getIStream(){      return iStream; }
+                ofstream* getOStream(){      return oStream; }
+                uint64_t getRelativeO(){    return relativeO; }
 
                 void setSize( uint64_t s ){         size=s; }
                 void setParent( Revision* rev ){    parent=rev; }
@@ -68,46 +97,16 @@ namespace Athena{
 
                 void addChild( Revision* child ){ child->setRoot( root ); children.push_back(child); }
 
-                /**
-                 *  @return parents of the current revision order by n asc ie root first
-                **/
-                list< Revision* > getParents(){
-                    if( n != -1 ){
-                        list< Revision* > parents = parent->getParents();
-                        parents.push_back( this );
-                    }else
-                        return list< Revision* >();
-                }
-
-                vector< uint32_t > getAllDiffs( vector< uint32_t >& vect ){
-                    if( n != -1 )
-                        vect.push_back( diff );
-                    next->getAllDiffs( vect );
-                    return vect;
-                }
 
                 /**
-                 * @return (minDiff,maxDiff)
-                **/
-                bool compDiff( uint32_t d1, uint32_t d2){
-                    return d1>d2;
-                }
+                 * @brief Extract all the diff from the current revision to the end, (ie used mostly with root)
+                 * @param vect          - vector which will stores the diffs, order by asc
+                 */
+                void getAllDiffs( vector< uint32_t >& vect );
 
-                pair<uint32_t, uint32_t> getExtremaDiff(){
-                    vector< uint32_t > vect;
-                    last->getAllDiffs( vect );
-                    if(vect.size() == 0)
-                        return pair<uint32_t, uint32_t>(0,0);
 
-                    uint32_t maxDiff = vect[0];
-                    uint32_t minDiff = vect[0];
-                    for(int i=1; i<vect.size(); i++){
-                        maxDiff = ( maxDiff<vect[i] ) ? vect[i] : maxDiff;
-                        minDiff = ( minDiff>vect[i] ) ? vect[i] : minDiff;
-                    }
-                    return pair<uint32_t, uint32_t>( minDiff, maxDiff);
-                }
 
+                pair<uint32_t, uint32_t> getExtremaDiff();
 
                 /*
                  * Build the current revision(data) in the argument, if we keep the result in RAM

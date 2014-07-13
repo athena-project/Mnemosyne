@@ -83,7 +83,7 @@ namespace Athena{
                 static string TMP_DIR(){ return ""; } ///Path of the directory for blovk
 
                 /**
-                 * Extracts a chunk from a block
+                 * @brief Extracts a chunk from a block
                  * @param block         - current block
                  * @param idChunk       - sql id of the chunk
                  * @return tmp location of the chunk
@@ -91,21 +91,21 @@ namespace Athena{
                 string getChunk( Block& block, uint64_t idChunk );
 
                 /**
-                 * Extracts chunks from a block
+                 * @brief Extracts chunks from a block
                  * @param block         -
                  * @return location of tmp directory
                  */
                 string extract( Block& block );
 
                 /**
-                 * Creates a block(now it's a compressed file) on DIR
+                 * @brief Creates a block(now it's a compressed file) on DIR
                  * @param block         -
                  * @param location      - path of the tmpDir which hosts all the chunks of this block
                  */
                 void make(Block& block, string location);
 
                 /**
-                 * Creates all the blocks depending of the  number of chunks
+                 * @brief Creates all the blocks depending of the  number of chunks
                  */
                 void makeBlocks();
         };

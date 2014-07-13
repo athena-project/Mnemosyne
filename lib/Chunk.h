@@ -89,14 +89,14 @@ namespace Athena{
                 static string TMP_DIR(){ return ""; } ///Path of the tmp directory for chunk
 
                 /**
-                 * Create a tmp file from a chunk
+                 * @brief Create a tmp file from a chunk
                  * @param id            - sql id of the chunk
                  * @return tmp path
                  */
                 string getFile( uint64_t id );
 
                 /**
-                 * Write the data of the chunk
+                 * @brief Write the data of the chunk
                  * @param id            - sql id of the chunk
                  * @param stream        - data
                  * @param idBeginning   - location in stream
@@ -106,7 +106,7 @@ namespace Athena{
                 void writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginning, uint64_t size, string dir="");
 
                 /**
-				 * Update data of chunk
+				 * @brief Update data of chunk
 				 * @param c             - current chunk
 				 * @param stream        - new data
 				 * @param idBeginning   - location in stream
@@ -115,7 +115,7 @@ namespace Athena{
                 void updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size);
 
                 /**
-                 * Make a vector chunks from a stream, this vect represents the stream data
+                 * @brief Make a vector chunks from a stream, this vect represents the stream data
                  * @param stream        - data stream
                  * @param idBeginning   - relativ origin of the stream
                  * @return vector of new chunks
