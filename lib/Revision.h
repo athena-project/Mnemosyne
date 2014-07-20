@@ -17,7 +17,6 @@
  * @autor Severus21
  */
 
-
 #ifndef REVISION_CPP_INCLUDED
 #define REVISION_CPP_INCLUDED
 
@@ -29,6 +28,7 @@
 #include <stdint.h>
 #include <algorithm>
 
+#include "Chunk.h"
 #include "Mutation.h"
 
 
@@ -106,70 +106,170 @@ namespace Athena{
                 RevisionHandler();
                 ~RevisionHandler();
 
-            ///Table function
+            ///Table functions
 
                 /**
-                 * @brief Extraction function
-                 * @param table         - cf.table structure
-                 * @param it            - current position of the cursor of table
-                 * @return
-                 */
-                int getNumber( vector<char>& table, vector<char>::iterator& it  );
-                uint16_t getOrigine( vector<char>& table, vector<char>::iterator& it );
-
-                uint64_t getIdBeginning( vector<char>& table, vector<char>::iterator& it );
-                uint64_t getSize( vector<char>& table, vector<char>::iterator& it );
-                uint16_t getDiff( vector<char>& table, vector<char>::iterator& it );
-
-                /**
+                 * @brief Return the size of the table in Bytes
+                 * @param stream        - input file
                  * @return size of the table in bytes
-                **/
+                 */
                 uint32_t extractSizeTable( ifstream& stream );
 
-
-                vector<int> extractChildren( vector< int >& origines, int parent );
-                void buildChildren( vector<int>& origines, vector< Revision* > revisions, Revision* current);
-
+                /**
+                 * @brief Return the table from the input file
+                 * @param stream        - input file
+                 * @return vector of char which is the table
+                 */
                 vector<char> extractTable(ifstream& stream);
 
-            ///Structure function
                 /**
-                 * Build the structur(ie no data)
-                 * @param table     - number(uint16_t) origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(float)...
-                **/
-                Revision* build( vector<bool>& table );
+                 * @brief Return the origin of the current revision
+                 * @param table         - cf.table structure
+                 * @param it            - current position of the cursor of table
+                 * @return origin
+                 */
+                uint16_t getOrigine( vector<char>& table, vector<char>::iterator& it );
 
+                /**
+                 * @brief Return the beginning of the current revision
+                 * @param table         - cf.table structure
+                 * @param it            - current position of the cursor of table
+                 * @return beginning
+                 */
+                uint64_t getIdBeginning( vector<char>& table, vector<char>::iterator& it );
 
+                /**
+                 * @brief Return the size of the current revision
+                 * @param table         - cf.table structure
+                 * @param it            - current position of the cursor of table
+                 * @return size
+                 */
+                uint64_t getSize( vector<char>& table, vector<char>::iterator& it );
 
+                /**
+                 * @brief Return the diff of the current revision
+                 * @param table         - cf.table structure
+                 * @param it            - current position of the cursor of table
+                 * @return diif
+                 */
+                uint16_t getDiff( vector<char>& table, vector<char>::iterator& it );
 
+            ///Structure functions
 
-                void write( vector<char>& data, uint64_t pos, uint64_t length, ofstream& stream);
+                /**
+                 * @brief Get the children's ids
+                 * @param origines      - key is the id of a revision and value is the origin one
+                 * @param parent        - id of the wanted origin
+                 * @return ids
+                 */
+                vector<int> extractChildren( vector< int >& origines, int parent );
+
+                /**
+                 * @brief Get the children's ids
+                 * @param origines      - key is the id of a revision and value is the origin one
+                 * @param revision      - all the revisions already hydrated, order by id
+                 * @param current       - the current revision
+                 * @return make the link between the rev and itsw children
+                 */
+                void buildChildren( vector<int>& origines, vector< Revision* > revisions, Revision* current);
+
+                /**
+                 * Build the revision tree
+                 * @param table         - number(uint16_t) origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(float)...
+                 */
+                Revision* buildStructure( vector<char>& table );
+
+            ///Building functions
+
+                /**
+                 *  @brief Return a mutation, the stream cursor is at the begining of the body of the mutation,
+                 *  the header has been already read
+                 *  @param stream       - location of the mutations' instructions
+                 */
+                Mutation readMutation( ifstream& stream );
+
+                /**
+                 * @brief Apply a revision to data
+                 * @param data          -
+                 * @param rev           -
+                 */
+                void applyMutations( vector<char>& data, Revision* rev);
+
+            ///Write functions
+
+                /**
+                 * @brief Write the table a the end of a file
+                 * @param table         - table's data
+                 * @param stream        - file
+                 */
                 void writeTable( vector<char>& table, ofstream& stream);
-                void createdMutations( vector<char>& origine, vector<char>& data, ofstream& stream, uint64_t pos);
 
                 /**
-                 * Calcul the difference between  origin and data, if we keep the result in RAM
-                 * @param origin     -
-                 * @param data     -
+                 * @brief Write a revision in a file
+                 * @param data          - revision data
+                 * @param pos           - beginning in the flux
+                 * @param size          - size of the data
+                 * @param stream        - file
+                 */
+                void write( vector<char>& data, uint64_t pos, uint64_t length, ofstream& stream);
+
+            ///Create new rev functions
+
+                /**
+                 * @brief Add a revision in table
+                 * @param cf.table structure
+                 */
+                void addTableElement( vector<char> table, uint64_t id, uint64_t size, uint16_t diff, uint16_t o);
+
+                /**
+                 * Calcul the difference between  origin and data
+                 * @param origin        - origin's data
+                 * @param data          - current's data
+                 * @return E[%*10000] diff with the origin, which is relative to the current rev
                 **/
                 uint64_t diff( vector<char>& origine, vector<char>& data  );
 
                 /**
-                 *  Return a mutation, the stream cursor is at the begining of the body of the mutation the header
-                 *  has been already read
-                 *  @param stream - location of the mutations' instructions
-                **/
-                Mutation readMutation( ifstream& stream );
-
-                void applyMutations( vector<char>& data, Revision* rev);
+                 * Calcul the differences between data and all the revision in the tree
+                 * @param rev           - revision tree
+                 * @param data          -
+                 * @return vector of diff order by id
+                 */
                 vector< uint64_t > calculDifferences( Revision* rev,  vector<char>& data );
+
+                /**
+                 * @brief Return the best origin for the current data
+                 * @param rev           - revision tree
+                 * @param data          -
+                 * @return  Revision which is the best origin
+                 */
                 Revision* bestOrigin( Revision* rev,  vector<char>& data );
 
+                /**
+                 * @brief Create the mutations needed to build data from origin
+                 * @param origin        -
+                 * @param data          -
+                 * @param stream        - file where mutations are written
+                 * @param pos           - id of the beginning in the flux
+                 */
+                void createMutations( vector<char>& origine, vector<char>& data, ofstream& stream, uint64_t pos);
+
+                /**
+                 * @brief Make a new revision from newData
+                 * @param currentRev    - last revision of the tree
+                 * @param newData
+                 * @return the new Rev
+                 */
                 Revision* newRevision( Revision* currentRev, vector<char>& newData);
 
-                Revision* buildStructure( vector<char>& table );
 
-                void addTableElement( vector<char> table, uint64_t id, uint64_t size, uint16_t diff, uint16_t o);
+
+
+
+
+
+
+
         };
 
     }

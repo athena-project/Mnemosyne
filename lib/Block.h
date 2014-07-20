@@ -17,7 +17,6 @@
  * @autor Severus21
  */
 
-
 #ifndef BLOCK_H_INCLUDED
 #define BLOCK_H_INCLUDED
 

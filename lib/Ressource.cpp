@@ -1,61 +1,20 @@
 #include "Ressource.h"
 
+
 namespace Athena{
     namespace Mnemosyne{
 
+    ///Ressource
         Ressource::Ressource(){}
 
-        Ressource::Ressource(string url, string contentType, unsigned int size, string content, unsigned int modified){
-            setUrl( url );
-            setContent( contentType );
-            setSize( size );
-            setContent( content );
-//            setModified( modified );
-            type = Ressource::DEFAULT;
-        }
-
-        Ressource::Ressource(unsigned int id, string url, string contentType, unsigned int size, string content, unsigned int modified){
-            Ressource(url, contentType, size, content, modified);
-            setId( id );
-
-
-        }
-
         Ressource::~Ressource(){}
-
-
-        int Ressource::getId(){ return id; }
-        string Ressource::getUrl(){ return url; }
-        uint32_t Ressource::getCurrentRevision(){ return currentRevision; }
-        string Ressource::getContentType(){ return contentType; }
-        uint32_t Ressource::getSize(){ return size; }
-        vector<uint64_t> Ressource::getChunkIds(){ return chunkIds; }
-        vector<Chunk> Ressource::getChunks(){ return chunks; }
-        string Ressource::getContent(){ return content; }
-//        unsigned int Ressource::getModified(){ return modified; }
-
-        void Ressource::setId(int param){ id = param; }
-        void Ressource::setUrl(string param){ url = param; }
-        void Ressource::setContentType(string param){ contentType = param; }
-        void Ressource::setSize(unsigned int param){ size = param; }
-        void Ressource::setContent(string param){ content = param; }
-        void Ressource::setChunkIds( vector<uint64_t> ids){
-            chunkIds=ids;
-
-            ChunkManager chManager;
-            chunks = chManager.get( chunkIds );
-
-        }
-  //      void Ressource::setModified(unsigned int param){ modified = param; }
-
 
         bool Ressource::empty(){
             return (content == "");
         }
 
-        /**
-            RessourceHandler
-        **/
+
+    ///RessourceHandler
 
         string RessourceHandler::buildRevision( Ressource& r, uint32_t n ){
             if( n > r.getCurrentRevision() )
@@ -123,6 +82,7 @@ namespace Athena{
                 remove( location.c_str() );
             return value.str();
         }
+
         /**
          *  @return ifstream* - is the stream use by each revision
         **/
@@ -130,11 +90,11 @@ namespace Athena{
             if( r.getCurrentRevision() == 0 )
                 return new Revision();
 
-            ChunkManager* chManager= new ChunkManager();
-            ChunkHandler* chHandler=new ChunkHandler();
-            RevisionHandler* revHandler= new RevisionHandler();
+            ChunkManager chManager;
+            ChunkHandler chHandler;
+            RevisionHandler revHandler;
             Revision* rev = new Revision();
-            vector<Chunk> chuncksTable = chManager->get( r.getChunkIds() );
+            vector<Chunk> chuncksTable = chManager.get( r.getChunkIds() );
 
 
             // Building the tmpFile, which will store the revision data, from the chunks
@@ -144,7 +104,7 @@ namespace Athena{
             ofstream tmpFile( (Ressource::TMP_DIR()+"/"+tmpId.str()).c_str() );
                 char(c);
             for(int i=0; i< chuncksTable.size(); i++){
-                ifstream tmpStream( chHandler->getFile( chuncksTable[i].getId() ).c_str() , ios::binary);
+                ifstream tmpStream( chHandler.getFile( chuncksTable[i].getId() ).c_str() , ios::binary);
                 while( tmpStream.get(c) ){
                     tmpFile << c;
                 }
@@ -152,13 +112,10 @@ namespace Athena{
             ifstream* stream = new ifstream( (Ressource::TMP_DIR()+"/"+tmpId.str()).c_str() );
 
 
-            vector< char> table = revHandler->extractTable( *stream );
-            delete chManager;
-            delete chHandler;
-            delete revHandler;
+            vector< char> table = revHandler.extractTable( *stream );
 
             //Body building
-            rev = revHandler->buildStructure( table ); //Root
+            rev = revHandler.buildStructure( table ); //Root
             while( rev->getNext() != NULL ){
                 rev->setIStream( stream );
                 rev = rev->getNext();
@@ -167,6 +124,7 @@ namespace Athena{
             return rev;
 
         }
+
         //Input is the ressource content
         void RessourceHandler::newRevision( Ressource* r, string dataStr ){
             vector< char > data;

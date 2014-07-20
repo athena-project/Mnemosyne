@@ -7,7 +7,7 @@
 #include <boost/filesystem.hpp>
 
 #include "Ressource.h"
-#include "RevisionHandler.h"
+#include "Revision.h"
 using namespace std;
 using namespace Athena::Mnemosyne;
 
@@ -21,16 +21,16 @@ int main(){
         str += c;
 
 
-    Ressource re("url","contentType", 5,"abcde", 10);
+/*    Ressource re("url","contentType", 5,"abcde", 10);
 
     RevisionHandler* handler= new RevisionHandler();
-    ofstream stream("/home/severus/test1", ios::app);
+    ofstream stream("/home/severus/test1", ios::app);*/
 
 //    handler->createdMutations(s1 , s2, stream, 0);
 //    ifstream s1( "/home/severus/s1", ios::binary);
 //    ifstream s2 ("/home/severus/s2", ios::binary);
 //    cout<<handler->diff(s1,s2)<<endl;
-    delete handler;
+    //delete handler;
 
     return 0;
 }

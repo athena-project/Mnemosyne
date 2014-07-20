@@ -1,3 +1,22 @@
+/*
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ *
+ * @autor Severus21
+ */
+
 #ifndef RESSOURCE_H_INCLUDED
 #define RESSOURCE_H_INCLUDED
 
@@ -9,88 +28,79 @@
 #include <sstream>
 
 #include "Revision.h"
-//#include "RessourceHandler.h"
 #include "Revision.h"
 #include "Chunk.h"
 
 
 using namespace std;
 
+
 namespace Athena{
     namespace Mnemosyne{
 
         class Ressource{
             protected :
-                int type;
-
-                uint64_t id;
-                string url;
-                string domain;
-                uint32_t currentRevision; //numero, 0 => no revision yet
-               // string time; //last revision
-                uint32_t size;
-                string contentType; // [nbrRevConcernées:contentType;charset...][nbrRevConcernées:contentType2;charset...]
-                vector<uint64_t> chunkIds; //ids of chunks
+                uint64_t id;                ///SQL id
+                uint32_t currentRevision;   ///id, 0 => no revision yet
+                vector<uint64_t> chunkIds;  ///ids of chunks
 
                 vector<Chunk> chunks;
-                string content; // current data if needed
-                Revision* rev;  // current revision if needed
+                string content;             /// current data if needed
+                Revision* rev;              /// current revision if needed
             public :
-                enum type{
-                    PAGE, CSS, JS, DEFAULT
-                };
 
                 static string TMP_DIR(){ return "/home/severus/Desktop"; }
-                static int contentTypeToType(string contentType){ return 0; /*à faire*/ }
 
                 Ressource();
-                Ressource(string url, string contentType, unsigned int size, string content, unsigned int modified);
-                Ressource(unsigned int id, string url, string contentType, unsigned int size, string content, unsigned int modified);
                 virtual ~Ressource();
 
-                int getId();
-                string getUrl();
-                uint32_t getCurrentRevision();
-                string getContentType();
-                uint32_t getSize();
-                string getContent();
-                vector<uint64_t> getChunkIds();
-                vector<Chunk> getChunks();
-                unsigned int getModified();
-
+                uint64_t getId(){ return id; }
+                uint32_t getCurrentRevision(){ return currentRevision; }
+                vector<uint64_t> getChunkIds(){ return chunkIds; }
+                vector<Chunk> getChunks(){ return chunks; }
+                string getContent(){ return content; }
                 Revision* getRevision(){ return rev; }
 
-                void setId(int param);
-                virtual void setUrl(string param);
-                void setContentType(string param);
-                void setCurrentRevision( uint32_t re ){ currentRevision = re; }
-                void setSize(unsigned int param);
-                void setContent(string param);
-                void setModified(unsigned int param);
-                void setChunkIds( vector<uint64_t> ids);
+                void setId(int param){ id = param; }
+                void setCurrentRevision( uint32_t cR ){ currentRevision = cR; }
+                void setContent(string param){ content = param; }
+                void setChunkIds( vector<uint64_t> ids){
+                    chunkIds=ids;
 
+                    ChunkManager chManager;
+                    chunks = chManager.get( chunkIds );
+                }
+
+                /**
+                 * @brief if content exists or not
+                 */
                 bool empty();
-
-//                string buildRevision( uint32_t n );
-//                void newRevision( string dataStr );
-            /*
-
-
-                string extractDomain();
-                string extractDir();
-
-                virtual list<string> collectURL();
-                virtual void fetchLinks(GumboNode* node, list<string>& links);
-                virtual list< string > urlFromLinks(list<string>& links);
-            */
         };
 
         class RessourceHandler{
             protected :
 
             public :
+                /**
+                 * @brief Build the content of the n revision of the ressource
+                 * @param r             - ressource
+                 * @param n             - number of the revision wanted
+                 * @return content
+                 */
                 string buildRevision( Ressource& r, uint32_t n );
+
+                /**
+                 * @brief Hydrate the content of the revision tree
+                 * @param r             - ressource
+                 * @return new revision tree
+                 */
                 Revision* buildAllRevisions(Ressource& r);
+
+                /**
+                 * @brief Create a  new revision of the ressource from dataStr
+                 * @param rev           - ressource
+                 * @param dataStr       - new data
+                 */
                 void newRevision( Ressource* rev, string dataStr );
         };
     }

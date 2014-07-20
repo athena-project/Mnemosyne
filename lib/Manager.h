@@ -17,7 +17,6 @@
  * @autor Severus21
  */
 
-
 #ifndef MANAGER_H_INCLUDED
 #define MANAGER_H_INCLUDED
 

@@ -17,7 +17,6 @@
  * @autor Severus21
  */
 
-
 #ifndef MUTATION_H_INCLUDED
 #define MUTATION_H_INCLUDED
 
