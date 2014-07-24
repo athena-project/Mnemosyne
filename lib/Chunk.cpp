@@ -11,8 +11,6 @@ namespace Athena{
         Chunk::Chunk(){}
 
         Chunk::Chunk( uint32_t size){
-            this->id = -1;
-            this->block_id = -1;
             this->size = size;
         }
 
@@ -38,8 +36,8 @@ namespace Athena{
 
         uint64_t ChunkManager::insert( Chunk chunk){
             mysqlpp::Query query = conn.query();
-            query<<"INSERT INTO chunk (block_id, size) VALUES ("<<chunk.getId();
-            query<<","<<chunk.getBlock_id()<<","<<chunk.getSize()<< ");";
+            query<<"INSERT INTO chunk (block_id, size) VALUES (";
+            query<<chunk.getBlock_id()<<","<<chunk.getSize()<< ");";
 
             if (mysqlpp::SimpleResult res = query.execute())
                 return (uint64_t)res.insert_id();
@@ -61,19 +59,23 @@ namespace Athena{
         }
 
         Chunk ChunkManager::get(uint64_t id){
-            vector<Chunk> vect = get( "*", "id := "+id, "id", "");
+            std::stringstream idStr;
+            idStr<<id;
+
+            vector<Chunk> vect = get( "*", "id = "+idStr.str(), "id", "");
             if( vect.size() == 1 )
                 return vect[0];
             else
-                throw "chunk not found";
+                throw runtime_error("chunk not found");
         }
 
         vector<Chunk> ChunkManager::get( string fieldsNeeded, string where, string order, string limit){
             vector<mysqlpp::Row> v;
             vector< Chunk > chunks;
             mysqlpp::Query query = conn.query();
-            query << "SELECT " << fieldsNeeded <<" FROM chunck "<< where <<" "<< order<< " "<<limit;
+            query << "SELECT " << fieldsNeeded <<" FROM chunk WHERE "<< where <<" ORDER BY "<< order<< " "<<limit;
             mysqlpp::StoreQueryResult res = query.store();
+
 
             for(size_t i = 0; i < res.num_rows(); ++i)
                 chunks.push_back( Chunk( (uint64_t)res[i]["id"], (uint64_t)res[i]["block_id"], (uint64_t)res[i]["size"] ) );
@@ -84,10 +86,14 @@ namespace Athena{
         vector<Chunk> ChunkManager::get(vector<uint64_t> ids){
             string where = "id INTO (";
 
-            for(vector<uint64_t>::iterator it; it != ids.end(); it++){
-                where += (it != ids.begin() ) ? "," : "";
-                where += (*it);
+            for(uint64_t i=0; i<ids.size(); i++){
+                where += ( i != 0 ) ? "," : "";
+
+                std::ostringstream id;
+                id<<ids[i];
+                where += id.str();
             }
+            where += ")";
             return get( "*", where, "id", "");
         }
 
@@ -125,14 +131,17 @@ namespace Athena{
             std::ostringstream chunckId;
             chunckId<<id;
 
-            Block currentBlock = bManager.get( currentChunk.getBlock_id() );
-
-            string chunkLocation1 = bHandler.getChunk( currentBlock, id );
             string chunkLocation2 = ChunkHandler::TMP_DIR()+"/"+chunckId.str();
+            try{
+                Block currentBlock = bManager.get( currentChunk.getBlock_id() );
+                string chunkLocation1 = bHandler.getChunk( currentBlock, id );
 
-            fs::copy_file( chunkLocation1, chunkLocation2);
-            files.push_back(chunkLocation2);
-            return chunkLocation2;
+                fs::copy_file( chunkLocation1, chunkLocation2);
+                files.push_back(chunkLocation2);
+                return chunkLocation2;
+            }catch(runtime_error e){//if no block yet
+                return chunkLocation2;
+            }
         }
 
         void ChunkHandler::writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginning, uint64_t size, string dir){
@@ -142,13 +151,16 @@ namespace Athena{
             string location = (dir == "" ) ? ChunkHandler::TMP_DIR()+"/"+strId.str() : dir+"/"+strId.str();
             ofstream oStream( location.c_str(), ios::trunc );
 
-            stream.seekg( idBeginning );
-
+            stream.seekg( idBeginning, stream.beg );
             char tmpChar;
             uint64_t i=0;
 
-            while( i<size && stream.get(tmpChar) )
-                oStream<<tmpChar;
+            while( i<size && stream.good() ){
+                tmpChar = stream.get();
+                if( stream.good() )
+                    oStream<<tmpChar;
+                i++;
+            }
         }
 
         void ChunkHandler::updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size){
@@ -172,6 +184,7 @@ namespace Athena{
             uint64_t nbrNeeded = ceil( (float)size / (float)(Chunk::CHUNK_SIZE_MAX) );
             stream.seekg( idBeginning );
 
+            ///Chunks creation
             vector<Chunk> chunks;
             for(uint64_t i=0; i<nbrNeeded; i++){
                 if( i<nbrNeeded-1)
@@ -180,6 +193,7 @@ namespace Athena{
                     chunks.push_back( size-(nbrNeeded-1)*(Chunk::CHUNK_SIZE_MAX) );//Size less than max
             }
 
+            ///SQL insertion and writting on hard drive
             vector<uint64_t> ids = cManager.insert( chunks );
             uint32_t chunkSize = Chunk::CHUNK_SIZE_MAX;
             for( uint64_t i=0; i<ids.size(); i++){

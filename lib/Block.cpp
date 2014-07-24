@@ -40,7 +40,7 @@ namespace Athena{
             if(vect.size() == 1)
                 return vect[0];
             else
-                throw "Block not found";
+                throw runtime_error("Block not found");
         }
 
         vector<Block> BlockManager::get( string fieldsNeeded, string where, string order, string limit){

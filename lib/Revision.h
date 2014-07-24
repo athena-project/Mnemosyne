@@ -44,9 +44,9 @@ namespace Athena{
 
             protected :
                 int n;                  ///N° of the current revision, -1 if this revision is a root
-                uint64_t idBeginning;   ///Index of the first char of this revision in iStream
-                uint64_t size;          ///Size of the data of the current revision
-                uint32_t diff;          ///E[%*10000] diff with the origin, which is relative to the current rev
+                uint64_t idBeginning = 0 ;   ///Index of the first char of this revision in iStream
+                uint64_t size = 0;          ///Size of the data of the current revision
+                uint32_t diff = 0;          ///E[%*10000] diff with the origin, which is relative to the current rev
 
 
                 Revision* parent;
@@ -56,7 +56,9 @@ namespace Athena{
                 Revision* last;         ///Last revision added ie nmax
                 Revision* root;
 
+                string iStreamLocation;
                 ifstream* iStream;      ///mutations's instructions
+                string oStreamLocation;
                 ofstream* oStream;      ///mutations's instructions
 
                 uint64_t relativeO = 0;     ///Relative origin in the current flux if we only load the needed chunks
@@ -64,9 +66,10 @@ namespace Athena{
             public :
                 static const uint32_t REVISION_SIZE_TABLE = 20; /// Bits , origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(uint16_t)
 
-                Revision(){ root=this; n=-1;}
-                Revision(int num) : n(num){ root = (n == -1 ) ? this : NULL; }
-                Revision(int num, uint64_t id, uint64_t s, uint32_t d) : n(num), idBeginning(id), size(s), diff(d){ root = (n == -1 ) ? this : NULL; }
+                Revision();
+                Revision(int num);
+                Revision(int num, uint64_t id, uint64_t s, uint32_t d);
+                void initPtr();
                 ~Revision();
 
                 int getN(){                 return n; }
@@ -85,6 +88,8 @@ namespace Athena{
 
                 ifstream* getIStream(){      return iStream; }
                 ofstream* getOStream(){      return oStream; }
+                string getIStreamLocation(){    return iStreamLocation; }
+                string getOStreamLocation(){    return oStreamLocation; }
                 uint64_t getRelativeO(){    return relativeO; }
 
                 void setSize( uint64_t s ){         size=s; }
@@ -92,8 +97,16 @@ namespace Athena{
                 void setPrevious( Revision* rev ){  previous=rev; }
                 void setNext( Revision* rev ){      next=rev; }
                 void setLast( Revision* rev ){      last=rev; }
-                void setIStream( ifstream* s ){      iStream=s; }
-                void setOStream( ofstream* s ){      oStream=s; }
+                void setIStream( string s ){
+                    iStreamLocation = s;
+                    delete iStream;
+                    iStream=new ifstream( s.c_str() );
+                }
+                void setOStream( string s ){
+                    oStreamLocation = s;
+                    delete oStream;
+                    oStream=new ofstream( s.c_str(), ios::app );
+                }
                 void setRelativeO( uint64_t n ){    relativeO=n; }
                 void setRoot( Revision* r ){        root = r; }
 
@@ -113,14 +126,14 @@ namespace Athena{
                  * @param stream        - input file
                  * @return size of the table in bytes
                  */
-                uint32_t extractSizeTable( ifstream& stream );
+                uint32_t extractSizeTable( ifstream* stream );
 
                 /**
                  * @brief Return the table from the input file
                  * @param stream        - input file
                  * @return vector of char which is the table
                  */
-                vector<char> extractTable(ifstream& stream);
+                vector<char> extractTable(ifstream* stream);
 
                 /**
                  * @brief Return the origin of the current revision
@@ -202,7 +215,7 @@ namespace Athena{
                  * @param table         - table's data
                  * @param stream        - file
                  */
-                void writeTable( vector<char>& table, ofstream& stream);
+                void writeTable( vector<char>& table, ofstream* stream);
 
                 /**
                  * @brief Write a revision in a file
@@ -211,7 +224,7 @@ namespace Athena{
                  * @param size          - size of the data
                  * @param stream        - file
                  */
-                void write( vector<char>& data, uint64_t pos, uint64_t length, ofstream& stream);
+                void write( vector<char>& data, uint64_t pos, uint64_t length, ofstream* stream);
 
             ///Create new rev functions
 
@@ -252,7 +265,7 @@ namespace Athena{
                  * @param stream        - file where mutations are written
                  * @param pos           - id of the beginning in the flux
                  */
-                void createMutations( vector<char>& origine, vector<char>& data, ofstream& stream, uint64_t pos);
+                void createMutations( vector<char>& origine, vector<char>& data, ofstream* stream, uint64_t pos);
 
                 /**
                  * @brief Make a new revision from newData

@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <bitset>
 #include <stdint.h>
 #include <vector>
 
@@ -15,22 +14,27 @@ using namespace Athena::Mnemosyne;
 
 int main(){
     string str;
-    ifstream s("/home/severus/Desktop/t1",ios::in);
+    ifstream s("/home/severus/Desktop/1.html",ios::in);
     char c;
     while( s.get(c) )
         str += c;
 
+    Ressource r;
+    RessourceHandler rHandler;
 
-/*    Ressource re("url","contentType", 5,"abcde", 10);
+        r.getRevision()->setIStream( "/home/severus/Desktop/1.stream");
+        r.getRevision()->setOStream( "/home/severus/Desktop/1.stream");
 
-    RevisionHandler* handler= new RevisionHandler();
-    ofstream stream("/home/severus/test1", ios::app);*/
+///Creation ressource
 
-//    handler->createdMutations(s1 , s2, stream, 0);
-//    ifstream s1( "/home/severus/s1", ios::binary);
-//    ifstream s2 ("/home/severus/s2", ios::binary);
-//    cout<<handler->diff(s1,s2)<<endl;
-    //delete handler;
+//    rHandler.newRevision(&r, str);
+
+
+///lecture
+    vector<uint64_t> ids;
+    ids.push_back(1);
+    r.setChunkIds( ids );
+    rHandler.buildRevision(r, 0);
 
     return 0;
 }

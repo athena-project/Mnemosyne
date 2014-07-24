@@ -40,9 +40,9 @@ namespace Athena{
 
         class Chunk{
             protected :
-                uint64_t id;
-                uint64_t block_id;
-                uint32_t size;
+                uint64_t id = 0;
+                uint64_t block_id = 0;
+                uint32_t size =0 ;
             public :
                 static const uint32_t CHUNK_SIZE_MAX = 64*1024; //Bits
 
@@ -86,7 +86,7 @@ namespace Athena{
                 ChunkHandler();
                 ~ChunkHandler();
 
-                static string TMP_DIR(){ return ""; } ///Path of the tmp directory for chunk
+                static string TMP_DIR(){ return "/home/severus/Desktop/chunks"; } ///Path of the tmp directory for chunk
 
                 /**
                  * @brief Create a tmp file from a chunk

@@ -5,9 +5,13 @@ namespace Athena{
     namespace Mnemosyne{
 
     ///Ressource
-        Ressource::Ressource(){}
+        Ressource::Ressource(){
+            rev = new Revision();
+        }
 
-        Ressource::~Ressource(){}
+        Ressource::~Ressource(){
+             delete rev;
+        }
 
         bool Ressource::empty(){
             return (content == "");
@@ -29,10 +33,11 @@ namespace Athena{
             vector<char> data;
             stringstream value;
 
-            // Table building, from the last chunks which host the end of the table
+            /// Table building, from the last chunks which host the end of the table
             vector<uint64_t> chunkIds = r.getChunkIds();
-            ifstream lastChunkStream( chHandler.getFile( chunkIds[chunkIds.size()-1] ) .c_str() , ios::binary);
-            uint32_t sizeTable = revHandler.extractSizeTable( lastChunkStream );
+            string lastChunkLocation = chHandler.getFile( chunkIds[chunkIds.size()-1]);
+            ifstream lastChunkStream( lastChunkLocation.c_str() , ios::binary);
+            uint32_t sizeTable = revHandler.extractSizeTable( &lastChunkStream );
             uint32_t nbrChuncksTable = ceil( (float)sizeTable / (float)(Chunk::CHUNK_SIZE_MAX) );
             vector< uint32_t > idChuncksTable;
             for(uint32_t i = (chunkIds.size()-nbrChuncksTable-1); i<chunkIds.size()  ; i++ )
@@ -40,7 +45,7 @@ namespace Athena{
             vector<Chunk> chuncksTable = chManager.get( chunkIds );
 
 
-            // Building the tmpFile, which will store the revision data, from the chunkIds
+            /// Building the tmpFile, which will store the revision data, from the chunkIds
             std::ostringstream tmpId;
             tmpId << r.getId();
             string location ="";
@@ -60,32 +65,30 @@ namespace Athena{
             }
 
             ifstream stream( location.c_str() , ios::binary);
-            vector< char> table = revHandler.extractTable( stream );
+            vector< char> table = revHandler.extractTable( &stream );
 
 
-            //Body building
-            Revision* rev = revHandler.buildStructure( table ); //Root
-            while( rev->getN() != n )
-                rev = rev->getNext();
-
-            list< Revision* > parents = rev->getParents();
-            for( list< Revision* >::iterator it = parents.begin() ; it!=parents.end() ; it++ )
-                revHandler.applyMutations( data, *it);
-
-            revHandler.applyMutations( data, rev); //Data is now hydrate
-
-            //We must converte vector<char> to string
-            for(uint64_t j=0; j<data.size(); j++)
-                value<<data[j];
-
-            if( location !="" )
-                remove( location.c_str() );
-            return value.str();
+            ///Body building
+//            Revision* rev = revHandler.buildStructure( table ); //Root
+//            while( rev->getN() != n )
+//                rev = rev->getNext();
+//
+//            list< Revision* > parents = rev->getParents();
+//            for( list< Revision* >::iterator it = parents.begin() ; it!=parents.end() ; it++ )
+//                revHandler.applyMutations( data, *it);
+//
+//            revHandler.applyMutations( data, rev); //Data is now hydrate
+//
+//            //We must converte vector<char> to string
+//            for(uint64_t j=0; j<data.size(); j++)
+//                value<<data[j];
+//
+//            if( location !="" )
+//                remove( location.c_str() );
+//            return value.str();
+return "";
         }
 
-        /**
-         *  @return ifstream* - is the stream use by each revision
-        **/
         Revision* RessourceHandler::buildAllRevisions(Ressource& r){
             if( r.getCurrentRevision() == 0 )
                 return new Revision();
@@ -109,15 +112,16 @@ namespace Athena{
                     tmpFile << c;
                 }
             }
-            ifstream* stream = new ifstream( (Ressource::TMP_DIR()+"/"+tmpId.str()).c_str() );
+            string streamLocation = (Ressource::TMP_DIR()+"/"+tmpId.str()).c_str() ;
+            ifstream* stream = new ifstream( streamLocation.c_str() );
 
 
-            vector< char> table = revHandler.extractTable( *stream );
+            vector< char> table = revHandler.extractTable( stream );
 
             //Body building
             rev = revHandler.buildStructure( table ); //Root
             while( rev->getNext() != NULL ){
-                rev->setIStream( stream );
+                rev->setIStream( streamLocation );
                 rev = rev->getNext();
             }
 
@@ -131,18 +135,8 @@ namespace Athena{
             for(uint64_t i=0; i<dataStr.size(); i++)
                 data.push_back( dataStr[i] );
 
-            Revision* rev = r->getRevision();
-            RevisionHandler* revHandler =new RevisionHandler();
-            Revision* origin = revHandler->bestOrigin( rev, data );
-            uint32_t tableSize = revHandler->extractSizeTable( *rev->getIStream() );
-
-            vector<char> tmpData;
-            list< Revision* > parents = origin->getParents();
-            for( list< Revision* >::iterator it = parents.begin() ; it!=parents.end() ; it++ )
-                revHandler->applyMutations( tmpData, *it);
-
-            revHandler->applyMutations( tmpData, origin); //Data is now hydrate
-            Revision* newRev = revHandler->newRevision( origin,  data );
+            RevisionHandler revHandler;
+            Revision* newRev = revHandler.newRevision( r->getRevision(),  data );
 
             ///Maj de l'instance courrante
             r->setCurrentRevision( r->getCurrentRevision() + 1 );
@@ -150,16 +144,17 @@ namespace Athena{
 
             ///Création des nv chunk
             vector< Chunk > chunks = r->getChunks();
-            ChunkHandler* cHandler = new ChunkHandler();
-            uint64_t sizeUpdate = min(newRev->getSize(), (uint64_t)Chunk::CHUNK_SIZE_MAX);
+            ChunkHandler cHandler;
+            uint64_t sizeUpdate = (chunks.size() == 0) ? 0 : min(newRev->getSize(), (uint64_t)Chunk::CHUNK_SIZE_MAX);
             ifstream* currentStream = newRev->getIStream();
 
-            currentStream->seekg(newRev->getIdBeginning());
-            cHandler->updateData( chunks[ chunks.size()-1 ], *currentStream, newRev->getIdBeginning(), sizeUpdate);
-            currentStream->seekg(newRev->getIdBeginning()+sizeUpdate);
-            cHandler->makeChunks( *currentStream, newRev->getIdBeginning()+sizeUpdate, newRev->getSize()-sizeUpdate);
 
-            delete revHandler;
+
+            currentStream->seekg(newRev->getIdBeginning());
+            if(chunks.size() > 0)
+                cHandler.updateData( chunks[ chunks.size()-1 ], *currentStream, newRev->getIdBeginning(), sizeUpdate);
+            currentStream->seekg( newRev->getIdBeginning() + sizeUpdate );
+            cHandler.makeChunks( *currentStream, newRev->getIdBeginning()+sizeUpdate, newRev->getSize()-sizeUpdate);
         }
     }
 }
