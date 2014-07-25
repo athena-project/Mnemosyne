@@ -232,7 +232,7 @@ namespace Athena{
                  * @brief Add a revision in table
                  * @param cf.table structure
                  */
-                void addTableElement( vector<char> table, uint64_t id, uint64_t size, uint16_t diff, uint16_t o);
+                void addTableElement( vector<char>& table, uint64_t id, uint64_t size, uint16_t diff, uint16_t o);
 
                 /**
                  * Calcul the difference between  origin and data

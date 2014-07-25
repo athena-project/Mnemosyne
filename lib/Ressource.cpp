@@ -50,6 +50,7 @@ namespace Athena{
             tmpId << r.getId();
             string location ="";
 
+            cout<<"chunk table "<<chuncksTable.size()<<endl;
             if( chuncksTable.size() == 1 )
                 location = chHandler.getFile( chuncksTable[0].getId() );
             else{
@@ -72,6 +73,7 @@ namespace Athena{
 //            Revision* rev = revHandler.buildStructure( table ); //Root
 //            while( rev->getN() != n )
 //                rev = rev->getNext();
+
 //
 //            list< Revision* > parents = rev->getParents();
 //            for( list< Revision* >::iterator it = parents.begin() ; it!=parents.end() ; it++ )
@@ -143,18 +145,18 @@ return "";
 
 
             ///Création des nv chunk
-            vector< Chunk > chunks = r->getChunks();
-            ChunkHandler cHandler;
-            uint64_t sizeUpdate = (chunks.size() == 0) ? 0 : min(newRev->getSize(), (uint64_t)Chunk::CHUNK_SIZE_MAX);
-            ifstream* currentStream = newRev->getIStream();
-
-
-
-            currentStream->seekg(newRev->getIdBeginning());
-            if(chunks.size() > 0)
-                cHandler.updateData( chunks[ chunks.size()-1 ], *currentStream, newRev->getIdBeginning(), sizeUpdate);
-            currentStream->seekg( newRev->getIdBeginning() + sizeUpdate );
-            cHandler.makeChunks( *currentStream, newRev->getIdBeginning()+sizeUpdate, newRev->getSize()-sizeUpdate);
+//            vector< Chunk > chunks = r->getChunks();
+//            ChunkHandler cHandler;
+//            uint64_t sizeUpdate = (chunks.size() == 0) ? 0 : min(newRev->getSize(), (uint64_t)Chunk::CHUNK_SIZE_MAX);
+//            ifstream* currentStream = newRev->getIStream();
+//
+//
+//
+//            currentStream->seekg(newRev->getIdBeginning());
+//            if(chunks.size() > 0)
+//                cHandler.updateData( chunks[ chunks.size()-1 ], *currentStream, newRev->getIdBeginning(), sizeUpdate);
+//            currentStream->seekg( newRev->getIdBeginning() + sizeUpdate );
+//            cHandler.makeChunks( *currentStream, newRev->getIdBeginning()+sizeUpdate, newRev->getSize()-sizeUpdate);
         }
     }
 }

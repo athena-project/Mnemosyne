@@ -19,6 +19,8 @@ int main(){
     while( s.get(c) )
         str += c;
 
+
+    cout<<"str size"<<str.size()<<endl;
     Ressource r;
     RessourceHandler rHandler;
 
@@ -27,14 +29,14 @@ int main(){
 
 ///Creation ressource
 
-//    rHandler.newRevision(&r, str);
+    rHandler.newRevision(&r, str);
 
 
 ///lecture
-    vector<uint64_t> ids;
-    ids.push_back(1);
-    r.setChunkIds( ids );
-    rHandler.buildRevision(r, 0);
+//    vector<uint64_t> ids;
+//    ids.push_back(3);
+//    r.setChunkIds( ids );
+//    rHandler.buildRevision(r, 0);
 
     return 0;
 }

@@ -56,7 +56,7 @@ namespace Athena{
         }
 
         vector<Block> BlockManager::get(vector<uint64_t>& ids){
-            string where = "id INTO (";
+            string where = "id IN (";
 
             for(vector<uint64_t>::iterator it = ids.begin(); it != ids.end(); it++){
                 where += (it != ids.begin() ) ? "," : "";

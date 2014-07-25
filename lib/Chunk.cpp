@@ -76,7 +76,8 @@ namespace Athena{
             query << "SELECT " << fieldsNeeded <<" FROM chunk WHERE "<< where <<" ORDER BY "<< order<< " "<<limit;
             mysqlpp::StoreQueryResult res = query.store();
 
-
+            ofstream tmp("/home/severus/Desktop/sql",ios::app);
+            tmp<<query<<endl;
             for(size_t i = 0; i < res.num_rows(); ++i)
                 chunks.push_back( Chunk( (uint64_t)res[i]["id"], (uint64_t)res[i]["block_id"], (uint64_t)res[i]["size"] ) );
 
@@ -84,7 +85,7 @@ namespace Athena{
         }
 
         vector<Chunk> ChunkManager::get(vector<uint64_t> ids){
-            string where = "id INTO (";
+            string where = "id IN (";
 
             for(uint64_t i=0; i<ids.size(); i++){
                 where += ( i != 0 ) ? "," : "";

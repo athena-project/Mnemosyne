@@ -55,23 +55,46 @@ namespace Athena{
             RevisionHandler::~RevisionHandler(){}
 
             uint32_t RevisionHandler::extractSizeTable( ifstream* stream ){
-                if( stream == NULL )
+                if( stream == NULL || stream->good() )
                     return 0;
 
                 uint16_t number = 0;
                 vector< uint8_t > table;
                 char c;
+//
+//                cout<<"connard"<<endl;
+//                stream->seekg(0, stream->beg);
+//                while( stream->good())
+//                    cout<<stream->get()<<endl;
+                stream->seekg(-2, stream->end );//revision number is a uint16_t
 
 
-                 stream->seekg(-2, stream->end );//revision number is a uint16_t
-
+//                stream->get(c);
+//                number = uint16_t(c);
+//                number << 8;
+//
+//                cout<<number<<endl;
+//                stream->get(c);
+//                number +=  uint16_t(c);
 
                 stream->get(c);
-                number = uint16_t(c);
+                number = uint8_t(c);
                 number << 8;
 
                 stream->get(c);
-                number +=  uint16_t(c);
+                number +=  uint8_t(c);
+                number << 8;
+
+                stream->get(c);
+                number +=  uint8_t(c);
+                number << 8;
+
+                stream->get(c);
+                number +=  uint8_t(c);
+                number << 8;
+
+                cout<<number<<endl;
+
 
                 return uint32_t(number) * Revision::REVISION_SIZE_TABLE;
             }
@@ -81,6 +104,7 @@ namespace Athena{
                     return vector<char>();
 
                 uint32_t sizeTable = extractSizeTable( stream );
+                cout<<sizeTable<<endl;
                 uint32_t beginningTable = -1 * ( sizeTable +2);
                 vector< char > table;
                 char c;
@@ -181,6 +205,7 @@ namespace Athena{
             }
 
             Revision* RevisionHandler::buildStructure( vector<char>& table ){
+                cout<<table.size()<<endl;
                 vector<char>::iterator it = table.begin();
                 if( it == table.end() )
                     return NULL;
@@ -253,14 +278,22 @@ namespace Athena{
                 for( uint64_t i=0; i<table.size(); i++){
                     (*stream)<<table[i];
                 }
+
+                ///Add nbr of table element
+                (*stream)<<uint32_t(float(table.size())/float(Revision::REVISION_SIZE_TABLE));
+
+                stream->flush();
             }
 
             void RevisionHandler::write( vector<char>& data, uint64_t pos, uint64_t length, ofstream* stream){
                 for(uint64_t j=pos; j<length; j++)
                     (*stream)<<data[j];
+
+                stream->flush();
             }
 
-            void RevisionHandler::addTableElement( vector<char> table, uint64_t id, uint64_t size, uint16_t diff, uint16_t o){
+            void RevisionHandler::addTableElement( vector<char>& table, uint64_t id, uint64_t size, uint16_t diff, uint16_t o){
+
                 ///ID
                 bitset<64> b1(id);
                 for(int i=7; i>-1; i--){
@@ -373,6 +406,7 @@ namespace Athena{
                 //Insert
                 if( origine.size()<data.size() ){
                     (*stream)<<Mutation::INSERT << origine.size() << data.size() - origine.size();
+                    stream->flush();
                     write(data, origine.size(), data.size()-origine.size(), stream);
                 }
             }
