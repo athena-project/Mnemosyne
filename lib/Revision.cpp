@@ -8,17 +8,15 @@ namespace Athena{
          *  Revision
          */
             Revision::Revision(){
-                root=this; n=-1;
+                root=this;
                 initPtr();
             }
 
-            Revision::Revision(int num) : n(num){
-                root = (n == -1 ) ? this : NULL;
+            Revision::Revision(uint16_t num) : n(num){
                 initPtr();
             }
 
-            Revision::Revision(int num, uint64_t id, uint64_t s, uint32_t d) : n(num), idBeginning(id), size(s), diff(d){
-                root = (n == -1 ) ? this : NULL;
+            Revision::Revision(uint16_t num, uint64_t id, uint64_t s, uint16_t d) : n(num), idBeginning(id), size(s), diff(d){
                 initPtr();
             }
 
@@ -38,12 +36,13 @@ namespace Athena{
                     delete children[i];
             }
 
-            list< Revision* > Revision::getParents(){
-                if( n != -1 ){
-                    list< Revision* > parents = parent->getParents();
+            vector< Revision* > Revision::getParents(){
+                if( parent != NULL && this != this->getRoot() ){
+                    vector< Revision* > parents = parent->getParents();
                     parents.push_back( this );
+                    return parents;
                 }else
-                    return list< Revision* >();
+                    return vector< Revision* >();
             }
 
         /**
@@ -54,123 +53,41 @@ namespace Athena{
 
             RevisionHandler::~RevisionHandler(){}
 
-            uint32_t RevisionHandler::extractSizeTable( ifstream* stream ){
-                if( stream == NULL || stream->good() )
+            uint16_t RevisionHandler::extractSizeTable( ifstream* stream ){
+                if( stream == NULL )
                     return 0;
 
                 uint16_t number = 0;
-                vector< uint8_t > table;
-                char c;
-//
-//                cout<<"connard"<<endl;
-//                stream->seekg(0, stream->beg);
-//                while( stream->good())
-//                    cout<<stream->get()<<endl;
-                stream->seekg(-2, stream->end );//revision number is a uint16_t
+                stream->seekg(-2, stream->end );
+                stream->read((char*)&number, 2);
 
-
-//                stream->get(c);
-//                number = uint16_t(c);
-//                number << 8;
-//
-//                cout<<number<<endl;
-//                stream->get(c);
-//                number +=  uint16_t(c);
-
-                stream->get(c);
-                number = uint8_t(c);
-                number << 8;
-
-                stream->get(c);
-                number +=  uint8_t(c);
-                number << 8;
-
-                stream->get(c);
-                number +=  uint8_t(c);
-                number << 8;
-
-                stream->get(c);
-                number +=  uint8_t(c);
-                number << 8;
-
-                cout<<number<<endl;
-
-
-                return uint32_t(number) * Revision::REVISION_SIZE_TABLE;
+                return number;
             }
 
-            vector<char> RevisionHandler::extractTable(ifstream* stream){
+            vector<TableElement> RevisionHandler::extractTable(ifstream* stream){
                 if( stream == NULL )
-                    return vector<char>();
+                    return vector<TableElement>();
 
-                uint32_t sizeTable = extractSizeTable( stream );
-                cout<<sizeTable<<endl;
-                uint32_t beginningTable = -1 * ( sizeTable +2);
-                vector< char > table;
-                char c;
+                vector<TableElement> table;
+                uint16_t sizeTable = extractSizeTable( stream );
+                int newOrigin = (-1)* ( sizeTable * Revision::REVISION_SIZE_TABLE + 2);//+2 : number of table element uint16_t
+                stream->seekg(newOrigin , stream->end);
 
-                for( uint32_t i=0; i<sizeTable; i++){
-                    stream->get(c);
-                    table.push_back( c );
+                for(uint16_t i=0 ; i<sizeTable ; i++ ){
+                    TableElement element;
+                    stream->read((char*)&element.idBeginning, 8);
+                    stream->read((char*)&element.size, 8);
+                    stream->read((char*)&element.diff, 2);
+                    stream->read((char*)&element.origin, 2);
+                    table.push_back( element );
+
+                    cout<<"extract table :: id "<<element.idBeginning<<endl;
+                    cout<<"extract table :: size "<<element.size<<endl;
+                    cout<<"extract table :: diff "<<element.diff<<endl;
+                    cout<<"extract table :: origin "<<element.origin<<endl;
                 }
 
-                stream->seekg (-2, stream->beg );
                 return table;
-            }
-
-            uint16_t RevisionHandler::getOrigine( vector<char>& table, vector<char>::iterator& it ){
-                uint16_t n=0b0;
-                for(int i=0; i<2; i++){
-                   bitset<8> ca( *it );
-                   for(int j =7 ; j>-1; j--){
-                        n=n<<1;
-                        n+=ca[j];
-
-                    }
-                    it++;
-                }
-                return n;
-            }
-
-            uint64_t RevisionHandler::getIdBeginning( vector<char>& table, vector<char>::iterator& it ){
-                uint64_t n=0b0;
-                for(int i=0; i<8; i++){
-                   bitset<8> ca( *it );
-                   for(int j =7 ; j>-1; j--){
-                        n=n<<1;
-                        n+=ca[j];
-
-                    }
-                    it++;
-                }
-                return n;
-            }
-
-            uint64_t RevisionHandler::getSize( vector<char>& table, vector<char>::iterator& it ){
-                uint64_t n=0b0;
-                for(int i=0; i<8; i++){
-                   bitset<8> ca( *it );
-                   for(int j =7 ; j>-1; j--){
-                        n=n<<1;
-                        n+=ca[j];
-
-                    }
-                    it++;
-                }
-                return n;
-            }
-
-            uint16_t RevisionHandler::getDiff( vector<char>& table, vector<char>::iterator& it ){
-                uint16_t n=0b0;
-                for(int i=0; i<2; i++){
-                   bitset<8> ca( *it );
-                   for(int j =7 ; j>-1; j--){
-                        n=n<<1;
-                        n+=ca[j];
-
-                    }
-                    it++;
-                }
             }
 
             vector<int> RevisionHandler::extractChildren( vector< int >& origines, int parent ){
@@ -181,106 +98,98 @@ namespace Athena{
                 return children;
             }
 
-            void RevisionHandler::buildChildren( vector<int>& origines, vector< Revision* > revisions, Revision* current){
+            void RevisionHandler::buildChildren( vector<int>& origines, vector< Revision* > revisions, Revision* current, int alreadyBuilt){
                 vector<int> children = extractChildren(origines, current->getN());
                 Revision* currentChild;
+
                 for(int i=0; i<children.size(); i++){
                     currentChild = revisions[ children[i] ];
-
                     currentChild->setParent( current );
+                    currentChild->setRoot( current->getRoot() );
                     if( currentChild->getN() > 0 )
                         currentChild->setPrevious( revisions[ currentChild->getN()-1 ] );
                     else
-                        currentChild->setPrevious( current ); //Current == root
+                        currentChild->setPrevious( current->getRoot() );
 
                     if( currentChild->getN() < children.size()-1 ){
                         currentChild->setNext( revisions[ currentChild->getN()+1 ] );
                         currentChild->setLast(  revisions[ children.size()-1 ] );
                     }
 
-
-                    buildChildren( origines, revisions,  currentChild );
                     current->addChild( currentChild );
+                    current->setNext( currentChild );
+                    if( alreadyBuilt < revisions.size()-1 )
+                        buildChildren( origines, revisions,  currentChild, alreadyBuilt + 1 );
                 }
             }
 
-            Revision* RevisionHandler::buildStructure( vector<char>& table ){
-                cout<<table.size()<<endl;
-                vector<char>::iterator it = table.begin();
-                if( it == table.end() )
+            Revision* RevisionHandler::buildStructure( vector<TableElement>& table ){
+                if( table.size() == 0 )
                     return NULL;
 
                 vector< int > origines;
                 vector< Revision* > revisions; // pair< begin, size >
 
-                uint64_t tmpBegin;
-                uint64_t tmpSize;
-                uint16_t tmpDiff;
-                while( it != table.end() ){
-                    tmpBegin = getIdBeginning(table, it);
-                    tmpSize  = getSize(table, it);
-                    tmpDiff  = getDiff(table,it);
-                    origines.push_back( getOrigine(table, it) );
-                    revisions.push_back( new Revision(revisions.size(), tmpBegin, tmpSize, tmpDiff) );
+                for( uint16_t i=0 ; i<table.size() ; i++){
+                    origines.push_back( table[i].origin );
+                    revisions.push_back( new Revision(revisions.size(), table[i].idBeginning, table[i].size, table[i].diff) );
                 }
 
-                Revision* root=new Revision(-1);
+                Revision* root=new Revision();
+                root->setRoot( root );
                 buildChildren( origines, revisions, root);
-                root;
+                return root;
             }
 
             Mutation RevisionHandler::readMutation( ifstream& stream ){
-                char c; bitset<8> buffer;
                 uint8_t type(0);
                 uint64_t idBegining(0);
                 uint64_t size(0);
 
-                stream.get( c );
-                type = uint8_t(c);
+                stream.read( (char *)&type, 1);
+                stream.read( (char *)&idBegining, 8);
+                stream.read( (char *)&size, 8);
 
-                //idBegining
-                for(int i=0; i<8; i++){//8bytes <=>uint64_t
-                    stream.get( c );
-                    idBegining+=c;
-                    idBegining << 8;
-                }
-
-                //size
-                for(int i=0; i<8; i++){//8bytes <=>uint64_t
-                    stream.get( c );
-                    size+=c;
-                    size << 8;
-                }
-
+                cout<<"size mutation "<<size<<endl;
                 Mutation m( type, idBegining, size);
                 return m;
             }
 
             void RevisionHandler::applyMutations( vector<char>& data, Revision* rev){
-                if( rev == NULL || rev->getN() == -1 )
+                if( rev == NULL || rev->getRoot() == rev )
                     return;
-
                 ifstream* stream = (rev->getIStream());
+
+
+
                 Mutation m;
                 uint64_t i =0;
                 stream->seekg( rev->getIdBeginning() - rev->getRelativeO(), stream->beg );
 
-
                 while( i < rev->getSize() ){
                     Mutation m=readMutation( *stream );
                     m.apply(data, *stream);
-                    i++;
+                    i+=m.getSize();
                 }
+                cout<<"data size "<<data.size()<<endl;
             }
 
-            void RevisionHandler::writeTable( vector<char>& table, ofstream* stream){
-                stream->seekp( -1, stream->end );
+            void RevisionHandler::writeTable( vector<TableElement>& table, ofstream* stream){
+                stream->seekp( 0, stream->end );
                 for( uint64_t i=0; i<table.size(); i++){
-                    (*stream)<<table[i];
+                    cout<<"id "<<table[i].idBeginning<<endl;
+                    cout<<"size "<<table[i].size<<endl;
+                    cout<<"diff "<<table[i].diff<<endl;
+                    cout<<"origin "<<table[i].origin<<endl;
+                    stream->write( (char*)&table[i].idBeginning, 8);
+                    stream->write( (char*)&table[i].size, 8);
+                    stream->write( (char*)&table[i].diff, 2);
+                    stream->write( (char*)&table[i].origin, 2);
                 }
 
                 ///Add nbr of table element
-                (*stream)<<uint32_t(float(table.size())/float(Revision::REVISION_SIZE_TABLE));
+                uint16_t s = table.size();
+                stream->write( (char*)&s, 2);
 
                 stream->flush();
             }
@@ -290,53 +199,6 @@ namespace Athena{
                     (*stream)<<data[j];
 
                 stream->flush();
-            }
-
-            void RevisionHandler::addTableElement( vector<char>& table, uint64_t id, uint64_t size, uint16_t diff, uint16_t o){
-
-                ///ID
-                bitset<64> b1(id);
-                for(int i=7; i>-1; i--){
-                    char t=0;
-                    for(int j=7; j>-1; j--){
-                        t=t<<1;
-                        t+=b1[i*8+j];
-                    }
-                    table.push_back(t);
-                }
-
-                ///Size
-                bitset<64> b2(size);
-                for(int i=7; i>-1; i--){
-                    char t=0;
-                    for(int j=7; j>-1; j--){
-                        t=t<<1;
-                        t+=b2[i*8+j];
-                    }
-                    table.push_back(t);
-                }
-
-                ///Diff
-                bitset<16> b3(diff);
-                for(int i=1; i>-1; i--){
-                    char t=0;
-                    for(int j=7; j>-1; j--){
-                        t=t<<1;
-                        t+=b3[i*8+j];
-                    }
-                    table.push_back(t);
-                }
-
-                ///Diff
-                bitset<16> b4(o);
-                for(int i=1; i>-1; i--){
-                    char t=0;
-                    for(int j=7; j>-1; j--){
-                        t=t<<1;
-                        t+=b4[i*8+j];
-                    }
-                    table.push_back(t);
-                }
             }
 
             uint64_t RevisionHandler::diff( vector<char>& origine, vector<char>& data ){
@@ -364,20 +226,22 @@ namespace Athena{
             }
 
             Revision* RevisionHandler::bestOrigin( Revision* rev,  vector<char>& data ){
-                if( rev->getN() == -1 )
+                vector< uint64_t > differences = calculDifferences( rev, data);
+                uint64_t tmpDiff = 0;
+                if( differences.size() > 0)
+                    tmpDiff = differences[0];
+                else
                     return rev;
 
-                vector< uint64_t > differences = calculDifferences( rev, data);
-                uint64_t tmpDiff=differences[0];
                 Revision* tmpRev = rev->getRoot();
 
-                for( int i=1; i<differences.size(); i++){
+                for( int i=1; i<differences.size(); i++)
                     if( tmpDiff > differences[i] ){
                         tmpDiff = differences[i];
                         tmpRev    = tmpRev->getNext();
                     }
-                }
-                return tmpRev;
+
+                return (tmpRev != NULL) ? tmpRev : rev;
             }
 
             void RevisionHandler::createMutations( vector<char>& origine, vector<char>& data, ofstream* stream, uint64_t pos){
@@ -416,14 +280,15 @@ namespace Athena{
                     rev = rev->getLast();
 
                 Revision* origin = bestOrigin( rev, newData );
+
                 uint32_t tableSize = extractSizeTable( rev->getIStream() );
-                vector<char> table = extractTable( rev->getIStream() );
+                vector<TableElement> table = extractTable( rev->getIStream() );
 
                 ///Building of origin
                 vector<char> tmpData;
-                list< Revision* > parents = origin->getParents();
-                for( list< Revision* >::iterator it = parents.begin() ; it!=parents.end() ; it++ )
-                    applyMutations( tmpData, *it);
+                vector< Revision* > parents = origin->getParents();
+                for( int i=0; i<parents.size()-1 ; i++)
+                    applyMutations( tmpData, parents[i]);
 
                 applyMutations( tmpData, origin); //Data is now hydrate
 
@@ -435,17 +300,26 @@ namespace Athena{
                 newRev->setRoot( rev->getRoot() );
                 newRev->setIStream( rev->getIStreamLocation() );
                 newRev->setOStream( rev->getOStreamLocation() );
+                newRev->setLast( newRev );
 
                 createMutations( tmpData, newData, newRev->getOStream(), tableSize);
 
                 ///Size
-                rev->getOStream()->seekp (0, rev->getOStream()->end);
-                uint64_t length = rev->getOStream()->tellp();
+                ofstream* oStream = rev->getOStream();
+                oStream->seekp (0, oStream->end);
+                uint64_t length = oStream->tellp();
                 newRev->setSize( length - rev->getIdBeginning()-rev->getSize() );
 
                 ///Maj of the table
-                addTableElement( table, newRev->getIdBeginning(), newRev->getSize(), newRev->getDiff(), origin->getN() );
-                writeTable( table, rev->getOStream() );
+                TableElement newElement;
+                newElement.idBeginning = newRev->getIdBeginning();
+                newElement.size = newRev->getSize();
+                newElement.diff = newRev->getDiff();
+                newElement.origin = ( origin != NULL ) ? origin->getN() : 0;
+
+                table.push_back( newElement );
+
+                writeTable( table, oStream );
 
                 return newRev;
             }

@@ -24,19 +24,19 @@ int main(){
     Ressource r;
     RessourceHandler rHandler;
 
-        r.getRevision()->setIStream( "/home/severus/Desktop/1.stream");
-        r.getRevision()->setOStream( "/home/severus/Desktop/1.stream");
+//        r.getRevision()->setIStream( "/home/severus/Desktop/1.stream");
+//        r.getRevision()->setOStream( "/home/severus/Desktop/1.stream");
 
 ///Creation ressource
 
-    rHandler.newRevision(&r, str);
+//    rHandler.newRevision(&r, str);
 
 
 ///lecture
-//    vector<uint64_t> ids;
-//    ids.push_back(3);
-//    r.setChunkIds( ids );
-//    rHandler.buildRevision(r, 0);
+    vector<uint64_t> ids;
+    ids.push_back(10);
+    r.setChunkIds( ids );
+    rHandler.buildRevision(r, 0);
 
     return 0;
 }

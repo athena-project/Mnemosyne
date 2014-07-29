@@ -38,15 +38,21 @@ using namespace std;
 namespace Athena{
     namespace Mnemosyne{
 
+        struct TableElement{
+                uint64_t idBeginning = 0 ;   ///Index of the first char of this revision in iStream
+                uint64_t size = 0;          ///Size of the data of the current revision
+                uint16_t diff = 0;
+                uint16_t origin = 0;
+        };
 
         class Revision{
 
 
             protected :
-                int n;                  ///N° of the current revision, -1 if this revision is a root
+                uint16_t n = 0;                  ///N° of the current revision
                 uint64_t idBeginning = 0 ;   ///Index of the first char of this revision in iStream
                 uint64_t size = 0;          ///Size of the data of the current revision
-                uint32_t diff = 0;          ///E[%*10000] diff with the origin, which is relative to the current rev
+                uint16_t diff = 0;          ///E[%*10000] diff with the origin, which is relative to the current rev
 
 
                 Revision* parent;
@@ -67,21 +73,21 @@ namespace Athena{
                 static const uint32_t REVISION_SIZE_TABLE = 20; /// Bits , origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(uint16_t)
 
                 Revision();
-                Revision(int num);
-                Revision(int num, uint64_t id, uint64_t s, uint32_t d);
+                Revision(uint16_t num);
+                Revision(uint16_t num, uint64_t id, uint64_t s, uint16_t d);
                 void initPtr();
                 ~Revision();
 
-                int getN(){                 return n; }
+                uint16_t getN(){                 return n; }
                 uint64_t getIdBeginning(){  return idBeginning; }
                 uint64_t getSize(){         return size; }
-                uint32_t getDiff(){         return diff; }
+                uint16_t getDiff(){         return diff; }
 
 
                 /**
                  *  @return parents of the current revision order by n asc ie root first
                  */
-                list< Revision* > getParents();
+                vector< Revision* > getParents();
                 Revision* getRoot(){        return root; }
                 Revision* getLast(){        return last; }
                 Revision* getNext(){        return next; }
@@ -126,46 +132,14 @@ namespace Athena{
                  * @param stream        - input file
                  * @return size of the table in bytes
                  */
-                uint32_t extractSizeTable( ifstream* stream );
+                uint16_t extractSizeTable( ifstream* stream );
 
                 /**
                  * @brief Return the table from the input file
                  * @param stream        - input file
                  * @return vector of char which is the table
                  */
-                vector<char> extractTable(ifstream* stream);
-
-                /**
-                 * @brief Return the origin of the current revision
-                 * @param table         - cf.table structure
-                 * @param it            - current position of the cursor of table
-                 * @return origin
-                 */
-                uint16_t getOrigine( vector<char>& table, vector<char>::iterator& it );
-
-                /**
-                 * @brief Return the beginning of the current revision
-                 * @param table         - cf.table structure
-                 * @param it            - current position of the cursor of table
-                 * @return beginning
-                 */
-                uint64_t getIdBeginning( vector<char>& table, vector<char>::iterator& it );
-
-                /**
-                 * @brief Return the size of the current revision
-                 * @param table         - cf.table structure
-                 * @param it            - current position of the cursor of table
-                 * @return size
-                 */
-                uint64_t getSize( vector<char>& table, vector<char>::iterator& it );
-
-                /**
-                 * @brief Return the diff of the current revision
-                 * @param table         - cf.table structure
-                 * @param it            - current position of the cursor of table
-                 * @return diif
-                 */
-                uint16_t getDiff( vector<char>& table, vector<char>::iterator& it );
+                vector<TableElement> extractTable(ifstream* stream);
 
             ///Structure functions
 
@@ -182,15 +156,16 @@ namespace Athena{
                  * @param origines      - key is the id of a revision and value is the origin one
                  * @param revision      - all the revisions already hydrated, order by id
                  * @param current       - the current revision
+                 * @param alreadyBuilt  -
                  * @return make the link between the rev and itsw children
                  */
-                void buildChildren( vector<int>& origines, vector< Revision* > revisions, Revision* current);
+                void buildChildren( vector<int>& origines, vector< Revision* > revisions, Revision* current, int alreadyBuilt=0);
 
                 /**
                  * Build the revision tree
-                 * @param table         - number(uint16_t) origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(float)...
+                 * @param table         - origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(uin16_t)...
                  */
-                Revision* buildStructure( vector<char>& table );
+                Revision* buildStructure( vector<TableElement>& table );
 
             ///Building functions
 
@@ -215,7 +190,7 @@ namespace Athena{
                  * @param table         - table's data
                  * @param stream        - file
                  */
-                void writeTable( vector<char>& table, ofstream* stream);
+                void writeTable( vector<TableElement>& table, ofstream* stream);
 
                 /**
                  * @brief Write a revision in a file
@@ -227,12 +202,6 @@ namespace Athena{
                 void write( vector<char>& data, uint64_t pos, uint64_t length, ofstream* stream);
 
             ///Create new rev functions
-
-                /**
-                 * @brief Add a revision in table
-                 * @param cf.table structure
-                 */
-                void addTableElement( vector<char>& table, uint64_t id, uint64_t size, uint16_t diff, uint16_t o);
 
                 /**
                  * Calcul the difference between  origin and data

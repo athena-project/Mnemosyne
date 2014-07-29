@@ -1,24 +1,57 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
 	<ActiveTarget name="Debug" />
-	<File name="SQLFactory.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Block.cpp" open="0" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="571" topLine="0" />
+			<Cursor1 position="1801" topLine="37" />
 		</Cursor>
 	</File>
-	<File name="Chunk.cpp" open="1" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Revision.cpp" open="1" top="1" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4139" topLine="49" />
+		</Cursor>
+		<Folding>
+			<Collapse line="14" />
+			<Collapse line="18" />
+			<Collapse line="22" />
+			<Collapse line="33" />
+			<Collapse line="38" />
+			<Collapse line="65" />
+		</Folding>
+	</File>
+	<File name="Block.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="750" topLine="3" />
+		</Cursor>
+	</File>
+	<File name="Chunk.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2242" topLine="81" />
+		</Cursor>
+	</File>
+	<File name="main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="651" topLine="14" />
+		</Cursor>
+	</File>
+	<File name="Chunk.cpp" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="2604" topLine="71" />
 		</Cursor>
 	</File>
+	<File name="Ressource.cpp" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2481" topLine="57" />
+		</Cursor>
+		<Folding>
+			<Collapse line="7" />
+			<Collapse line="11" />
+			<Collapse line="15" />
+		</Folding>
+	</File>
 	<File name="Manager.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="22" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="Mutation.cpp" open="0" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="23" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="Manager.h" open="0" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -26,75 +59,34 @@
 			<Cursor1 position="751" topLine="8" />
 		</Cursor>
 	</File>
-	<File name="Revision.h" open="1" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="SQLFactory.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="9419" topLine="228" />
+			<Cursor1 position="571" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="Revision.cpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Mutation.cpp" open="0" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1715" topLine="0" />
+			<Cursor1 position="23" topLine="0" />
 		</Cursor>
-		<Folding>
-			<Collapse line="101" />
-			<Collapse line="120" />
-			<Collapse line="134" />
-			<Collapse line="148" />
-			<Collapse line="162" />
-			<Collapse line="175" />
-			<Collapse line="183" />
-			<Collapse line="206" />
-			<Collapse line="231" />
-			<Collapse line="258" />
-			<Collapse line="287" />
-			<Collapse line="294" />
-		</Folding>
+	</File>
+	<File name="Mutation.h" open="0" top="0" tabpos="10" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="751" topLine="23" />
+		</Cursor>
+	</File>
+	<File name="SQLFactory.cpp" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="265" topLine="0" />
+		</Cursor>
 	</File>
 	<File name="Ressource.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="1579" topLine="35" />
 		</Cursor>
 	</File>
-	<File name="Mutation.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Revision.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="751" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="645" topLine="16" />
-		</Cursor>
-	</File>
-	<File name="Ressource.cpp" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="5983" topLine="23" />
-		</Cursor>
-		<Folding>
-			<Collapse line="7" />
-			<Collapse line="11" />
-			<Collapse line="15" />
-			<Collapse line="22" />
-			<Collapse line="93" />
-		</Folding>
-	</File>
-	<File name="Chunk.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2242" topLine="81" />
-		</Cursor>
-	</File>
-	<File name="Block.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="750" topLine="3" />
-		</Cursor>
-	</File>
-	<File name="SQLFactory.cpp" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="264" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="Block.cpp" open="1" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1801" topLine="37" />
+			<Cursor1 position="2506" topLine="60" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>
