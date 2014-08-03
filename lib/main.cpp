@@ -23,23 +23,25 @@ int main(){
     cout<<"str size"<<str.size()<<endl;
     Ressource r;
     RessourceHandler rHandler;
-//
-//        r.getRevision()->setIStream( "/home/severus/Desktop/1.stream");
-//        r.getRevision()->setOStream( "/home/severus/Desktop/1.stream");
+    RevisionHandler revHandler;
+
+        r.getRevision()->setIStream( "/home/severus/Desktop/1.stream");
+        r.getRevision()->setOStream( "/home/severus/Desktop/1.stream");
+
 
 ///Creation ressource
 
-//    rHandler.newRevision(&r, str);
+    rHandler.newRevision(&r, str);
 
 
 ///lecture
-    vector<uint64_t> ids;
-    ids.push_back(13);
-    r.setChunkIds( ids );
-
-    ofstream test("/home/severus/Desktop/2.html");
-    string a=rHandler.buildRevision(r, 0);
-    test<<a;
+//    vector<uint64_t> ids;
+//    ids.push_back(14);
+//    r.setChunkIds( ids );
+//
+//    ofstream test("/home/severus/Desktop/2.html");
+//    string a=rHandler.buildRevision(r, 0);
+//    test<<a;
 
     return 0;
 }

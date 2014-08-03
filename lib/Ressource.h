@@ -70,6 +70,10 @@ namespace Athena{
                     ChunkManager chManager;
                     chunks = chManager.get( chunkIds );
                 }
+                void setRevision(Revision* newRev){
+                    delete rev;
+                    rev = newRev;
+                }
 
                 /**
                  * @brief if content exists or not

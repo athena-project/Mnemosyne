@@ -25,7 +25,6 @@ namespace Athena{
                 previous = NULL;
                 next = NULL;
                 last = NULL;
-                root = NULL;
 
                 oStream=NULL;
                 iStream=NULL;
@@ -106,6 +105,10 @@ namespace Athena{
                     currentChild = revisions[ children[i] ];
                     currentChild->setParent( current );
                     currentChild->setRoot( current->getRoot() );
+                    currentChild->setIStream( current->getIStreamLocation() ); /// A virer tmp .....
+                    currentChild->setOStream( current->getOStreamLocation() );
+
+
                     if( currentChild->getN() > 0 )
                         currentChild->setPrevious( revisions[ currentChild->getN()-1 ] );
                     else
@@ -118,6 +121,8 @@ namespace Athena{
 
                     current->addChild( currentChild );
                     current->setNext( currentChild );
+
+
                     if( alreadyBuilt < revisions.size()-1 )
                         buildChildren( origines, revisions,  currentChild, alreadyBuilt + 1 );
                 }
@@ -125,7 +130,7 @@ namespace Athena{
 
             Revision* RevisionHandler::buildStructure( vector<TableElement>& table ){
                 if( table.size() == 0 )
-                    return NULL;
+                    return new Revision();
 
                 vector< int > origines;
                 vector< Revision* > revisions; // pair< begin, size >
@@ -163,6 +168,7 @@ namespace Athena{
 
                 Mutation m;
                 uint64_t i =0;
+                cout<< " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa "<<rev->getIdBeginning() - rev->getRelativeO()<<endl;
                 stream->seekg( rev->getIdBeginning() - rev->getRelativeO(), stream->beg );
 
                 while( i < rev->getSize() ){
@@ -213,13 +219,14 @@ namespace Athena{
             vector< uint64_t > RevisionHandler::calculDifferences( Revision* rev,  vector<char>& data ){
                 vector< char > tmpData(data);
                 vector< uint64_t > differences;
-                Revision* tmp = (rev->getRoot()); //Diff with racine <=> rev origine
+                Revision* tmp = (rev->getRoot()->getNext()); //Diff with racine <=> rev origine
 
-                while( tmp != NULL ){
+                while( tmp != NULL ){cout<<" dfssssssssssssss"<<tmp->getSize()<<endl;
                     applyMutations( tmpData, tmp);
                     differences.push_back( diff(tmpData, data) );
                     tmp = tmp->getNext();
                 }
+                cout<<" fin "<<endl;
                 return differences;
             }
 
@@ -300,10 +307,17 @@ namespace Athena{
                 if( rev != NULL && rev->getLast() != NULL )
                     rev = rev->getLast();
 
-                Revision* origin = bestOrigin( rev, newData );
-
                 uint32_t tableSize = extractSizeTable( rev->getIStream() );
                 vector<TableElement> table = extractTable( rev->getIStream() );
+
+                ///Building tree
+                Revision* origin;
+                origin = buildStructure( table );
+                origin = bestOrigin( origin, newData );
+                origin = ( origin->getLast() == NULL ) ? rev : origin->getLast();
+
+
+                cout<<origin->getSize()<<endl;
 
                 ///Building of origin
                 vector<char> tmpData;

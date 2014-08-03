@@ -77,13 +77,13 @@ namespace Athena{
                 rev = rev->getNext();
                 rev->setIStream( location.c_str() );
             }
-
-
-            vector< Revision* > parents = rev->getParents();
-            for( int i=0 ; i<parents.size()-1 ; i++)
-                revHandler.applyMutations( data, parents[i] );
-
-            revHandler.applyMutations( data, rev); //Data is now hydrate
+//
+//
+//            vector< Revision* > parents = rev->getParents();
+//            for( int i=0 ; i<parents.size()-1 ; i++)
+//                revHandler.applyMutations( data, parents[i] );
+//
+//            revHandler.applyMutations( data, rev); //Data is now hydrate
 
             ///We must converte vector<char> to string
             for(uint64_t j=0; j<data.size(); j++)
@@ -118,15 +118,16 @@ namespace Athena{
                 }
             }
             string streamLocation = (Ressource::TMP_DIR()+"/"+tmpId.str()).c_str() ;
-            ifstream* stream = new ifstream( streamLocation.c_str() );
+            ifstream stream( streamLocation.c_str() );
 
 
-            vector< TableElement> table = revHandler.extractTable( stream );
+            vector< TableElement> table = revHandler.extractTable( &stream );
 
             //Body building
             rev = revHandler.buildStructure( table ); //Root
             while( rev->getNext() != NULL ){
                 rev->setIStream( streamLocation );
+                rev->setOStream( streamLocation );
                 rev = rev->getNext();
             }
 
