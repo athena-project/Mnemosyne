@@ -150,7 +150,6 @@ namespace Athena{
                 stream.read( (char *)&idBegining, 8);
                 stream.read( (char *)&size, 8);
 
-                cout<<"size mutation "<<size<<endl;
                 Mutation m( type, idBegining, size);
                 return m;
             }
@@ -169,9 +168,8 @@ namespace Athena{
                 while( i < rev->getSize() ){
                     Mutation m=readMutation( *stream );
                     m.apply(data, *stream);
-                    i+=m.getSize();
+                    i+=m.getSize() + 17; //17 Bytes => header of a mutation
                 }
-                cout<<"data size "<<data.size()<<endl;
             }
 
             void RevisionHandler::writeTable( vector<TableElement>& table, ofstream* stream){
@@ -247,6 +245,10 @@ namespace Athena{
             void RevisionHandler::createMutations( vector<char>& origine, vector<char>& data, ofstream* stream, uint64_t pos){
                 stream->seekp(pos, stream->end);
 
+                uint8_t type = 0;
+                uint64_t idBeginning = 0;
+                uint64_t size = 0;
+
                 //Update first
                 uint64_t i(0);
                 uint64_t n = min( origine.size(), data.size() );
@@ -256,7 +258,13 @@ namespace Athena{
                     if( origine[i] !=  data[i] ){
                         length++;
                     }else if(length != 0){
-                        (*stream)<<Mutation::UPDATE << (i-length) << length; //type(uint8_t)beginning(uint64_t)size(uint64_t)
+                        type = Mutation::UPDATE;
+                        idBeginning = i-length;
+                        size = length;
+
+                        stream->write( (char*)&type,1);
+                        stream->write( (char*)&idBeginning, 8);
+                        stream->write( (char*)&size, 8);
                         write(data, i-length, length, stream);
                         length=0;
                     }
@@ -264,15 +272,28 @@ namespace Athena{
                 }
 
                 //Delete
-                if( origine.size()>data.size() )
-                    (*stream)<<Mutation::DELETE << data.size() << origine.size() - data.size(); //type(uint8_t)beginning(uint64_t)size(uint64_t)
+                if( origine.size()>data.size() ){
+                    type = Mutation::DELETE;
+                    idBeginning = data.size();
+                    size = origine.size() - data.size();
+
+                    stream->write( (char*)&type,1);
+                    stream->write( (char*)&idBeginning, 8);
+                    stream->write( (char*)&size, 8);
+                }
 
                 //Insert
                 if( origine.size()<data.size() ){
-                    (*stream)<<Mutation::INSERT << origine.size() << data.size() - origine.size();
-                    stream->flush();
+                    type = Mutation::INSERT ;
+                    idBeginning = origine.size();
+                    size = data.size() - origine.size();
+
+                    stream->write( (char*)&type,1);
+                    stream->write( (char*)&idBeginning, 8);
+                    stream->write( (char*)&size, 8);
                     write(data, origine.size(), data.size()-origine.size(), stream);
                 }
+                stream->flush();
             }
 
             Revision* RevisionHandler::newRevision( Revision* rev,  vector<char>&newData){
@@ -287,10 +308,12 @@ namespace Athena{
                 ///Building of origin
                 vector<char> tmpData;
                 vector< Revision* > parents = origin->getParents();
-                for( int i=0; i<parents.size()-1 ; i++)
-                    applyMutations( tmpData, parents[i]);
+                if( parents.size() > 0){
+                    for( int i=0; i<parents.size()-1 ; i++)
+                        applyMutations( tmpData, parents[i]);
 
-                applyMutations( tmpData, origin); //Data is now hydrate
+                    applyMutations( tmpData, origin); //Data is now hydrate
+                }
 
                 ///Rev creation, size will be hydrate later
                 Revision* newRev= new Revision( rev->getN()+1, rev->getIdBeginning()+rev->getSize(), 0, diff( tmpData, newData) );

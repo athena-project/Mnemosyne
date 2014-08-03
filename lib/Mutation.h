@@ -21,7 +21,7 @@
 #define MUTATION_H_INCLUDED
 
 #include <stdint.h>
-
+#include <iostream>
 #include <vector>
 #include <fstream>
 #include <bitset>

@@ -85,14 +85,13 @@ namespace Athena{
 
             revHandler.applyMutations( data, rev); //Data is now hydrate
 
-//            //We must converte vector<char> to string
-//            for(uint64_t j=0; j<data.size(); j++)
-//                value<<data[j];
-//
+            ///We must converte vector<char> to string
+            for(uint64_t j=0; j<data.size(); j++)
+                value<<data[j];
+
 //            if( location !="" )
 //                remove( location.c_str() );
-//            return value.str();
-return "";
+            return value.str();
         }
 
         Revision* RessourceHandler::buildAllRevisions(Ressource& r){

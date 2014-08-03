@@ -6,6 +6,7 @@ namespace Athena{
 
         void Mutation::applyInsert(vector<char>& data, ifstream& stream){
             char c;
+
             for(uint64_t i=0; i<size; i++){
                 stream.get(c);
                 data.push_back( c );
@@ -25,8 +26,6 @@ namespace Athena{
         }
 
         void Mutation::apply( vector<char>& data, ifstream& stream){
-            stream.seekg( idBeginning, stream.beg );
-
             if( type == INSERT )
                 applyInsert( data, stream );
             else if( type == DELETE )

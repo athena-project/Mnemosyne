@@ -23,7 +23,7 @@ int main(){
     cout<<"str size"<<str.size()<<endl;
     Ressource r;
     RessourceHandler rHandler;
-
+//
 //        r.getRevision()->setIStream( "/home/severus/Desktop/1.stream");
 //        r.getRevision()->setOStream( "/home/severus/Desktop/1.stream");
 
@@ -34,9 +34,12 @@ int main(){
 
 ///lecture
     vector<uint64_t> ids;
-    ids.push_back(10);
+    ids.push_back(13);
     r.setChunkIds( ids );
-    rHandler.buildRevision(r, 0);
+
+    ofstream test("/home/severus/Desktop/2.html");
+    string a=rHandler.buildRevision(r, 0);
+    test<<a;
 
     return 0;
 }
