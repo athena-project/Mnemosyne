@@ -132,7 +132,7 @@ namespace Athena{
             std::ostringstream chunckId;
             chunckId<<id;
 
-            string chunkLocation2 = ChunkHandler::TMP_DIR()+"/"+chunckId.str();
+            string chunkLocation2 = ChunkHandler::DIR()+"/"+chunckId.str();
             try{
                 Block currentBlock = bManager.get( currentChunk.getBlock_id() );
                 string chunkLocation1 = bHandler.getChunk( currentBlock, id );
@@ -149,7 +149,7 @@ namespace Athena{
             std::ostringstream strId;
             strId<<id;
 
-            string location = (dir == "" ) ? ChunkHandler::TMP_DIR()+"/"+strId.str() : dir+"/"+strId.str();
+            string location = (dir == "" ) ? ChunkHandler::DIR()+"/"+strId.str() : dir+"/"+strId.str();
             ofstream oStream( location.c_str(), ios::trunc );
 
             stream.seekg( idBeginning, stream.beg );

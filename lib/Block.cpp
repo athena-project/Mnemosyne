@@ -162,7 +162,7 @@ namespace Athena{
                     std::ostringstream tmpId2;
                     tmpId2<<j;
 
-                    string sourceChunk = ChunkHandler::TMP_DIR()+"/"+tmpId2.str();
+                    string sourceChunk = ChunkHandler::DIR()+"/"+tmpId2.str();
                     string destChunk = tmpBlockLocation+"/"+tmpId2.str();
                     fs::path pathSource = fs::path(sourceChunk.c_str());
                     fs::path pathDest = fs::path(destChunk.c_str());

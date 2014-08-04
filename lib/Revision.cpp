@@ -105,8 +105,6 @@ namespace Athena{
                     currentChild = revisions[ children[i] ];
                     currentChild->setParent( current );
                     currentChild->setRoot( current->getRoot() );
-                    currentChild->setIStream( current->getIStreamLocation() ); /// A virer tmp .....
-                    currentChild->setOStream( current->getOStreamLocation() );
 
 
                     if( currentChild->getN() > 0 )
@@ -154,7 +152,10 @@ namespace Athena{
                 stream.read( (char *)&type, 1);
                 stream.read( (char *)&idBegining, 8);
                 stream.read( (char *)&size, 8);
-
+                cout<< "mutation type "<<type<<endl;
+                cout<< "mutation idBeginnng "<<idBegining<<endl;
+                cout<< "mutation size "<<size<<endl;
+                cout<<endl<<endl;
                 Mutation m( type, idBegining, size);
                 return m;
             }
@@ -164,11 +165,8 @@ namespace Athena{
                     return;
                 ifstream* stream = (rev->getIStream());
 
-
-
                 Mutation m;
                 uint64_t i =0;
-                cout<< " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa "<<rev->getIdBeginning() - rev->getRelativeO()<<endl;
                 stream->seekg( rev->getIdBeginning() - rev->getRelativeO(), stream->beg );
 
                 while( i < rev->getSize() ){
@@ -217,34 +215,43 @@ namespace Athena{
             }
 
             vector< uint64_t > RevisionHandler::calculDifferences( Revision* rev,  vector<char>& data ){
-                vector< char > tmpData(data);
+                vector< char > tmpData;
                 vector< uint64_t > differences;
                 Revision* tmp = (rev->getRoot()->getNext()); //Diff with racine <=> rev origine
 
-                while( tmp != NULL ){cout<<" dfssssssssssssss"<<tmp->getSize()<<endl;
+                while( tmp != NULL ){
                     applyMutations( tmpData, tmp);
+                    ofstream fddf( "/home/severus/Desktop/testDiff");
+                    for( int i=0; i<tmpData.size(); i++)
+                        fddf<<tmpData[i];
                     differences.push_back( diff(tmpData, data) );
                     tmp = tmp->getNext();
                 }
-                cout<<" fin "<<endl;
+
                 return differences;
             }
 
             Revision* RevisionHandler::bestOrigin( Revision* rev,  vector<char>& data ){
                 vector< uint64_t > differences = calculDifferences( rev, data);
                 uint64_t tmpDiff = 0;
+                int j=0;
+
                 if( differences.size() > 0)
-                    tmpDiff = differences[0];
+                    tmpDiff = data.size();
                 else
                     return rev;
 
                 Revision* tmpRev = rev->getRoot();
 
-                for( int i=1; i<differences.size(); i++)
+                for( int i=0; i<differences.size(); i++){
                     if( tmpDiff > differences[i] ){
                         tmpDiff = differences[i];
-                        tmpRev    = tmpRev->getNext();
+                        j++;
                     }
+                }
+
+                for( int k=0; k<j; k++)
+                    tmpRev = tmpRev->getNext();
 
                 return (tmpRev != NULL) ? tmpRev : rev;
             }
@@ -313,11 +320,19 @@ namespace Athena{
                 ///Building tree
                 Revision* origin;
                 origin = buildStructure( table );
-                origin = bestOrigin( origin, newData );
-                origin = ( origin->getLast() == NULL ) ? rev : origin->getLast();
+                origin->setIStream( rev->getIStreamLocation() );
+                origin->setOStream( rev->getOStreamLocation() );
 
+                while( origin->getNext() != NULL ){
+                    origin = origin->getNext();
+                    origin->setIStream( rev->getIStreamLocation() );
+                    origin->setOStream( rev->getOStreamLocation() );
+                }
+
+                origin = bestOrigin( origin, newData );
 
                 cout<<origin->getSize()<<endl;
+
 
                 ///Building of origin
                 vector<char> tmpData;
@@ -338,7 +353,7 @@ namespace Athena{
                 newRev->setIStream( rev->getIStreamLocation() );
                 newRev->setOStream( rev->getOStreamLocation() );
                 newRev->setLast( newRev );
-
+throw "";
                 createMutations( tmpData, newData, newRev->getOStream(), tableSize);
 
                 ///Size

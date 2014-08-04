@@ -49,7 +49,8 @@ namespace Athena{
                 Revision* rev;              /// current revision if needed
             public :
 
-                static string TMP_DIR(){ return "/home/severus/Desktop/ressources"; }
+                static string DIR(){ return "/home/severus/Desktop/ressources"; }
+                static string TMP_DIR(){ return "/home/severus/Desktop/ressources/tmp"; }
 
                 Ressource();
                 virtual ~Ressource();

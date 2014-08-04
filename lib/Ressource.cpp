@@ -142,9 +142,42 @@ namespace Athena{
                 data.push_back( dataStr[i] );
 
             RevisionHandler revHandler;
-            Revision* newRev = revHandler.newRevision( r->getRevision(),  data );
+            Revision* rev = r->getRevision();
+
+//            ///Revisions' tree building
+//            vector<TableElement> table = extractTable( rev->getIStream() );
+//            rev = buildStructure( table );
+//            origin = bestOrigin( origin, data );
+//
+//                ///Loading only chunk needed
+//                vector< Revision* > parents = origin->getParents();
+//                vector< vector<uint64_t> > chunkIdsNeeded; //by revision vector=> rev, vector<vecotr>>chunks
+//                Revision* tmpRevision = rev->getRoot()->getNext();
+//                int j=0;
+//                uint64_t idBeg = 0;
+//                vector< uint64_t > chunksIds = r->getChunkIds();
+//                for( int i=1; i<parents.size() ; i++){
+//                    while( j<parents[i]->getN() ){
+//                        tmpRevision = tmpRevision->getNext();
+//                        idBeg += tmpRevision->getSize();
+//                    }
+//                    vector<uint64_t> tmpVect;
+//
+//                    uint64_t firstChunk = idBeg / Chunk::CHUNK_SIZE_MAX; ///First chunk needed
+//                    uint64_t lastChunk = (idBeg + tmpRevision->getSize() )/ Chunk::CHUNK_SIZE_MAX;
+//                    for( uint64_t k=firstChunk ; k<=lastChunk ; k++)
+//                        tmpVect.push_back( k );
+//
+//                    chunkIdsNeeded.push_back( tmpVect );
+//                }
+
+//            vector< string > tmpFile; /// one by revision
+
+
+
 
             ///Maj de l'instance courrante
+            Revision* newRev = revHandler.newRevision( rev,  data );
             r->setCurrentRevision( r->getCurrentRevision() + 1 );
 
 

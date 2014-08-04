@@ -86,7 +86,8 @@ namespace Athena{
                 ChunkHandler();
                 ~ChunkHandler();
 
-                static string TMP_DIR(){ return "/home/severus/Desktop/chunks"; } ///Path of the tmp directory for chunk
+                static string DIR(){ return "/home/severus/Desktop/chunks"; } ///Path of the directory for chunk
+                static string TMP_DIR(){ return "/home/severus/Desktop/chunks/tmp"; }
 
                 /**
                  * @brief Create a tmp file from a chunk
