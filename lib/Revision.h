@@ -238,11 +238,11 @@ namespace Athena{
 
                 /**
                  * @brief Make a new revision from newData
-                 * @param currentRev    - last revision of the tree
+                 * @param origin    - origin of the new mutation
                  * @param newData
                  * @return the new Rev
                  */
-                Revision* newRevision( Revision* currentRev, vector<char>& newData);
+                Revision* newRevision( Revision* origin, vector<char>& newData);
 
 
 

@@ -150,34 +150,68 @@ namespace Athena{
             strId<<id;
 
             string location = (dir == "" ) ? ChunkHandler::DIR()+"/"+strId.str() : dir+"/"+strId.str();
-            ofstream oStream( location.c_str(), ios::trunc );
+            ofstream oStream( location.c_str() );
 
             stream.seekg( idBeginning, stream.beg );
-            char tmpChar;
-            uint64_t i=0;
 
-            while( i<size && stream.good() ){
-                tmpChar = stream.get();
-                if( stream.good() )
-                    oStream<<tmpChar;
-                i++;
-            }
+            char* buffer = new char[ size ];
+            stream.read( buffer, size);
+            oStream.write( buffer, size);
+            delete[] buffer;
+
+            oStream.flush();
+            oStream.close();
         }
 
-        void ChunkHandler::updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size){
+        void ChunkHandler::updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size, uint64_t offset){
             BlockManager bManager;
+            BlockHandler bHandler;
+            Block currentBlock;
+            string blockLocation;
             uint64_t tmpIdBlock = ceil( (float)c.getId() / (float)(Block::CHUNKS) );
+            bool flag = tmpIdBlock < bManager.count();
 
-            if( tmpIdBlock >= bManager.count() )
-                writeChunk( c.getId(), stream, idBeginning, size);
-            else{ //In a block
-                BlockHandler bHandler;
-                Block currentBlock = bManager.get( tmpIdBlock );
-                string blockLocation = bHandler.extract( currentBlock );
+            idBeginning -= c.getSize(); ///chunk must be overwrite
 
-                writeChunk( c.getId(), stream, idBeginning, size, blockLocation );
-                bHandler.make( currentBlock, blockLocation);
+            std::ostringstream strId;
+            strId<<c.getId();
+            string location = ChunkHandler::DIR()+"/"+strId.str();
+
+            cout <<"update data"<<idBeginning<< "size  "<<size<<endl;
+            if( flag ){ //In a block
+                currentBlock = bManager.get( tmpIdBlock );
+                blockLocation = bHandler.extract( currentBlock );
+                location = bHandler.extract( currentBlock )+"/"+strId.str();
             }
+
+
+            ofstream oStream( location.c_str());
+            stream.seekg( idBeginning, stream.beg );
+
+
+            ///Write first part of the chunk
+            char* buffer = new char[ c.getSize()-offset ];
+            stream.read( buffer, c.getSize()-offset);
+            oStream.write( buffer, c.getSize()-offset);
+            delete[] buffer;
+
+            ///Skip offset's bytes
+            stream.seekg( offset, stream.cur );
+
+            ///Write last part of the chunk
+            char* buffer2 = new char[ size ];
+            stream.read( buffer2, size);
+            oStream.write( buffer2, size);
+            delete[] buffer2;
+
+            oStream.flush();
+            oStream.close();
+
+            if( flag )
+                bHandler.make( currentBlock, blockLocation);
+
+
+
         }
 
         vector<Chunk> ChunkHandler::makeChunks( ifstream& stream, uint64_t idBeginning, uint64_t size ){
@@ -191,7 +225,7 @@ namespace Athena{
                 if( i<nbrNeeded-1)
                     chunks.push_back( Chunk(Chunk::CHUNK_SIZE_MAX) );
                 else
-                    chunks.push_back( size-(nbrNeeded-1)*(Chunk::CHUNK_SIZE_MAX) );//Size less than max
+                    chunks.push_back( Chunk( size-(nbrNeeded-1)*(Chunk::CHUNK_SIZE_MAX)) );//Size less than max
             }
 
             ///SQL insertion and writting on hard drive

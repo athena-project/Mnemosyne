@@ -26,6 +26,7 @@
 #include <cmath>
 #include <fstream>
 #include <sstream>
+#include <ctime>
 
 #include "Revision.h"
 #include "Revision.h"

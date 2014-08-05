@@ -221,9 +221,6 @@ namespace Athena{
 
                 while( tmp != NULL ){
                     applyMutations( tmpData, tmp);
-                    ofstream fddf( "/home/severus/Desktop/testDiff");
-                    for( int i=0; i<tmpData.size(); i++)
-                        fddf<<tmpData[i];
                     differences.push_back( diff(tmpData, data) );
                     tmp = tmp->getNext();
                 }
@@ -310,28 +307,9 @@ namespace Athena{
                 stream->flush();
             }
 
-            Revision* RevisionHandler::newRevision( Revision* rev,  vector<char>&newData){
-                if( rev != NULL && rev->getLast() != NULL )
-                    rev = rev->getLast();
-
-                uint32_t tableSize = extractSizeTable( rev->getIStream() );
-                vector<TableElement> table = extractTable( rev->getIStream() );
-
-                ///Building tree
-                Revision* origin;
-                origin = buildStructure( table );
-                origin->setIStream( rev->getIStreamLocation() );
-                origin->setOStream( rev->getOStreamLocation() );
-
-                while( origin->getNext() != NULL ){
-                    origin = origin->getNext();
-                    origin->setIStream( rev->getIStreamLocation() );
-                    origin->setOStream( rev->getOStreamLocation() );
-                }
-
-                origin = bestOrigin( origin, newData );
-
-                cout<<origin->getSize()<<endl;
+            Revision* RevisionHandler::newRevision( Revision* origin,  vector<char>&newData){
+                uint32_t tableSize = extractSizeTable( origin->getIStream() );
+                vector<TableElement> table = extractTable( origin->getIStream() );
 
 
                 ///Building of origin
@@ -345,22 +323,25 @@ namespace Athena{
                 }
 
                 ///Rev creation, size will be hydrate later
+                Revision* rev = (origin->getLast() != NULL ) ? origin->getLast() : origin;
                 Revision* newRev= new Revision( rev->getN()+1, rev->getIdBeginning()+rev->getSize(), 0, diff( tmpData, newData) );
                 rev->addChild( newRev );
                 newRev->setPrevious( rev );
                 newRev->setParent( origin );
-                newRev->setRoot( rev->getRoot() );
-                newRev->setIStream( rev->getIStreamLocation() );
-                newRev->setOStream( rev->getOStreamLocation() );
+                newRev->setRoot( origin->getRoot() );
+                newRev->setIStream( origin->getIStreamLocation() );
+                newRev->setOStream( origin->getOStreamLocation() );
                 newRev->setLast( newRev );
-throw "";
+cout<<origin->getSize()<<endl;
+
+
                 createMutations( tmpData, newData, newRev->getOStream(), tableSize);
 
                 ///Size
-                ofstream* oStream = rev->getOStream();
+                ofstream* oStream = origin->getOStream();
                 oStream->seekp (0, oStream->end);
                 uint64_t length = oStream->tellp();
-                newRev->setSize( length - rev->getIdBeginning()-rev->getSize() );
+                newRev->setSize( length - origin->getIdBeginning()-origin->getSize()-tableSize*Revision::REVISION_SIZE_TABLE-2 );
 
                 ///Maj of the table
                 TableElement newElement;

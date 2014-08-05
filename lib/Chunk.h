@@ -112,8 +112,9 @@ namespace Athena{
 				 * @param stream        - new data
 				 * @param idBeginning   - location in stream
 				 * @param size          - size of the data
+				 * @param offset        - bytes not written again
 				 */
-                void updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size);
+                void updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size, uint64_t offset);
 
                 /**
                  * @brief Make a vector chunks from a stream, this vect represents the stream data
