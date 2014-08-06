@@ -193,16 +193,14 @@ namespace Athena{
             ///Création des nv chunk
             vector< Chunk > chunks = r->getChunks();
             ChunkHandler cHandler;
-            uint64_t sizeUpdate = newRev->getSize() + (newRev->getLast()->getN()+1 ) * Revision::REVISION_SIZE_TABLE + 2;
+            uint64_t sizeUpdate = newRev->getSize() + newRev->getLast()->getN()  * Revision::REVISION_SIZE_TABLE + 2;
             uint64_t sizeUpdateLastChunk = (chunks.size() == 0) ? 0 : min(sizeUpdate, (uint64_t)Chunk::CHUNK_SIZE_MAX);
-            uint64_t offset = newRev->getLast()->getN() * Revision::REVISION_SIZE_TABLE + 2;
+            uint64_t offset = (newRev->getLast()->getN()-1) * Revision::REVISION_SIZE_TABLE + 2;
             ifstream* currentStream = newRev->getIStream();
 
-            currentStream->seekg(newRev->getIdBeginning());
             if(chunks.size() > 0)
                 cHandler.updateData( chunks[ chunks.size()-1 ], *currentStream, newRev->getIdBeginning(), sizeUpdateLastChunk, offset);
-//            currentStream->seekg( newRev->getIdBeginning() + sizeUpdateLastChunk );
-//            cHandler.makeChunks( *currentStream, newRev->getIdBeginning()+sizeUpdateLastChunk, sizeUpdate-sizeUpdateLastChunk);
+            cHandler.makeChunks( *currentStream, newRev->getIdBeginning()+sizeUpdateLastChunk, sizeUpdate-sizeUpdateLastChunk);
 
             std::remove( rev->getIStreamLocation().c_str() );
         }

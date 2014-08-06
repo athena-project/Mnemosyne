@@ -73,6 +73,10 @@ namespace Athena{
                 vector<Chunk> get( string fieldsNeeded, string where, string order, string limit);
                 vector<Chunk> get(vector<uint64_t> ids); //Order by id
 
+                void update( Chunk chunk);
+                void update( vector< Chunk > chunks );
+
+
                 uint64_t count( string where="", string order="", string limit="" );
         };
 

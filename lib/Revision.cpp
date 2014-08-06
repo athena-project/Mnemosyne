@@ -69,6 +69,8 @@ namespace Athena{
 
                 vector<TableElement> table;
                 uint16_t sizeTable = extractSizeTable( stream );
+                cout<<sizeTable<<endl;
+                throw"";
                 int newOrigin = (-1)* ( sizeTable * Revision::REVISION_SIZE_TABLE + 2);//+2 : number of table element uint16_t
                 stream->seekg(newOrigin , stream->end);
 
@@ -324,7 +326,8 @@ namespace Athena{
 
                 ///Rev creation, size will be hydrate later
                 Revision* rev = (origin->getLast() != NULL ) ? origin->getLast() : origin;
-                Revision* newRev= new Revision( rev->getN()+1, rev->getIdBeginning()+rev->getSize(), 0, diff( tmpData, newData) );
+                Revision* newRev= new Revision( tableSize+1, rev->getIdBeginning()+rev->getSize(), 0, diff( tmpData, newData) );
+
                 rev->addChild( newRev );
                 newRev->setPrevious( rev );
                 newRev->setParent( origin );
@@ -341,7 +344,10 @@ cout<<origin->getSize()<<endl;
                 ofstream* oStream = origin->getOStream();
                 oStream->seekp (0, oStream->end);
                 uint64_t length = oStream->tellp();
-                newRev->setSize( length - origin->getIdBeginning()-origin->getSize()-tableSize*Revision::REVISION_SIZE_TABLE-2 );
+                if( tableSize > 0 )
+                    newRev->setSize( length - origin->getIdBeginning()-origin->getSize()-tableSize*Revision::REVISION_SIZE_TABLE-2 );
+                else
+                    newRev->setSize( length );
 
                 ///Maj of the table
                 TableElement newElement;

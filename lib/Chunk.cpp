@@ -108,6 +108,26 @@ namespace Athena{
 
         }
 
+        void ChunkManager::update( Chunk chunk){
+            mysqlpp::Query query = conn.query();
+            query<<"UPDATE chunk SET block_id="<<chunk.getBlock_id();
+            query<<", size="<<chunk.getSize();
+            query<<" WHERE id:="<< chunk.getId();
+
+            if (mysqlpp::SimpleResult res = query.execute())
+                return;
+            else{
+                cerr << "Failed to get item list: " << query.error() << endl;
+                throw "";
+            }
+        }
+
+        void ChunkManager::update( vector< Chunk > chunks ){
+            for(vector<Chunk>::iterator it=chunks.begin(); it!=chunks.end(); it++)
+                 update( *it );
+
+            return;
+        }
 
 
         /**
@@ -153,7 +173,7 @@ namespace Athena{
             ofstream oStream( location.c_str() );
 
             stream.seekg( idBeginning, stream.beg );
-
+        cout<< "size false "<<size<<endl;
             char* buffer = new char[ size ];
             stream.read( buffer, size);
             oStream.write( buffer, size);
@@ -170,14 +190,13 @@ namespace Athena{
             string blockLocation;
             uint64_t tmpIdBlock = ceil( (float)c.getId() / (float)(Block::CHUNKS) );
             bool flag = tmpIdBlock < bManager.count();
-
+            idBeginning += offset; ///Table
             idBeginning -= c.getSize(); ///chunk must be overwrite
 
             std::ostringstream strId;
             strId<<c.getId();
             string location = ChunkHandler::DIR()+"/"+strId.str();
 
-            cout <<"update data"<<idBeginning<< "size  "<<size<<endl;
             if( flag ){ //In a block
                 currentBlock = bManager.get( tmpIdBlock );
                 blockLocation = bHandler.extract( currentBlock );
@@ -210,13 +229,15 @@ namespace Athena{
             if( flag )
                 bHandler.make( currentBlock, blockLocation);
 
-
-
+            ///SQL UPDATE
+            c.setSize( c.getSize()-offset+size );
+            cManager->update( c );
         }
 
         vector<Chunk> ChunkHandler::makeChunks( ifstream& stream, uint64_t idBeginning, uint64_t size ){
             ChunkManager cManager;
             uint64_t nbrNeeded = ceil( (float)size / (float)(Chunk::CHUNK_SIZE_MAX) );
+            cout<<"nbrneeded"<<nbrNeeded<<endl;
             stream.seekg( idBeginning );
 
             ///Chunks creation
@@ -234,10 +255,13 @@ namespace Athena{
             for( uint64_t i=0; i<ids.size(); i++){
                 chunks[i].setId( ids[i] );
 
-                if( i=ids.size()-1 )
+                if( i == ids.size()-1 )
                     chunkSize = min( (uint64_t)Chunk::CHUNK_SIZE_MAX, size-(ids.size()-1)*(Chunk::CHUNK_SIZE_MAX) );
+                else
+                    chunkSize = Chunk::CHUNK_SIZE_MAX;
 
-                writeChunk( ids[i], stream, idBeginning+i*(Chunk::CHUNK_SIZE_MAX), Chunk::CHUNK_SIZE_MAX);
+                cout<< "i "<<i<<" s"<<ids.size()<<"re "<<size<<endl;
+                writeChunk( ids[i], stream, idBeginning+i*(Chunk::CHUNK_SIZE_MAX), chunkSize);
             }
 
             return chunks;

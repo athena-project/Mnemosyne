@@ -24,11 +24,11 @@ int main(){
     Ressource r;
     RessourceHandler rHandler;
     RevisionHandler revHandler;
-
+//
 //        r.getRevision()->setIStream( "/home/severus/Desktop/1.stream");
 //        r.getRevision()->setOStream( "/home/severus/Desktop/1.stream");
     vector<uint64_t> ids;
-    ids.push_back(63);
+    ids.push_back(92);
     r.setChunkIds( ids );
 
 
