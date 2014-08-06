@@ -14,13 +14,11 @@ using namespace Athena::Mnemosyne;
 
 int main(){
     string str;
-    ifstream s("/home/severus/Desktop/1.html.origin",ios::in);
+    ifstream s("/home/severus/Desktop/1.html",ios::in);
     char c;
     while( s.get(c) )
         str += c;
 
-
-    cout<<"str size"<<str.size()<<endl;
     Ressource r;
     RessourceHandler rHandler;
     RevisionHandler revHandler;
@@ -28,7 +26,7 @@ int main(){
 //        r.getRevision()->setIStream( "/home/severus/Desktop/1.stream");
 //        r.getRevision()->setOStream( "/home/severus/Desktop/1.stream");
     vector<uint64_t> ids;
-    ids.push_back(92);
+    ids.push_back(105);
     r.setChunkIds( ids );
 
 

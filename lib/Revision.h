@@ -91,6 +91,7 @@ namespace Athena{
                 Revision* getRoot(){        return root; }
                 Revision* getLast(){        return last; }
                 Revision* getNext(){        return next; }
+                Revision* getPrevious(){    return previous; }
 
                 ifstream* getIStream(){      return iStream; }
                 ofstream* getOStream(){      return oStream; }
@@ -117,6 +118,19 @@ namespace Athena{
                 void setRoot( Revision* r ){        root = r; }
 
                 void addChild( Revision* child ){ child->setRoot( root ); children.push_back(child); }
+                void setChildren( vector<Revision*> c ){ children=c; }
+
+
+                void print(){
+                    cout<<"Revision : "<<endl;
+                    cout<<"N° "<<n<<endl;
+                    cout<<"IdBeginning  "<<idBeginning<<endl;
+                    cout<<"Size  "<<size<<endl;
+                    cout<<"=============="<<endl;
+                    if( next != NULL )
+                        next->print();
+
+                }
         };
 
 
@@ -150,16 +164,6 @@ namespace Athena{
                  * @return ids
                  */
                 vector<int> extractChildren( vector< int >& origines, int parent );
-
-                /**
-                 * @brief Get the children's ids
-                 * @param origines      - key is the id of a revision and value is the origin one
-                 * @param revision      - all the revisions already hydrated, order by id
-                 * @param current       - the current revision
-                 * @param alreadyBuilt  -
-                 * @return make the link between the rev and itsw children
-                 */
-                void buildChildren( vector<int>& origines, vector< Revision* > revisions, Revision* current, int alreadyBuilt=0);
 
                 /**
                  * Build the revision tree

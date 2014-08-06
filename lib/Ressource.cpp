@@ -185,7 +185,7 @@ namespace Athena{
             RevisionHandler revHandler;
             Revision* rev = buildAllRevisions( *r );
             rev = revHandler.bestOrigin( rev, data );
-//throw"";
+
             ///Maj de l'instance courrante
             Revision* newRev = revHandler.newRevision( rev,  data );
             r->setCurrentRevision( r->getCurrentRevision() + 1 );

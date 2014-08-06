@@ -69,8 +69,7 @@ namespace Athena{
 
                 vector<TableElement> table;
                 uint16_t sizeTable = extractSizeTable( stream );
-                cout<<sizeTable<<endl;
-                throw"";
+
                 int newOrigin = (-1)* ( sizeTable * Revision::REVISION_SIZE_TABLE + 2);//+2 : number of table element uint16_t
                 stream->seekg(newOrigin , stream->end);
 
@@ -99,51 +98,45 @@ namespace Athena{
                 return children;
             }
 
-            void RevisionHandler::buildChildren( vector<int>& origines, vector< Revision* > revisions, Revision* current, int alreadyBuilt){
-                vector<int> children = extractChildren(origines, current->getN());
-                Revision* currentChild;
-
-                for(int i=0; i<children.size(); i++){
-                    currentChild = revisions[ children[i] ];
-                    currentChild->setParent( current );
-                    currentChild->setRoot( current->getRoot() );
-
-
-                    if( currentChild->getN() > 0 )
-                        currentChild->setPrevious( revisions[ currentChild->getN()-1 ] );
-                    else
-                        currentChild->setPrevious( current->getRoot() );
-
-                    if( currentChild->getN() < children.size()-1 ){
-                        currentChild->setNext( revisions[ currentChild->getN()+1 ] );
-                        currentChild->setLast(  revisions[ children.size()-1 ] );
-                    }
-
-                    current->addChild( currentChild );
-                    current->setNext( currentChild );
-
-
-                    if( alreadyBuilt < revisions.size()-1 )
-                        buildChildren( origines, revisions,  currentChild, alreadyBuilt + 1 );
-                }
-            }
-
             Revision* RevisionHandler::buildStructure( vector<TableElement>& table ){
+                Revision* previous = new Revision();
                 if( table.size() == 0 )
-                    return new Revision();
+                    return previous;
 
-                vector< int > origines;
-                vector< Revision* > revisions; // pair< begin, size >
+                Revision* current;
+                vector<Revision*>* structur = new vector<Revision*>[ table.size() ]; /// Must not be deleted, it's used in revision tree
+                ///Previous and root
+                for( int i=0 ; i<table.size() ; i++){
+                    current = new Revision( i+1, table[i].idBeginning, table[i].size, table[i].diff );
+                    current->setPrevious( previous );
+                    current->setRoot( previous->getRoot() );
+                    structur[ table[i].origin ].push_back( current );
 
-                for( uint16_t i=0 ; i<table.size() ; i++){
-                    origines.push_back( table[i].origin );
-                    revisions.push_back( new Revision(revisions.size(), table[i].idBeginning, table[i].size, table[i].diff) );
+                    previous = current;
                 }
 
-                Revision* root=new Revision();
-                root->setRoot( root );
-                buildChildren( origines, revisions, root);
-                return root;
+                ///Next and last
+                previous = current->getPrevious();
+                current->setLast( current );
+                while( previous != NULL ){
+                    previous->setNext( current );
+                    previous->setLast( current->getLast() );
+
+                    previous = previous->getPrevious();
+                    current  = current->getPrevious();
+                }
+
+                ///Children and parents
+                current = current->getRoot();
+                for( int i=0 ; i<table.size() ; i++){
+                    current->setChildren( structur[i] );
+                    for( int j=0 ; j<structur[i].size() ; j++)
+                        structur[i][j]->setParent( current );
+
+                    current = current->getNext();
+                }
+
+                return current->getRoot();
             }
 
             Mutation RevisionHandler::readMutation( ifstream& stream ){
@@ -154,10 +147,6 @@ namespace Athena{
                 stream.read( (char *)&type, 1);
                 stream.read( (char *)&idBegining, 8);
                 stream.read( (char *)&size, 8);
-                cout<< "mutation type "<<type<<endl;
-                cout<< "mutation idBeginnng "<<idBegining<<endl;
-                cout<< "mutation size "<<size<<endl;
-                cout<<endl<<endl;
                 Mutation m( type, idBegining, size);
                 return m;
             }
@@ -181,10 +170,6 @@ namespace Athena{
             void RevisionHandler::writeTable( vector<TableElement>& table, ofstream* stream){
                 stream->seekp( 0, stream->end );
                 for( uint64_t i=0; i<table.size(); i++){
-                    cout<<"id "<<table[i].idBeginning<<endl;
-                    cout<<"size "<<table[i].size<<endl;
-                    cout<<"diff "<<table[i].diff<<endl;
-                    cout<<"origin "<<table[i].origin<<endl;
                     stream->write( (char*)&table[i].idBeginning, 8);
                     stream->write( (char*)&table[i].size, 8);
                     stream->write( (char*)&table[i].diff, 2);
@@ -234,6 +219,8 @@ namespace Athena{
                 vector< uint64_t > differences = calculDifferences( rev, data);
                 uint64_t tmpDiff = 0;
                 int j=0;
+                cout << " diff      "<<differences.size()<<endl;
+
 
                 if( differences.size() > 0)
                     tmpDiff = data.size();
@@ -354,7 +341,7 @@ cout<<origin->getSize()<<endl;
                 newElement.idBeginning = newRev->getIdBeginning();
                 newElement.size = newRev->getSize();
                 newElement.diff = newRev->getDiff();
-                newElement.origin = ( origin != NULL ) ? origin->getN() : 0;
+                newElement.origin = origin->getN();
 
                 table.push_back( newElement );
 

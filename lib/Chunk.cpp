@@ -112,7 +112,7 @@ namespace Athena{
             mysqlpp::Query query = conn.query();
             query<<"UPDATE chunk SET block_id="<<chunk.getBlock_id();
             query<<", size="<<chunk.getSize();
-            query<<" WHERE id:="<< chunk.getId();
+            query<<" WHERE id="<< chunk.getId();
 
             if (mysqlpp::SimpleResult res = query.execute())
                 return;
