@@ -173,7 +173,7 @@ namespace Athena{
             ofstream oStream( location.c_str() );
 
             stream.seekg( idBeginning, stream.beg );
-        cout<< "size false "<<size<<endl;
+
             char* buffer = new char[ size ];
             stream.read( buffer, size);
             oStream.write( buffer, size);
@@ -237,7 +237,6 @@ namespace Athena{
         vector<Chunk> ChunkHandler::makeChunks( ifstream& stream, uint64_t idBeginning, uint64_t size ){
             ChunkManager cManager;
             uint64_t nbrNeeded = ceil( (float)size / (float)(Chunk::CHUNK_SIZE_MAX) );
-            cout<<"nbrneeded"<<nbrNeeded<<endl;
             stream.seekg( idBeginning );
 
             ///Chunks creation
@@ -260,7 +259,6 @@ namespace Athena{
                 else
                     chunkSize = Chunk::CHUNK_SIZE_MAX;
 
-                cout<< "i "<<i<<" s"<<ids.size()<<"re "<<size<<endl;
                 writeChunk( ids[i], stream, idBeginning+i*(Chunk::CHUNK_SIZE_MAX), chunkSize);
             }
 
