@@ -155,7 +155,8 @@ namespace Athena{
                 if( rev == NULL || rev->getRoot() == rev )
                     return;
                 ifstream* stream = (rev->getIStream());
-
+if (stream == NULL )
+    throw"";
                 Mutation m;
                 uint64_t i =0;
                 stream->seekg( rev->getIdBeginning() - rev->getRelativeO(), stream->beg );

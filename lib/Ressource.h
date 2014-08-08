@@ -50,8 +50,8 @@ namespace Athena{
                 Revision* rev;              /// current revision if needed
             public :
 
-                static string DIR(){ return "/home/severus/Desktop/ressources"; }
-                static string TMP_DIR(){ return "/home/severus/Desktop/ressources/tmp"; }
+                static string DIR(){ return "/home/toor/Desktop/ressources"; }
+                static string TMP_DIR(){ return "/home/toor/Desktop/ressources/tmp"; }
 
                 Ressource();
                 virtual ~Ressource();
@@ -87,6 +87,15 @@ namespace Athena{
             protected :
 
             public :
+
+                /**
+                 * @brief build the revisions' table of the current ressource,
+                 * only loading the needed chunk.
+                 * @param r             - ressource
+                 * @return all the table
+                 */
+                vector< TableElement> x_buildTable( Ressource& r );
+
                 /**
                  * @brief Build the content of the n revision of the ressource
                  * @param r             - ressource
