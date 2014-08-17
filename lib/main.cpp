@@ -14,7 +14,7 @@ using namespace Athena::Mnemosyne;
 
 int main(){
     string str;
-    ifstream s("/home/toor/Desktop/1.html.origin",ios::in);
+    ifstream s("/home/severus/Desktop/1.html",ios::in);
     char c;
     while( s.get(c) )
         str += c;
@@ -23,24 +23,25 @@ int main(){
     RessourceHandler rHandler;
     RevisionHandler revHandler;
 //
-//        r.getRevision()->setIStream( "/home/toor/Desktop/1.stream");
-//        r.getRevision()->setOStream( "/home/toor/Desktop/1.stream");
+//        r.getRevision()->setIStream( "/home/severus/Desktop/1.stream");
+//        r.getRevision()->setOStream( "/home/severus/Desktop/1.stream");
     vector<uint64_t> ids;
-    ids.push_back(24);
+    ids.push_back(123);
     r.setChunkIds( ids );
 
 
 ///Creation ressource
-
-//    rHandler.newRevision(&r, str);
+//
+    rHandler.newRevision(&r, str);
 
 
 ///lecture
 
-//
-    ofstream test("/home/toor/Desktop/2.html");
-    string a=rHandler.buildRevision(r, 1);
-    test<<a;
+
+//    r.setCurrentRevision(3);
+//    ofstream test("/home/severus/Desktop/2.html");
+//    string a=rHandler.buildRevision(r, 1);
+//    test<<a;
 
     return 0;
 }

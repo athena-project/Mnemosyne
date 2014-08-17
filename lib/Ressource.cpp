@@ -42,8 +42,9 @@ namespace Athena{
             tmpId << timestamp;
             tmpId << "table";
 
-            const char* location = ( Ressource::TMP_DIR()+"/"+tmpId.str() ).c_str();
-            ofstream tableStream ( location, ios::binary );
+            string location = Ressource::TMP_DIR()+"/"+tmpId.str() ;
+
+            ofstream tableStream ( location.c_str(), ios::binary );
 
             for( int i=0; i<chuncksTable.size(); i++){
                 ifstream tmpStreamTable( chHandler.getFile( chuncksTable[i].getId() ).c_str(), ios::binary );
@@ -54,10 +55,10 @@ namespace Athena{
             }
             tableStream.flush();
 
-            ifstream stream( location, ios::binary);
+            ifstream stream( location.c_str(), ios::binary);
             vector< TableElement> table = revHandler.extractTable( &stream );
 
-            std::remove( location );
+            std::remove( location.c_str() );
             return table;
         }
 
@@ -74,10 +75,6 @@ namespace Athena{
             vector< string > tmpFiles; //All files which must be deleted
             vector<char> data;
             stringstream value;
-
-
-
-
 
             ///Revision's tree building
             vector< TableElement> table =  x_buildTable( r );
@@ -96,7 +93,7 @@ namespace Athena{
                  while( it != parents.end() ){
                     if( (*it)->getN() == i ){
                         uint64_t m = floor( double(s+1) / double(Chunk::CHUNK_SIZE_MAX) );
-                        uint64_t M = ceil( double(s+(*it)->getSize()) / double(Chunk::CHUNK_SIZE_MAX) );
+                        uint64_t M = floor( double(s+(*it)->getSize()) / double(Chunk::CHUNK_SIZE_MAX) );
                         extrematIds.push_back( pair<uint64_t, uint64_t>(m,M) );
                         it++;
                     }
@@ -107,7 +104,7 @@ namespace Athena{
 
                 ///Hydrating rev tree
                  uint64_t lastMax = 0;
-                 for(int j=0; j<extrematIds.size(); i++){
+                 for(int j=0; j<extrematIds.size(); j++){
                     ///Tmp file
                     std::time_t timestamp = std::time(0);  // t is an integer type
                     std::ostringstream tmpId;
@@ -115,8 +112,9 @@ namespace Athena{
                     tmpId << timestamp;
                     tmpId << extrematIds[j].first << extrematIds[j].second;
 
-                    const char* location = ( Ressource::TMP_DIR()+"/"+tmpId.str() ).c_str();
-                    ofstream stream ( location, ios::binary );
+                    string location = Ressource::TMP_DIR()+"/"+tmpId.str();
+
+                    ofstream stream ( location.c_str(), ios::binary );
 
                     ///Filling tmpfile
                     for(int k=extrematIds[j].first; k<=extrematIds[j].second; k++){
@@ -128,10 +126,9 @@ namespace Athena{
                         tmpStream.read( buffer, size);
                         stream.write( buffer, size);
                         delete[] buffer;
-                        std::remove( tmpLocation );
                     }
                     stream.close();
-                    tmpFiles.push_back( location );
+                    tmpFiles.push_back( location.c_str() );
 
                     parents[j]->setIStream( location );
                  }
@@ -252,7 +249,7 @@ namespace Athena{
                 data.push_back( dataStr[i] );
 
             RevisionHandler revHandler;
-            Revision* rev = buildAllRevisions( *r );rev->getRoot()->print();
+            Revision* rev = buildAllRevisions( *r );
             rev = revHandler.bestOrigin( rev, data );
 
             ///Maj de l'instance courrante

@@ -185,7 +185,7 @@ if (stream == NULL )
             }
 
             void RevisionHandler::write( vector<char>& data, uint64_t pos, uint64_t length, ofstream* stream){
-                for(uint64_t j=pos; j<length; j++)
+                for(uint64_t j=pos; j<length+pos; j++)
                     (*stream)<<data[j];
 
                 stream->flush();
@@ -292,7 +292,7 @@ if (stream == NULL )
                     stream->write( (char*)&type,1);
                     stream->write( (char*)&idBeginning, 8);
                     stream->write( (char*)&size, 8);
-                    write(data, origine.size(), data.size()-origine.size(), stream);
+                    write(data, origine.size(), size, stream);
                 }
                 stream->flush();
             }
@@ -323,8 +323,6 @@ if (stream == NULL )
                 newRev->setIStream( origin->getIStreamLocation() );
                 newRev->setOStream( origin->getOStreamLocation() );
                 newRev->setLast( newRev );
-cout<<origin->getSize()<<endl;
-
 
                 createMutations( tmpData, newData, newRev->getOStream(), tableSize);
 
@@ -347,7 +345,6 @@ cout<<origin->getSize()<<endl;
                 table.push_back( newElement );
 
                 writeTable( table, oStream );
-
                 return newRev;
             }
 
