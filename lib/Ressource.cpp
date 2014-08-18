@@ -133,41 +133,6 @@ namespace Athena{
                     parents[j]->setIStream( location );
                  }
 
-//return "";
-
-//            /// Building the tmpFile, which will store the revision data, from the chunkIds
-//            std::ostringstream tmpId;
-//            tmpId << r.getId();
-//            string location ="";
-//
-//            if( chuncksTable.size() == 1 )
-//                location = chHandler.getFile( chuncksTable[0].getId() );
-//            else{
-//                ofstream tmpFile( (Ressource::TMP_DIR()+"/"+tmpId.str()).c_str() );
-//                char(c);
-//                for(int i=0; i< chuncksTable.size(); i++){
-//                    ifstream tmpStream(chHandler.getFile( chuncksTable[i].getId() ).c_str() , ios::binary);
-//                    while( tmpStream.get(c) ){
-//                        tmpFile << c;
-//                    }
-//                }
-//                location = Ressource::TMP_DIR()+"/"+tmpId.str();
-//            }
-//
-//            ifstream stream( location.c_str() , ios::binary);
-//
-//
-//            ///Body building
-//            Revision* rev = revHandler.buildStructure( table ); //Root
-//
-//            while( rev->getN() != n ){
-//                rev->setIStream( location.c_str() );
-//                rev = rev->getNext();
-//            }
-//            rev->setIStream( location.c_str() );
-//
-//
-//            vector< Revision* > parents = rev->getParents();
             ///Hydrating the data
             for( int i=0 ; i<int(parents.size())-1 ; i++)
                 revHandler.applyMutations( data, parents[i] );

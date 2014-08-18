@@ -90,8 +90,8 @@ namespace Athena{
                 ChunkHandler();
                 ~ChunkHandler();
 
-                static string DIR(){ return "/home/severus/Desktop/chunks"; } ///Path of the directory for chunk
-                static string TMP_DIR(){ return "/home/severus/Desktop/chunks/tmp"; }
+                static string DIR(){ return "/home/toor/Desktop/chunks"; } ///Path of the directory for chunk
+                static string TMP_DIR(){ return "/home/toor/Desktop/chunks/tmp"; }
 
                 /**
                  * @brief Create a tmp file from a chunk
@@ -115,7 +115,7 @@ namespace Athena{
 				 * @param c             - current chunk
 				 * @param stream        - new data
 				 * @param idBeginning   - location in stream
-				 * @param size          - size of the data
+				 * @param size          - size of the data, which will be added to the chunk
 				 * @param offset        - bytes not written again
 				 */
                 void updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size, uint64_t offset);

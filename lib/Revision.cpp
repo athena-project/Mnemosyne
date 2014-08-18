@@ -331,7 +331,7 @@ if (stream == NULL )
                 oStream->seekp (0, oStream->end);
                 uint64_t length = oStream->tellp();
                 if( tableSize > 0 )
-                    newRev->setSize( length - origin->getIdBeginning()-origin->getSize()-tableSize*Revision::REVISION_SIZE_TABLE-2 );
+                    newRev->setSize( length - rev->getIdBeginning()-rev->getSize()-tableSize*Revision::REVISION_SIZE_TABLE-2 );
                 else
                     newRev->setSize( length );
 
