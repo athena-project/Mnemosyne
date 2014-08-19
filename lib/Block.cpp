@@ -79,7 +79,9 @@ namespace Athena{
          * Block Handler
          */
 
-        BlockHandler::BlockHandler(){}
+        BlockHandler::BlockHandler(){
+            init();
+        }
 
         BlockHandler::~BlockHandler(){
             for( int i=0; i<files.size(); i++)
@@ -173,6 +175,18 @@ namespace Athena{
 
                 make( blocks[i], tmpBlockLocation );
             }
+        }
+
+        void BlockHandler::test(){
+//                tar( "/home/toor/Desktop/test.tar", "/home/toor/Desktop/Test/", "test");
+//            FILE* tmp=fopen( "/home/toor/Desktop/matos", "r");
+//            FILE* tmp2=fopen( "/home/toor/Desktop/matos.xz", "w");
+//
+//            init_encoder(5);
+//            compress( tmp, tmp2);
+//
+//            fclose(tmp);
+//            fclose(tmp2);
         }
 
     }

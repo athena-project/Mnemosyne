@@ -363,10 +363,10 @@
 	<string>
 	<stdint.h>
 
-1407504071 source:/home/toor/Github/Mnemosyne/trunk/lib/Block.cpp
+1408455319 source:/home/toor/Github/Mnemosyne/trunk/lib/Block.cpp
 	"Block.h"
 
-1407504071 /home/toor/Github/Mnemosyne/trunk/lib/Block.h
+1408453567 /home/toor/Github/Mnemosyne/trunk/lib/Block.h
 	<stdint.h>
 	<stdio.h>
 	<vector>
@@ -374,6 +374,8 @@
 	<boost/filesystem.hpp>
 	"Manager.h"
 	"Chunk.h"
+	"Xz.h"
+	"Tar.h"
 
 1408384171 source:/home/toor/Github/Mnemosyne/trunk/lib/Chunk.cpp
 	"Chunk.h"
@@ -391,13 +393,14 @@
 	<mysql++/ssqls.h>
 	"SQLFactory.h"
 
-1408383983 source:/home/toor/Github/Mnemosyne/trunk/lib/main.cpp
+1408438552 source:/home/toor/Github/Mnemosyne/trunk/lib/main.cpp
 	<iostream>
 	<fstream>
 	<stdint.h>
 	<vector>
 	<boost/filesystem.hpp>
 	"Ressource.h"
+	"Block.h"
 	"Revision.h"
 
 1405242238 /home/toor/Github/Mnemosyne/trunk/lib/RevisionHandler.h
@@ -475,9 +478,28 @@
 	"Revision.h"
 	"Chunk.h"
 
-1408384544 source:/home/toor/Github/Mnemosyne/trunk/lib/Ressource.cpp
+1408388048 source:/home/toor/Github/Mnemosyne/trunk/lib/Ressource.cpp
 	"Ressource.h"
 
 1407504071 source:/home/toor/Github/Mnemosyne/trunk/lib/SQLFactory.cpp
 	"SQLFactory.h"
+
+1408438382 source:/home/toor/Github/Mnemosyne/trunk/lib/Xz.cpp
+	"Xz.h"
+
+1408455672 /home/toor/Github/Mnemosyne/trunk/lib/Xz.h
+	<stdio.h>
+	<lzma.h>
+
+1408455426 /home/toor/Github/Mnemosyne/trunk/lib/Tar.h
+	<libtar.h>
+	<iostream>
+	<fcntl.h>
+	<stdio.h>
+	<stdlib.h>
+	<errno.h>
+	<cstring>
+
+1408455359 source:/home/toor/Github/Mnemosyne/trunk/lib/Tar.cpp
+	"Tar.h"
 

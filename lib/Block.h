@@ -31,6 +31,8 @@ namespace fs = boost::filesystem;
 
 #include "Manager.h"
 #include "Chunk.h"
+#include "Xz.h"
+#include "Tar.h"
 
 
 using namespace std;
@@ -70,7 +72,7 @@ namespace Athena{
                 uint64_t count( string where="", string order="", string limit="" );
         };
 
-        class BlockHandler{
+        class BlockHandler : public Tar, Xz{
             protected :
                 vector<string> files;
                 vector<string> directories;
@@ -107,6 +109,8 @@ namespace Athena{
                  * @brief Creates all the blocks depending of the  number of chunks
                  */
                 void makeBlocks();
+
+                void test();
         };
     }
 }
