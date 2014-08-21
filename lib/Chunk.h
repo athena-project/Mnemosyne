@@ -29,8 +29,7 @@
 namespace fs = boost::filesystem;
 
 #include "Manager.h"
-#include "Block.h"
-
+#include "Xz.h"
 
 using namespace std;
 
@@ -41,22 +40,18 @@ namespace Athena{
         class Chunk{
             protected :
                 uint64_t id = 0;
-                uint64_t block_id = 0;
                 uint32_t size =0 ;
             public :
                 static const uint32_t CHUNK_SIZE_MAX = 64*1024; //Bits
 
                 Chunk();
                 Chunk( uint32_t size );
-                Chunk( uint64_t id, uint64_t block_id);
-                Chunk( uint64_t id, uint64_t block_id, uint32_t size);
+                Chunk( uint64_t id, uint32_t size);
 
                 uint64_t getId(){ return id; }
-                uint64_t getBlock_id(){ return block_id; }
                 uint32_t getSize(){ return size; }
 
                 void setId( uint64_t i){ id=i; }
-                void setBlock_id( uint64_t i){ block_id=i; }
                 void setSize( uint64_t i){ size=i; }
         };
 
@@ -80,7 +75,7 @@ namespace Athena{
                 uint64_t count( string where="", string order="", string limit="" );
         };
 
-        class ChunkHandler {
+        class ChunkHandler : public Xz {
             protected :
                 ChunkManager* cManager;
 
@@ -101,14 +96,20 @@ namespace Athena{
                 string getFile( uint64_t id );
 
                 /**
+                 * @brief Mv tmp file to file(compressed)
+                 * @param id            - sql id of the chunk
+                 */
+                void save( uint64_t id);
+
+
+                /**
                  * @brief Write the data of the chunk
                  * @param id            - sql id of the chunk
                  * @param stream        - data
                  * @param idBeginning   - location in stream
                  * @param size          - size of the data
-                 * @param dir           - parent directory ( if dir = "" then TMP_DIR )
                  */
-                void writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginning, uint64_t size, string dir="");
+                void writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginning, uint64_t size);
 
                 /**
 				 * @brief Update data of chunk

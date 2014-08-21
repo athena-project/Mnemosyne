@@ -32,8 +32,6 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
-		<Unit filename="Block.cpp" />
-		<Unit filename="Block.h" />
 		<Unit filename="Chunk.cpp" />
 		<Unit filename="Chunk.h" />
 		<Unit filename="Manager.cpp" />
@@ -46,6 +44,10 @@
 		<Unit filename="Revision.h" />
 		<Unit filename="SQLFactory.cpp" />
 		<Unit filename="SQLFactory.h" />
+		<Unit filename="Tar.cpp" />
+		<Unit filename="Tar.h" />
+		<Unit filename="Xz.cpp" />
+		<Unit filename="Xz.h" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<envvars />

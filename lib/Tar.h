@@ -27,6 +27,11 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <cstring>
+#include <stdio.h> // remove file
+
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
+
 using namespace std;
 
 namespace Athena{
@@ -41,6 +46,7 @@ namespace Athena{
 
                 bool tar_dir( char* location, char* path, char* name );
                 bool untar( char* source, char* location);
+                bool untar_file( char* source, char* name, char* location);
         };
 
     }

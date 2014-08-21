@@ -46,9 +46,11 @@ namespace Athena{
             return false;
         }
 
-        bool Xz::compress(char* inpath, char* outpath){
-            FILE* infile=fopen( inpath, "r");
-            FILE* outfile=fopen( outpath, "w");
+        bool Xz::compress(const char* inpath, const char* outpath){
+            FILE* infile=fopen( inpath, "rb");
+            FILE* outfile=fopen( outpath, "wb");
+            init_encoder( 5 );
+
 
             lzma_action action = LZMA_RUN;
 
@@ -128,7 +130,6 @@ namespace Athena{
             }
         }
 
-
         bool Xz::init_decoder(){
             lzma_ret ret = lzma_stream_decoder(ptr, UINT64_MAX, LZMA_CONCATENATED);
 
@@ -156,7 +157,12 @@ namespace Athena{
             return false;
         }
 
-        bool Xz::decompress(const char *inname, FILE *infile, FILE *outfile){
+        bool Xz::decompress( const char* inpath, const char* outpath){
+            FILE* infile=fopen( inpath, "rb");
+            FILE* outfile=fopen( outpath, "wb");
+
+            init_decoder();
+
             lzma_action action = LZMA_RUN;
 
             uint8_t inbuf[ BUFSIZ ];
@@ -170,8 +176,7 @@ namespace Athena{
             while (true) {
                 if (ptr->avail_in == 0 && !feof(infile)) {
                     ptr->next_in = inbuf;
-                    ptr->avail_in = fread(inbuf, 1, sizeof(inbuf),
-                            infile);
+                    ptr->avail_in = fread(inbuf, 1, sizeof(inbuf), infile);
 
                     if (ferror(infile)) {
 //                        fprintf(stderr, "%s: Read error: %s\n", inname, strerror(errno));
@@ -188,15 +193,18 @@ namespace Athena{
                 if (ptr->avail_out == 0 || ret == LZMA_STREAM_END) {
                     size_t write_size = sizeof(outbuf) - ptr->avail_out;
 
-                    if (fwrite(outbuf, 1, write_size, outfile)
-                            != write_size) {
+                    if( fwrite(outbuf, 1, write_size, outfile) != write_size) {
 //                        fprintf(stderr, "Write error: %s\n", strerror(errno));
+                        fclose(infile);
+                        fclose(outfile);
                         throw"";
                         return false;
                     }
 
                     ptr->next_out = outbuf;
                     ptr->avail_out = sizeof(outbuf);
+                    fclose(infile);
+                    fclose(outfile);
                 }
 
                 if (ret != LZMA_OK) {
@@ -230,7 +238,7 @@ namespace Athena{
                             break;
                     }
 
-                    fprintf(stderr, "%s: Decoder error: %s (error code %u)\n", inname, msg, ret);
+//                    fprintf(stderr, "%s: Decoder error: %s (error code %u)\n", inname, msg, ret);
                     throw"";
                     return false;
                 }

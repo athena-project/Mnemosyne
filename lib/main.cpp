@@ -6,7 +6,6 @@
 #include <boost/filesystem.hpp>
 
 #include "Ressource.h"
-#include "Block.h"
 #include "Revision.h"
 using namespace std;
 using namespace Athena::Mnemosyne;
@@ -25,12 +24,12 @@ int main(){
 
 
     vector<uint64_t> ids;
-//    ids.push_back(34);
+    ids.push_back(52);
     r.setChunkIds( ids );
 
 
 ///Creation ressource
-//    rHandler.newRevision(&r, str);
+    rHandler.newRevision(&r, str);
 
 
 ///lecture
@@ -40,9 +39,5 @@ int main(){
 //    ofstream test("/home/toor/Desktop/2.html");
 //    string a=rHandler.buildRevision(r, 1);
 //    test<<a;
-
-
-    BlockHandler b;
-    b.test();
     return 0;
 }

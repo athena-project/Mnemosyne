@@ -21,6 +21,7 @@
 #ifndef XZ_H_INCLUDED
 #define XZ_H_INCLUDED
 
+#include <iostream>
 #include <stdio.h>
 #include <lzma.h>
 
@@ -42,10 +43,10 @@ namespace Athena{
 
 
                 bool init_encoder(uint32_t preset);
-                bool compress(char* inpath, char* outpath);
+                bool compress(const char* inpath, const char* outpath);
 
                 bool init_decoder();
-                bool decompress( const char *inname, FILE *infile, FILE *outfile );
+                bool decompress( const char* inpath, const char* outpath );
 
         };
     }

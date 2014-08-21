@@ -7,6 +7,8 @@ DROP TABLE IF EXISTS `block`;
 
 CREATE TABLE `block` (
   `id` BIGINT(11) NOT NULL AUTO_INCREMENT,
+  `time`  BIGINT(11),
+  `statut` TINYINT
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
@@ -18,7 +20,6 @@ DROP TABLE IF EXISTS `chunk`;
 
 CREATE TABLE `chunk` (
   `id` BIGINT(11) NOT NULL AUTO_INCREMENT,
-  `block_id` BIGINT(11),
   `size` INT(11),
   PRIMARY KEY (`id`),
   KEY key_block_id (block_id)

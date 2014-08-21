@@ -14,13 +14,9 @@ namespace Athena{
             this->size = size;
         }
 
-        Chunk::Chunk( uint64_t id, uint64_t block_id){
-            this->id = id;
-            this->block_id = block_id;
-            size=0;
-        }
 
-        Chunk::Chunk( uint64_t id, uint64_t block_id, uint32_t size) : Chunk(id, block_id){
+        Chunk::Chunk( uint64_t id, uint32_t size){
+            this->id = id;
             this->size = size;
         }
 
@@ -36,8 +32,7 @@ namespace Athena{
 
         uint64_t ChunkManager::insert( Chunk chunk){
             mysqlpp::Query query = conn.query();
-            query<<"INSERT INTO chunk (block_id, size) VALUES (";
-            query<<chunk.getBlock_id()<<","<<chunk.getSize()<< ");";
+            query<<"INSERT INTO chunk (size) VALUES (" <<chunk.getSize()<< ");";
 
             if (mysqlpp::SimpleResult res = query.execute())
                 return (uint64_t)res.insert_id();
@@ -76,10 +71,8 @@ namespace Athena{
             query << "SELECT " << fieldsNeeded <<" FROM chunk WHERE "<< where <<" ORDER BY "<< order<< " "<<limit;
             mysqlpp::StoreQueryResult res = query.store();
 
-            ofstream tmp("/home/toor/Desktop/sql",ios::app);
-            tmp<<query<<endl;
             for(size_t i = 0; i < res.num_rows(); ++i)
-                chunks.push_back( Chunk( (uint64_t)res[i]["id"], (uint64_t)res[i]["block_id"], (uint64_t)res[i]["size"] ) );
+                chunks.push_back( Chunk( (uint64_t)res[i]["id"], (uint64_t)res[i]["size"] ) );
 
             return chunks;
         }
@@ -110,8 +103,7 @@ namespace Athena{
 
         void ChunkManager::update( Chunk chunk){
             mysqlpp::Query query = conn.query();
-            query<<"UPDATE chunk SET block_id="<<chunk.getBlock_id();
-            query<<", size="<<chunk.getSize();
+            query<<"UPDATE chunk SET "<<"size="<<chunk.getSize();
             query<<" WHERE id="<< chunk.getId();
 
             if (mysqlpp::SimpleResult res = query.execute())
@@ -145,31 +137,36 @@ namespace Athena{
         }
 
         string ChunkHandler::getFile( uint64_t id){
-            BlockHandler bHandler;
-            BlockManager bManager;
-
-            Chunk currentChunk = cManager->get( id );
             std::ostringstream chunckId;
             chunckId<<id;
 
-            string chunkLocation2 = ChunkHandler::DIR()+"/"+chunckId.str();
-            try{
-                Block currentBlock = bManager.get( currentChunk.getBlock_id() );
-                string chunkLocation1 = bHandler.getChunk( currentBlock, id );
+            string chunkLocation = ChunkHandler::DIR()+"/"+chunckId.str()+".xz";
+            string chunkLocation2 = ChunkHandler::TMP_DIR()+"/"+chunckId.str();
 
-                fs::copy_file( chunkLocation1, chunkLocation2);
-                files.push_back(chunkLocation2);
-                return chunkLocation2;
-            }catch(runtime_error e){//if no block yet
-                return chunkLocation2;
-            }
+            decompress( chunkLocation.c_str(), chunkLocation2.c_str());
+//            files.push_back(chunkLocation2);
+            return chunkLocation2;
         }
 
-        void ChunkHandler::writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginning, uint64_t size, string dir){
+        void ChunkHandler::save( uint64_t id){
+            std::ostringstream chunckId;
+            chunckId<<id;
+
+            string chunkLocation2 = ChunkHandler::DIR()+"/"+chunckId.str()+".xz";
+            string chunkLocation = ChunkHandler::TMP_DIR()+"/"+chunckId.str();
+
+            if( fs::exists( chunkLocation2 ) )
+                remove( chunkLocation2.c_str() );
+
+//            files.push_back( chunkLocation );
+            compress( chunkLocation.c_str(), chunkLocation2.c_str());
+        }
+
+        void ChunkHandler::writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginning, uint64_t size){
             std::ostringstream strId;
             strId<<id;
 
-            string location = (dir == "" ) ? ChunkHandler::DIR()+"/"+strId.str() : dir+"/"+strId.str();
+            string location = ChunkHandler::TMP_DIR()+"/"+strId.str();
             ofstream oStream( location.c_str() );
 
             stream.seekg( idBeginning, stream.beg );
@@ -181,32 +178,20 @@ namespace Athena{
 
             oStream.flush();
             oStream.close();
+
+            save( id );
         }
 
         void ChunkHandler::updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size, uint64_t offset){
-            BlockManager bManager;
-            BlockHandler bHandler;
-            Block currentBlock;
-            string blockLocation;
-            uint64_t tmpIdBlock = ceil( (float)c.getId() / (float)(Block::CHUNKS) );
-            bool flag = tmpIdBlock < bManager.count();
             idBeginning += offset; ///Table
             idBeginning -= c.getSize(); ///chunk must be overwrite
 
             std::ostringstream strId;
             strId<<c.getId();
-            string location = ChunkHandler::DIR()+"/"+strId.str();
-
-            if( flag ){ //In a block
-                currentBlock = bManager.get( tmpIdBlock );
-                blockLocation = bHandler.extract( currentBlock );
-                location = bHandler.extract( currentBlock )+"/"+strId.str();
-            }
-
+            string location = getFile( c.getId() );
 
             ofstream oStream( location.c_str(), ios::binary);
             stream.seekg( idBeginning, stream.beg );
-
 
             ///Write first part of the chunk
             char* buffer = new char[ c.getSize()-offset ];
@@ -216,7 +201,7 @@ namespace Athena{
 
             ///Skip offset's bytes
             stream.seekg( offset, stream.cur );
-cout<<size<<endl;
+
             ///Write last part of the chunk
             char* buffer2 = new char[ size ];
             stream.read( buffer2, size);
@@ -225,9 +210,6 @@ cout<<size<<endl;
 
             oStream.flush();
             oStream.close();
-
-            if( flag )
-                bHandler.make( currentBlock, blockLocation);
 
             ///SQL UPDATE
             c.setSize( c.getSize()-offset+size );
