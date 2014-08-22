@@ -1,18 +1,5 @@
 
 --
--- Table structure for table `block`
---
-
-DROP TABLE IF EXISTS `block`;
-
-CREATE TABLE `block` (
-  `id` BIGINT(11) NOT NULL AUTO_INCREMENT,
-  `time`  BIGINT(11),
-  `statut` TINYINT
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
-
---
 -- Table structure for table `chunk`
 --
 

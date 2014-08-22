@@ -133,7 +133,8 @@ namespace Athena{
             delete cManager;
 
             for( int i=0; i<files.size(); i++)
-                remove( files[i].c_str() );
+                if( fs::exists( files[i] ) )
+                    remove( files[i].c_str() );
         }
 
         string ChunkHandler::getFile( uint64_t id){
@@ -144,7 +145,7 @@ namespace Athena{
             string chunkLocation2 = ChunkHandler::TMP_DIR()+"/"+chunckId.str();
 
             decompress( chunkLocation.c_str(), chunkLocation2.c_str());
-//            files.push_back(chunkLocation2);
+            files.push_back(chunkLocation2);
             return chunkLocation2;
         }
 
@@ -158,7 +159,7 @@ namespace Athena{
             if( fs::exists( chunkLocation2 ) )
                 remove( chunkLocation2.c_str() );
 
-//            files.push_back( chunkLocation );
+            files.push_back( chunkLocation );
             compress( chunkLocation.c_str(), chunkLocation2.c_str());
         }
 
@@ -214,6 +215,8 @@ namespace Athena{
             ///SQL UPDATE
             c.setSize( c.getSize()-offset+size );
             cManager->update( c );
+
+            save( c.getId() );
         }
 
         vector<Chunk> ChunkHandler::makeChunks( ifstream& stream, uint64_t idBeginning, uint64_t size ){

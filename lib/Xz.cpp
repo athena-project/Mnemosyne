@@ -123,10 +123,6 @@ namespace Athena{
                     throw"";
                     return false;
                 }
-
-                fclose(infile);
-                fclose(outfile);
-                return true;
             }
         }
 

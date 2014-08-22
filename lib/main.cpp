@@ -14,7 +14,7 @@ using namespace Athena::Mnemosyne;
 
 int main(){
     string str;
-    ifstream s("/home/toor/Desktop/1.html",ios::in);
+    ifstream s("/home/toor/Desktop/1.html.origin",ios::in);
     char c;
     while( s.get(c) )
         str += c;
@@ -24,7 +24,7 @@ int main(){
 
 
     vector<uint64_t> ids;
-    ids.push_back(52);
+    ids.push_back(69);
     r.setChunkIds( ids );
 
 
