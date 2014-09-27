@@ -393,7 +393,7 @@
 	<mysql++/ssqls.h>
 	"SQLFactory.h"
 
-1408695162 source:/home/toor/Github/Mnemosyne/trunk/lib/main.cpp
+1411825762 source:/home/toor/Github/Mnemosyne/trunk/lib/main.cpp
 	<iostream>
 	<fstream>
 	<stdint.h>
@@ -465,9 +465,9 @@
 1407504071 /home/toor/Github/Mnemosyne/trunk/lib/SQLFactory.h
 	<mysql++/mysql++.h>
 
-1408383152 /home/toor/Github/Mnemosyne/trunk/lib/Ressource.h
-	<vector>
+1411825656 /home/toor/Github/Mnemosyne/trunk/lib/Ressource.h
 	<string>
+	<vector>
 	<stdint.h>
 	<cmath>
 	<fstream>
@@ -504,4 +504,10 @@
 
 1408610058 source:/home/toor/Github/Mnemosyne/trunk/lib/Tar.cpp
 	"Tar.h"
+
+1411826217 source:/home/toor/Github/Mnemosyne/trunk/lib/PyRessource.c
+	"PyRessource.h"
+
+1411827999 /home/toor/Github/Mnemosyne/trunk/lib/PyRessource.h
+	"Ressource.h"
 

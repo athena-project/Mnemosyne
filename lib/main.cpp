@@ -24,7 +24,7 @@ int main(){
 
 
     vector<uint64_t> ids;
-    ids.push_back(69);
+    //ids.push_back(69);
     r.setChunkIds( ids );
 
 

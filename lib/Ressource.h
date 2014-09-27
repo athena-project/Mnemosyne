@@ -20,8 +20,9 @@
 #ifndef RESSOURCE_H_INCLUDED
 #define RESSOURCE_H_INCLUDED
 
-#include <vector>
+
 #include <string>
+#include <vector>
 #include <stdint.h>
 #include <cmath>
 #include <fstream>
