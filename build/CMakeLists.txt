@@ -8,37 +8,35 @@ ENDIF()
 
 
 #Project config
-PROJECT(Mnemosyne)
+#PROJECT(Mnemosyne)
 #SET(LIBRARY_OUTPUT_PATH lib/${CMAKE_BUILD_TYPE})
 
 #Configuration de l'exécutable
-FILE( GLOB_RECURSE  source_files  lib/*)
+FILE( GLOB_RECURSE  source_files  ../lib/*)
 
 
 
 
-#INCLUDE_DIRECTORIES( "/usr/local/mysql/lib")
+INCLUDE_DIRECTORIES( "/usr/local/mysql/lib")
 INCLUDE_DIRECTORIES( "/usr/include/mysql" )
 
 
-FIND_PACKAGE(Boost 1.54.0)
-IF(Boost_FOUND)
-  INCLUDE_DIRECTORIES("${Boost_INCLUDE_DIRS}" "/usr/include/python3.4")
-  SET(Boost_USE_STATIC_LIBS OFF)
-  SET(Boost_USE_MULTITHREADED ON)
-  SET(Boost_USE_STATIC_RUNTIME OFF)
-  FIND_PACKAGE(Boost 1.54.0 COMPONENTS python)
-
-  ADD_LIBRARY(pyRessource SHARED lib/PyRessource.cpp)
-  TARGET_LINK_LIBRARIES(pyRessource ${Boost_LIBRARIES})
-ELSEIF(NOT Boost_FOUND)
-  MESSAGE(FATAL_ERROR "Unable to find correct Boost version. Did you set BOOST_ROOT?")
-ENDIF()
+INCLUDE_DIRECTORIES("/usr/include/python3.4" "/home/toor/Downloads/boost_1_56_0/stage/lib" )
+SET(Boost_USE_STATIC_LIBS OFF)
+SET(Boost_USE_MULTITHREADED ON)
+SET(Boost_USE_STATIC_RUNTIME OFF)
 
 
+ADD_LIBRARY(pyRessource SHARED ../lib/PyRessource.cpp)
+
+#ADD_LIBRARY(boost_python3 SHARED /home/toor/Downloads/boost_1_56_0/stage/lib/libboost_python3.so)
+#SET_TARGET_PROPERTIES(boost_python3 PROPERTIES LINKER_LANGUAGE C)
+
+#ADD_LIBRARY(boost_filesytem SHARED /home/toor/Downloads/boost_1_56_0/stage/lib/libboost_filesystem.so)
+#SET_TARGET_PROPERTIES(boost_filesytem PROPERTIES LINKER_LANGUAGE C)
 
 
-
+TARGET_LINK_LIBRARIES(pyRessource "/home/toor/Downloads/boost_1_56_0/stage/lib/libboost_python3.so" "/home/toor/Downloads/boost_1_56_0/stage/lib/libboost_filesystem.so")
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
   ADD_DEFINITIONS("-Wall")
