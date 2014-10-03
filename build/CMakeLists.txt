@@ -17,33 +17,33 @@ FILE( GLOB_RECURSE  source_files  ../lib/*)
 
 
 
-INCLUDE_DIRECTORIES( "/usr/local/mysql/lib")
-INCLUDE_DIRECTORIES( "/usr/include/mysql" )
-
-
-INCLUDE_DIRECTORIES("/usr/include/python3.4" "/home/toor/Downloads/boost_1_56_0/stage/lib" )
+INCLUDE_DIRECTORIES( "/usr/local/mysql/lib" 
+						"/usr/include/mysql"
+						"/usr/include/python3.4" 
+						"/home/toor/Downloads/boost_1_56_0/stage/lib" 
+						"/home/toor/Github/Mnemosyne/trunk/lib" 
+					)
 SET(Boost_USE_STATIC_LIBS OFF)
 SET(Boost_USE_MULTITHREADED ON)
 SET(Boost_USE_STATIC_RUNTIME OFF)
 
 
+
+
+
+
+ADD_DEFINITIONS("-Wall")
+ADD_DEFINITIONS("-std=c++11")
+
+
+
+
+
+
 ADD_LIBRARY(pyRessource SHARED ../lib/PyRessource.cpp)
 
-#ADD_LIBRARY(boost_python3 SHARED /home/toor/Downloads/boost_1_56_0/stage/lib/libboost_python3.so)
-#SET_TARGET_PROPERTIES(boost_python3 PROPERTIES LINKER_LANGUAGE C)
+TARGET_LINK_LIBRARIES(pyRessource  "/home/toor/Downloads/boost_1_56_0/stage/lib/libboost_python3.so" 
+									"/home/toor/Downloads/boost_1_56_0/stage/lib/libboost_system.so" 
+									"/home/toor/Downloads/mysql++-3.2.1/libmysqlpp.so"
+									"/usr/lib/x86_64-linux-gnu/liblzma.so")
 
-#ADD_LIBRARY(boost_filesytem SHARED /home/toor/Downloads/boost_1_56_0/stage/lib/libboost_filesystem.so)
-#SET_TARGET_PROPERTIES(boost_filesytem PROPERTIES LINKER_LANGUAGE C)
-
-
-TARGET_LINK_LIBRARIES(pyRessource "/home/toor/Downloads/boost_1_56_0/stage/lib/libboost_python3.so" "/home/toor/Downloads/boost_1_56_0/stage/lib/libboost_filesystem.so")
-
-IF(CMAKE_COMPILER_IS_GNUCXX)
-  ADD_DEFINITIONS("-Wall")
-  ADD_DEFINITIONS("-lmysqlpp" "-lmysqlclient")
-  ADD_DEFINITIONS("-lboost_filesystem" "-lboost_system" "-lboost_python")
-  ADD_DEFINITIONS("-llzma" "-ltar")
-  ADD_DEFINITIONS("-std=c++11")
-ELSE()
-  MESSAGE(FATAL_ERROR "CMakeLists.txt has not been tested/written for your compiler.")
-ENDIF()
