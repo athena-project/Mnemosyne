@@ -34,23 +34,19 @@ namespace fs = boost::filesystem;
 
 using namespace std;
 
-namespace Athena{
-    namespace Mnemosyne{
 
-        class Tar{
-            protected:
+class Tar{
+	protected:
 
-            public:
-                Tar();
+	public:
+		Tar();
 
 
-                bool tar_dir( char* location, char* path, char* name );
-                bool untar( char* source, char* location);
-                bool untar_file( char* source, char* name, char* location);
-        };
+		bool tar_dir( char* location, char* path, char* name );
+		bool untar( char* source, char* location);
+		bool untar_file( char* source, char* name, char* location);
+};
 
-    }
-}
 
 
 #endif // TAR_H_INCLUDED

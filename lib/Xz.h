@@ -28,28 +28,23 @@
 
 using namespace std;
 
-namespace Athena{
-    namespace Mnemosyne{
+class Xz{
+	protected:
+		lzma_stream* ptr;
+		lzma_stream stream;
 
-        class Xz{
-            protected:
-                lzma_stream* ptr;
-                lzma_stream stream;
-
-            public:
-                Xz();
-                ~Xz();
-                void init();
+	public:
+		Xz();
+		~Xz();
+		void init();
 
 
-                bool init_encoder(uint32_t preset);
-                bool compress(const char* inpath, const char* outpath);
+		bool init_encoder(uint32_t preset);
+		bool compress(const char* inpath, const char* outpath);
 
-                bool init_decoder();
-                bool decompress( const char* inpath, const char* outpath );
+		bool init_decoder();
+		bool decompress( const char* inpath, const char* outpath );
 
-        };
-    }
-}
+};
 
 #endif // XZ_H_INCLUDED

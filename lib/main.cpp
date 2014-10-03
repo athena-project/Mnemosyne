@@ -8,7 +8,6 @@
 #include "Ressource.h"
 #include "Revision.h"
 using namespace std;
-using namespace Athena::Mnemosyne;
 
 
 

@@ -17,20 +17,30 @@
  * @autor Severus21
  */
 #include <boost/python.hpp>
+
 #include "Ressource.h"
+#include "Ressource.cpp"
+#include "Revision.h"
+#include "Revision.cpp"
+#include "Mutation.h"
+#include "Mutation.cpp"
+#include "Chunk.h"
+#include "Chunk.cpp"
+#include "Manager.cpp"
+#include "Xz.cpp"
+#include "SQLFactory.cpp"
+#include <mysql++/mysql++.h>
 
-using namespace std;
-using namespace boost::python;
-using namespace Athena::Mnemosyne;
+BOOST_PYTHON_MODULE(libpyRessource){
+	using namespace boost::python;
 
-BOOST_PYTHON_MODULE(PyRessource){
     class_<Ressource>("Ressource", init<>())
         .def("getId", &Ressource::getId)
         .def("getCurrentRevision", &Ressource::getCurrentRevision)
         .def("getChunkIds", &Ressource::getChunkIds)
         .def("setId", &Ressource::setId)
         .def("setCurrentRevision", &Ressource::setCurrentRevision)
-        .def("getChunkIds", &Ressource::getChunkIds)
+        .def("setChunkIds", &Ressource::setChunkIds)
     ;
 
     class_<RessourceHandler>("RessourceHandler", init<>())
