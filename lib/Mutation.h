@@ -37,9 +37,10 @@ class Mutation{
 		uint64_t size;
 
 	public :
-		static const uint8_t INSERT=0b00;
-		static const uint8_t DELETE=0b01;
-		static const uint8_t UPDATE=0b10;
+		static const uint8_t INSERT     = 0b00;
+		static const uint8_t DELETE     = 0b01;
+		static const uint8_t UPDATE     = 0b10;
+		static const uint8_t HEADER_SIZE= 17; ///Bytes
 
 		Mutation(){}
 		Mutation( uint8_t t, uint64_t id, uint64_t s) : type(t), idBeginning(id), size(s){}

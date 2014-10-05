@@ -30,6 +30,10 @@
 	Revision::~Revision(){
 		for(int i=0; i<children.size(); i++)
 			delete children[i];
+        if( oStream != NULL)
+            delete oStream;
+        if( iStream != NULL)
+            delete iStream;
 	}
 
 	vector< Revision* > Revision::getParents(){
@@ -77,11 +81,6 @@
 			stream->read((char*)&element.diff, 2);
 			stream->read((char*)&element.origin, 2);
 			table.push_back( element );
-
-			cout<<"extract table :: id "<<element.idBeginning<<endl;
-			cout<<"extract table :: size "<<element.size<<endl;
-			cout<<"extract table :: diff "<<element.diff<<endl;
-			cout<<"extract table :: origin "<<element.origin<<endl;
 		}
 
 		return table;
@@ -101,7 +100,7 @@
 			return previous;
 
 		Revision* current;
-		vector<Revision*>* structur = new vector<Revision*>[ table.size() ]; /// Must not be deleted, it's used in revision tree
+		vector< vector<Revision*> > structur =  vector< vector<Revision*> >( table.size() ); /// Must not be deleted, it's used in revision tree
 		///Previous and root
 		for( int i=0 ; i<table.size() ; i++){
 			current = new Revision( i+1, table[i].idBeginning, table[i].size, table[i].diff );
@@ -152,8 +151,7 @@
 		if( rev == NULL || rev->getRoot() == rev )
 			return;
 		ifstream* stream = (rev->getIStream());
-if (stream == NULL )
-throw"";
+
 		Mutation m;
 		uint64_t i =0;
 		stream->seekg( rev->getIdBeginning() - rev->getRelativeO(), stream->beg );
@@ -161,7 +159,7 @@ throw"";
 		while( i < rev->getSize() ){
 			Mutation m=readMutation( *stream );
 			m.apply(data, *stream);
-			i+=m.getSize() + 17; //17 Bytes => header of a mutation
+			i+=m.getSize() + Mutation::HEADER_SIZE;
 		}
 	}
 

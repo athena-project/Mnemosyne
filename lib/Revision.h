@@ -34,38 +34,34 @@
 
 using namespace std;
 
-
-
 struct TableElement{
-		uint64_t idBeginning = 0 ;   ///Index of the first char of this revision in iStream
-		uint64_t size = 0;          ///Size of the data of the current revision
-		uint16_t diff = 0;
-		uint16_t origin = 0;
+		uint64_t idBeginning    = 0;    ///Index of the first char of this revision in iStream
+		uint64_t size           = 0;    ///Size of the data of the current revision
+		uint16_t diff           = 0;
+		uint16_t origin         = 0;
 };
 
 class Revision{
-
-
 	protected :
-		uint16_t n = 0;                  ///N° of the current revision
-		uint64_t idBeginning = 0 ;   ///Index of the first char of this revision in iStream
-		uint64_t size = 0;          ///Size of the data of the current revision
-		uint16_t diff = 0;          ///E[%*10000] diff with the origin, which is relative to the current rev
+		uint16_t n              = 0;    ///N° of the current revision
+		uint64_t idBeginning    = 0;    ///Index of the first char of this revision in iStream
+		uint64_t size           = 0;    ///Size of the data of the current revision
+		uint16_t diff           = 0;    ///E[%*10000] diff with the origin, which is relative to the current rev
 
 
-		Revision* parent;
+		Revision* parent        = NULL;
 		vector< Revision* > children;
-		Revision* previous;     ///revision n-1, if exists
-		Revision* next;         ///revision n+1, if exists
-		Revision* last;         ///Last revision added ie nmax
-		Revision* root;
+		Revision* previous      = NULL; ///revision n-1, if exists
+		Revision* next          = NULL; ///revision n+1, if exists
+		Revision* last          = NULL; ///Last revision added ie nmax
+		Revision* root          = NULL;
 
 		string iStreamLocation;
-		ifstream* iStream;      ///mutations's instructions
+		ifstream* iStream       = NULL; ///mutations's instructions
 		string oStreamLocation;
-		ofstream* oStream;      ///mutations's instructions
+		ofstream* oStream       = NULL; ///mutations's instructions
 
-		uint64_t relativeO = 0;     ///Relative origin in the current flux if we only load the needed chunks
+		uint64_t relativeO      = 0;    ///Relative origin in the current flux if we only load the needed chunks
 
 	public :
 		static const uint32_t REVISION_SIZE_TABLE = 20; /// Bits , origine(uint16_t) idBeginning(uint64_t) size(uint64_t) diff(uint16_t)

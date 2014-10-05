@@ -18,6 +18,8 @@
  */
 #include <boost/python.hpp>
 
+#include <stdint.h>
+
 #include "Ressource.h"
 #include "Ressource.cpp"
 #include "Revision.h"
@@ -33,14 +35,19 @@
 
 BOOST_PYTHON_MODULE(libpyRessource){
 	using namespace boost::python;
-
+	
+	
+	//class_<std::vector<uint64_t> >("VectorOfUint64_t")
+        ////.def(vector_indexing_suite<std::vector<uint64_t> >() )
+    //;
+	
     class_<Ressource>("Ressource", init<>())
         .def("getId", &Ressource::getId)
         .def("getCurrentRevision", &Ressource::getCurrentRevision)
         .def("getChunkIds", &Ressource::getChunkIds)
         .def("setId", &Ressource::setId)
         .def("setCurrentRevision", &Ressource::setCurrentRevision)
-        .def("setChunkIds", &Ressource::setChunkIds)
+        .def("setChunkIdsFromList", &Ressource::setChunkIdsFromList)
     ;
 
     class_<RessourceHandler>("RessourceHandler", init<>())
