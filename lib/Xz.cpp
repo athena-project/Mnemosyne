@@ -197,11 +197,11 @@ bool Xz::decompress( const char* inpath, const char* outpath){
 
 			ptr->next_out = outbuf;
 			ptr->avail_out = sizeof(outbuf);
-			fclose(infile);
-			fclose(outfile);
 		}
 
 		if (ret != LZMA_OK) {
+            fclose(infile);
+            fclose(outfile);
 			if (ret == LZMA_STREAM_END)
 				return true;
 
@@ -236,6 +236,9 @@ bool Xz::decompress( const char* inpath, const char* outpath){
 			throw"";
 			return false;
 		}
+
 	}
 }
+
+
 

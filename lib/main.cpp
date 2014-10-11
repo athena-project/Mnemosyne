@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <vector>
 
-#include <boost/filesystem.hpp>
 
 #include "Ressource.h"
 #include "Revision.h"
@@ -12,8 +11,9 @@ using namespace std;
 
 
 int main(){
+
     string str;
-    ifstream s("/home/toor/Desktop/1.html.origin",ios::in);
+    ifstream s("/home/toor/Desktop/1.html",ios::in);
     char c;
     while( s.get(c) )
         str += c;
@@ -23,7 +23,7 @@ int main(){
 
 
     vector<uint64_t> ids;
-    //ids.push_back(69);
+    ids.push_back(940);
     r.setChunkIds( ids );
 
 

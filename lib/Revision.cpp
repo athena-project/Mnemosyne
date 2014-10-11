@@ -1,6 +1,11 @@
 #include "Revision.h"
 
 
+	vector<uint64_t> methodes = { 1, 32 }; /// block size
+	int METHODE_STD		= 0;
+	int METHODE_LINE	= 10;
+
+
 /**
  *  Revision
  */
@@ -10,22 +15,21 @@
 	}
 
 	Revision::Revision(uint16_t num) : n(num){
-		initPtr();
+        initPtr();
 	}
 
 	Revision::Revision(uint16_t num, uint64_t id, uint64_t s, uint16_t d) : n(num), idBeginning(id), size(s), diff(d){
-		initPtr();
+        initPtr();
 	}
 
-	void Revision::initPtr(){
-		parent = NULL;
-		previous = NULL;
-		next = NULL;
-		last = NULL;
-
-		oStream=NULL;
-		iStream=NULL;
-	}
+    void Revision::initPtr(){
+        parent = NULL;
+        previous = NULL;
+        next = NULL;
+        last = NULL;
+        oStream=NULL;
+        iStream=NULL;
+    }
 
 	Revision::~Revision(){
 		for(int i=0; i<children.size(); i++)
@@ -186,74 +190,175 @@
 		stream->flush();
 	}
 
-	uint64_t RevisionHandler::diff( vector<char>& origine, vector<char>& data ){
+	vector< uint64_t > RevisionHandler::stripLine( vector<char>& d ){ ///vector[last char of the line+1 ie begin of the new line]
+		vector< uint64_t > lines;
+		uint64_t size = 0;
+		if(d.empty())
+			return lines;
+
+		lines.push_back(0);
+		for(uint64_t i=0 ; i<d.size() ; i++){
+			if( d[i]==10 )
+                lines.push_back( i+1 );
+		}
+		if( lines.back() != d.size())///abstract line
+			lines.push_back( d.size() );
+
+		return lines;
+	}
+
+	uint64_t RevisionHandler::diffLine( vector<char>& origine, vector<char>& data){
+		vector< uint64_t > lineO = stripLine( origine );
+		vector< uint64_t > lineD = stripLine( data );
+
+		uint64_t num = min( lineO.size(), lineD.size() );
+		uint64_t diff = 0;
+
+		uint64_t lastBegO(0), lastBegD(0);
+		uint64_t j(0), m(0);
+		bool flag			= true;
+		for(uint64_t i=0 ; i<num ; i++){
+			flag = ( lineO[i]- lastBegO == lineD[i]- lastBegD );//Size comparison
+
+			j=0;
+			m=min( lineO[i]- lastBegO, lineD[i]- lastBegD);
+			while(flag && j<m){
+				flag =( origine[ lastBegO + j ] == data[ lastBegD + j ] );
+				j++;
+			}
+
+			diff += (flag) ? 0 : lineD[i] - lastBegD;
+			lastBegO	= lineO[i];
+			lastBegD	= lineD[i];
+		}
+
+
+		if( lineO.size() > lineD.size() )
+			diff += Mutation::HEADER_SIZE;
+		if( lineO.size() < lineD.size() )
+			diff += Mutation::HEADER_SIZE;
+		return diff;
+
+	}
+
+	uint64_t RevisionHandler::diffBlock( vector<char>& origine, vector<char>& data, int method ){
 		uint64_t num= min( origine.size(), data.size() );
 		uint64_t diff = max( origine.size(), data.size() ) - num;
 
-		for(uint64_t i=0; i<num; i++){
-			if( origine[i] != data[i] )
-				diff++;
+		uint64_t blockSize 	= methodes[ method ];
+		uint64_t j			= 0;
+		bool flag			= true;
+
+		for(uint64_t i=0; i<num; i+=blockSize){
+			flag 	= true; j		= 0;
+			while( j<blockSize && flag){
+				if( origine[ i+j ] != data[ i+j ] ){
+					diff	+=	blockSize;
+					flag 	=	false;
+				}
+				j++;
+			}
 		}
 		return diff;
 	}
 
-	vector< uint64_t > RevisionHandler::calculDifferences( Revision* rev,  vector<char>& data ){
+    uint64_t RevisionHandler::diff( vector<char>& origine, vector<char>& data, int method){
+        if(method == METHODE_LINE)
+			diffLine( origine, data);
+		else
+			diffBlock( origine, data, method);
+	}
+
+	vector< vector<uint64_t> > RevisionHandler::calculDifferences( Revision* rev,  vector<char>& data ){
 		vector< char > tmpData;
-		vector< uint64_t > differences;
+		vector< vector<uint64_t> > differences;
+		vector< uint64_t > tmpDifferences =  vector< uint64_t >( methodes.size()+1 );
 		Revision* tmp = (rev->getRoot()->getNext()); //Diff with racine <=> rev origine
 
 		while( tmp != NULL ){
 			applyMutations( tmpData, tmp);
-			differences.push_back( diff(tmpData, data) );
-			tmp = tmp->getNext();
-		}
 
+			tmpDifferences =  vector< uint64_t >( methodes.size()+1 );
+			for(int i=0; i<methodes.size() ; i++)
+				tmpDifferences[i] =  diff(tmpData, data, i);
+			tmpDifferences[ methodes.size() ] =  diffLine(tmpData, data);
+			differences.push_back( tmpDifferences );
+
+			tmp = tmp->getNext();
+
+		}
 		return differences;
 	}
 
-	Revision* RevisionHandler::bestOrigin( Revision* rev,  vector<char>& data ){
-		vector< uint64_t > differences = calculDifferences( rev, data);
+	pair<Revision*, int>RevisionHandler::bestOrigin( Revision* rev,  vector<char>& data ){
+		vector< vector< uint64_t> > differences = calculDifferences( rev, data);
+		if( differences.size() == 0)
+			return pair<Revision*, int>(  rev, METHODE_STD );
+
+
+
+		///Selection best method by rev
+		vector< uint64_t > linearDiff	= vector< uint64_t >( differences.size() );
+		vector< uint64_t > linearMethod	= vector< uint64_t >( differences.size() );
 		uint64_t tmpDiff = 0;
-		int j=0;
-		cout << " diff      "<<differences.size()<<endl;
+		int tmpMethod = 0;
 
+		for( int i=0 ; i<differences.size() ; i++){
+			tmpDiff 	= differences[i][0];
+			tmpMethod	= 0;
+			for( int j=0; j<=methodes.size() ; j++){
+				if( tmpDiff > differences[i][j] ){
+					tmpDiff 	= differences[i][j];
+					tmpMethod	= (j==methodes.size()) ? METHODE_LINE : j;
+				}
+			}
 
-		if( differences.size() > 0)
-			tmpDiff = data.size();
-		else
-			return rev;
+			linearDiff[i]	= tmpDiff;
+			linearMethod[i]	= tmpMethod;
+		}
 
+		///Selection best origin
 		Revision* tmpRev = rev->getRoot();
-
-		for( int i=0; i<differences.size(); i++){
-			if( tmpDiff > differences[i] ){
-				tmpDiff = differences[i];
-				j++;
+		tmpDiff 	= linearDiff[0];
+		int j=0;
+		for( int i=0; i<linearDiff.size(); i++){
+			if( tmpDiff > linearDiff[i] ){
+				tmpDiff = linearDiff[i];
+				j=i;
 			}
 		}
 
 		for( int k=0; k<j; k++)
 			tmpRev = tmpRev->getNext();
 
-		return (tmpRev != NULL) ? tmpRev : rev;
+		return pair<Revision*, int>(  tmpRev, linearMethod[j] );
 	}
 
-	void RevisionHandler::createMutations( vector<char>& origine, vector<char>& data, ofstream* stream, uint64_t pos){
+	void RevisionHandler::createBlockMutations( vector<char>& origine, vector<char>& data, ofstream* stream, uint64_t pos, int method){
 		stream->seekp(pos, stream->end);
+		uint64_t blockSize = methodes[ method ];
 
 		uint8_t type = 0;
 		uint64_t idBeginning = 0;
 		uint64_t size = 0;
 
-		//Update first
-		uint64_t i(0);
+		///Update first
+		uint64_t j(0);
 		uint64_t n = min( origine.size(), data.size() );
 
 		uint64_t length(0);
-		while( i<n ){
-			if( origine[i] !=  data[i] ){
-				length++;
-			}else if(length != 0){
+		bool flag(true), lastFlag(true);
+		for(uint64_t i=0 ; i<n ; i+=blockSize){
+			j		= 0;
+			flag	= true;
+			while(j<blockSize && i+j<n && flag){
+				flag = ( origine[i+j] == data[i+j] );
+				j++;
+			}
+
+			length	+=	(flag) ? 0 : blockSize;
+
+			if( flag && !lastFlag ){
 				type = Mutation::UPDATE;
 				idBeginning = i-length;
 				size = length;
@@ -262,12 +367,24 @@
 				stream->write( (char*)&idBeginning, 8);
 				stream->write( (char*)&size, 8);
 				write(data, i-length, length, stream);
+
 				length=0;
+				flag=true;
 			}
-			i++;
+			lastFlag = flag;
+		}
+		if( !flag ){ ///Save the last block
+			type = Mutation::UPDATE;
+			idBeginning = n-length;
+			size = length;
+
+			stream->write( (char*)&type,1);
+			stream->write( (char*)&idBeginning, 8);
+			stream->write( (char*)&size, 8);
+			write(data, n-length, length, stream);
 		}
 
-		//Delete
+		///Delete
 		if( origine.size()>data.size() ){
 			type = Mutation::DELETE;
 			idBeginning = data.size();
@@ -278,7 +395,7 @@
 			stream->write( (char*)&size, 8);
 		}
 
-		//Insert
+		///Insert
 		if( origine.size()<data.size() ){
 			type = Mutation::INSERT ;
 			idBeginning = origine.size();
@@ -292,7 +409,99 @@
 		stream->flush();
 	}
 
-	Revision* RevisionHandler::newRevision( Revision* origin,  vector<char>&newData){
+	void RevisionHandler::createLineMutations( vector<char>& origine, vector<char>& data, ofstream* stream, uint64_t pos){
+        stream->seekp(pos, stream->end);
+
+		uint8_t type = 0;
+		uint64_t idBeginning = 0;
+		uint64_t size = 0;
+
+		vector< uint64_t > lineO = stripLine( origine );
+		vector< uint64_t > lineD = stripLine( data );
+cout<<lineD.size()<<" "<<origine.size()<<endl;
+
+		///Update first
+		uint64_t num = min( lineO.size(), lineD.size() );
+		uint64_t diff = 0;
+
+		uint64_t lastBegO(0), lastBegD(0);
+		uint64_t j(0), m(0), length(0);
+		bool flag(true), lastFlag(true);
+		for(uint64_t i=0 ; i<num ; i++){
+			flag = ( lineO[i]- lastBegO == lineD[i]- lastBegD );//Size comparison
+
+			j=0;
+			m=min( lineO[i]- lastBegO, lineD[i]- lastBegD);
+			while(flag && j<m){
+				flag =( origine[ lastBegO + j ] == data[ lastBegD + j ] );
+				j++;
+			}
+
+			length 		+= (flag) ? 0 : lineD[i] - lastBegD;
+			lastBegO	= lineO[i];
+			lastBegD	= lineD[i];
+
+			if( flag && !lastFlag ){
+				type = Mutation::UPDATE;
+				idBeginning = lastBegD-length;
+				size = length;
+
+				stream->write( (char*)&type,1);
+				stream->write( (char*)&idBeginning, 8);
+				stream->write( (char*)&size, 8);
+				write(data, lastBegD-length, length, stream);
+
+				length=0;
+				flag=true;
+			}
+			lastFlag = flag;
+		}
+		if( !flag ){ ///Save the last line
+			type = Mutation::UPDATE;
+			idBeginning = lineD[num-1]-length;
+			size = length;
+
+			stream->write( (char*)&type,1);
+			stream->write( (char*)&idBeginning, 8);
+			stream->write( (char*)&size, 8);
+			write(data, lineD[num-1]-length, length, stream);
+		}
+//
+		///Delete
+		if( lineD.size() < lineO.size() ){
+			type = Mutation::DELETE;
+			idBeginning = data.size();
+			size = lineO.back() - lineD.back();
+
+			stream->write( (char*)&type,1);
+			stream->write( (char*)&idBeginning, 8);
+			stream->write( (char*)&size, 8);
+			write(data, data.size(), size, stream);
+		}
+cout<<lineD.size()<<" "<<lineO.size()<<endl;
+//		///Insert
+//		if( lineO.size() < lineD.size() ){
+//			type = Mutation::INSERT ;
+//			idBeginning = origine.size();
+//			size = lineD.back() - lineO.back();
+//
+//			stream->write( (char*)&type,1);
+//			stream->write( (char*)&idBeginning, 8);
+//			stream->write( (char*)&size, 8);
+//			write(data, origine.size(), size, stream);
+//		}
+throw"";
+		stream->flush();
+	}
+
+	void RevisionHandler::createMutations( vector<char>& origine, vector<char>& data, ofstream* stream, uint64_t pos, int method){
+		if(method == METHODE_LINE)
+			createLineMutations( origine, data, stream, pos);
+		else
+			createBlockMutations( origine, data, stream, pos, method);
+	}
+
+	Revision* RevisionHandler::newRevision( Revision* origin, int method, vector<char>&newData){
 		uint32_t tableSize = extractSizeTable( origin->getIStream() );
 		vector<TableElement> table = extractTable( origin->getIStream() );
 
@@ -307,9 +516,11 @@
 			applyMutations( tmpData, origin); //Data is now hydrate
 		}
 
+        cout<<tmpData.size()<<endl;
+
 		///Rev creation, size will be hydrate later
 		Revision* rev = (origin->getLast() != NULL ) ? origin->getLast() : origin;
-		Revision* newRev= new Revision( tableSize+1, rev->getIdBeginning()+rev->getSize(), 0, diff( tmpData, newData) );
+		Revision* newRev= new Revision( tableSize+1, rev->getIdBeginning()+rev->getSize(), 0, diff( tmpData, newData, method) );
 
 		rev->addChild( newRev );
 		newRev->setPrevious( rev );
@@ -319,7 +530,7 @@
 		newRev->setOStream( origin->getOStreamLocation() );
 		newRev->setLast( newRev );
 
-		createMutations( tmpData, newData, newRev->getOStream(), tableSize);
+		createMutations( tmpData, newData, newRev->getOStream(), tableSize, method);
 
 		///Size
 		ofstream* oStream = origin->getOStream();

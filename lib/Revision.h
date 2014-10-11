@@ -27,7 +27,7 @@
 #include <fstream>
 #include <stdint.h>
 #include <algorithm>
-
+#include <utility>
 
 #include "Mutation.h"
 
@@ -200,30 +200,56 @@ class RevisionHandler{
 		void write( vector<char>& data, uint64_t pos, uint64_t length, ofstream* stream);
 
 	///Create new rev functions
+		/**
+		 * Split a vector in line
+		 * @param d				- data
+		 * @return vector of index of beginning line ( an abstract line beginnin at the end of the data)
+		**/
+		vector< uint64_t > stripLine( vector<char>& d );
 
 		/**
-		 * Calcul the difference between  origin and data
+		 * Calcul the difference between  origin and data by line in bytes
 		 * @param origin        - origin's data
 		 * @param data          - current's data
-		 * @return E[%*10000] diff with the origin, which is relative to the current rev
+		 * @return diff with the origin, which is relative to the current rev
 		**/
-		uint64_t diff( vector<char>& origine, vector<char>& data  );
+		uint64_t diffLine( vector<char>& origine, vector<char>& data);
+
 
 		/**
-		 * Calcul the differences between data and all the revision in the tree
+		 * Calcul the difference between  origin and data by block in bytes
+		 * @param origin        - origin's data
+		 * @param data          - current's data
+		 * @param method		- block type
+		 * @return diff with the origin, which is relative to the current rev
+		**/
+		uint64_t diffBlock( vector<char>& origine, vector<char>& data, int method );
+
+
+		/**
+		 * Calcul the difference between  origin and data, used as an interface for diffLine and diffBlock
+		 * @param origin        - origin's data
+		 * @param data          - current's data
+		 * @param method		- block type (or line)
+		 * @return diff with the origin, which is relative to the current rev
+		**/
+		uint64_t diff( vector<char>& origine, vector<char>& data, int method);
+
+		/**
+		 * Calcul the differences between data and all the revision in the tree for all the methods
 		 * @param rev           - revision tree
 		 * @param data          -
 		 * @return vector of diff order by id
 		 */
-		vector< uint64_t > calculDifferences( Revision* rev,  vector<char>& data );
+		vector< vector<uint64_t> > calculDifferences( Revision* rev,  vector<char>& data );
 
 		/**
 		 * @brief Return the best origin for the current data
 		 * @param rev           - revision tree
 		 * @param data          -
-		 * @return  Revision which is the best origin
+		 * @return  Revision which is the best origin, with the best method
 		 */
-		Revision* bestOrigin( Revision* rev,  vector<char>& data );
+		pair<Revision*, int> bestOrigin( Revision* rev,  vector<char>& data );
 
 		/**
 		 * @brief Create the mutations needed to build data from origin
@@ -231,16 +257,38 @@ class RevisionHandler{
 		 * @param data          -
 		 * @param stream        - file where mutations are written
 		 * @param pos           - id of the beginning in the flux
+		 * @param method		- block type
 		 */
-		void createMutations( vector<char>& origine, vector<char>& data, ofstream* stream, uint64_t pos);
+		void createBlockMutations( vector<char>& origine, vector<char>& data, ofstream* stream, uint64_t pos, int method);
+
+		/**
+		 * @brief Create the mutations needed to build data from origin
+		 * @param origin        -
+		 * @param data          -
+		 * @param stream        - file where mutations are written
+		 * @param pos           - id of the beginning in the flux
+		 * @param method		- block type
+		 */
+		void createLineMutations( vector<char>& origine, vector<char>& data, ofstream* stream, uint64_t pos);
+
+		/**
+		 * @brief Create the mutations needed to build data from origin, used as an interface
+		 * @param origin        -
+		 * @param data          -
+		 * @param stream        - file where mutations are written
+		 * @param pos           - id of the beginning in the flux
+		 * @param method		- block type
+		 */
+		void createMutations( vector<char>& origine, vector<char>& data, ofstream* stream, uint64_t pos, int method);
 
 		/**
 		 * @brief Make a new revision from newData
 		 * @param origin    - origin of the new mutation
+		 * @param method    - block type (or line)
 		 * @param newData
 		 * @return the new Rev
 		 */
-		Revision* newRevision( Revision* origin, vector<char>& newData);
+		Revision* newRevision( Revision* origin, int method, vector<char>& newData);
 };
 
 
