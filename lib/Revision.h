@@ -99,13 +99,13 @@ class Revision{
 		void setNext( Revision* rev ){      next=rev; }
 		void setLast( Revision* rev ){      last=rev; }
 		void setIStream( string s ){
+            delete iStream;
 			iStreamLocation = s;
-			delete iStream;
 			iStream=new ifstream( s.c_str() );
 		}
 		void setOStream( string s ){
+            delete oStream;
 			oStreamLocation = s;
-			delete oStream;
 			oStream=new ofstream( s.c_str(), ios::app );
 		}
 		void setRelativeO( uint64_t n ){    relativeO=n; }

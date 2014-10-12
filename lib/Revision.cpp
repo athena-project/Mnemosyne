@@ -159,7 +159,6 @@
 		Mutation m;
 		uint64_t i =0;
 		stream->seekg( rev->getIdBeginning() - rev->getRelativeO(), stream->beg );
-
 		while( i < rev->getSize() ){
 			Mutation m=readMutation( *stream );
 			m.apply(data, *stream);
@@ -236,7 +235,7 @@
 		if( lineO.size() > lineD.size() )
 			diff += Mutation::HEADER_SIZE;
 		if( lineO.size() < lineD.size() )
-			diff += Mutation::HEADER_SIZE;
+			diff += Mutation::HEADER_SIZE + lineO.back()-lineD.back();
 		return diff;
 
 	}
@@ -291,11 +290,10 @@
 	}
 
 	pair<Revision*, int>RevisionHandler::bestOrigin( Revision* rev,  vector<char>& data ){
-		vector< vector< uint64_t> > differences = calculDifferences( rev, data);
-		if( differences.size() == 0)
+		if( NULL == rev->getLast() )
 			return pair<Revision*, int>(  rev, METHODE_STD );
 
-
+		vector< vector< uint64_t> > differences = calculDifferences( rev, data);
 
 		///Selection best method by rev
 		vector< uint64_t > linearDiff	= vector< uint64_t >( differences.size() );
@@ -318,7 +316,7 @@
 		}
 
 		///Selection best origin
-		Revision* tmpRev = rev->getRoot();
+		Revision* tmpRev = rev->getRoot()->getNext();
 		tmpDiff 	= linearDiff[0];
 		int j=0;
 		for( int i=0; i<linearDiff.size(); i++){
@@ -418,7 +416,6 @@
 
 		vector< uint64_t > lineO = stripLine( origine );
 		vector< uint64_t > lineD = stripLine( data );
-cout<<lineD.size()<<" "<<origine.size()<<endl;
 
 		///Update first
 		uint64_t num = min( lineO.size(), lineD.size() );
@@ -466,7 +463,7 @@ cout<<lineD.size()<<" "<<origine.size()<<endl;
 			stream->write( (char*)&size, 8);
 			write(data, lineD[num-1]-length, length, stream);
 		}
-//
+
 		///Delete
 		if( lineD.size() < lineO.size() ){
 			type = Mutation::DELETE;
@@ -476,21 +473,20 @@ cout<<lineD.size()<<" "<<origine.size()<<endl;
 			stream->write( (char*)&type,1);
 			stream->write( (char*)&idBeginning, 8);
 			stream->write( (char*)&size, 8);
-			write(data, data.size(), size, stream);
 		}
-cout<<lineD.size()<<" "<<lineO.size()<<endl;
-//		///Insert
-//		if( lineO.size() < lineD.size() ){
-//			type = Mutation::INSERT ;
-//			idBeginning = origine.size();
-//			size = lineD.back() - lineO.back();
-//
-//			stream->write( (char*)&type,1);
-//			stream->write( (char*)&idBeginning, 8);
-//			stream->write( (char*)&size, 8);
-//			write(data, origine.size(), size, stream);
-//		}
-throw"";
+
+		///Insert
+		if( lineO.size() < lineD.size() ){
+			type = Mutation::INSERT ;
+			idBeginning = origine.size();
+			size = lineD.back() - lineO.back();
+
+			stream->write( (char*)&type,1);
+			stream->write( (char*)&idBeginning, 8);
+			stream->write( (char*)&size, 8);
+			write(data, origine.size(), size, stream);
+		}
+
 		stream->flush();
 	}
 
@@ -509,19 +505,15 @@ throw"";
 		///Building of origin
 		vector<char> tmpData;
 		vector< Revision* > parents = origin->getParents();
-		if( parents.size() > 0){
-			for( int i=0; i<parents.size()-1 ; i++)
-				applyMutations( tmpData, parents[i]);
-
-			applyMutations( tmpData, origin); //Data is now hydrate
-		}
-
-        cout<<tmpData.size()<<endl;
+        for( int i=0; i<parents.size() ; i++)
+            applyMutations( tmpData, parents[i]);
+        if( parents.empty() )//Data is now hydrate
+            applyMutations( tmpData, origin);
 
 		///Rev creation, size will be hydrate later
 		Revision* rev = (origin->getLast() != NULL ) ? origin->getLast() : origin;
+		cout<<diff( tmpData, newData, method) <<endl;
 		Revision* newRev= new Revision( tableSize+1, rev->getIdBeginning()+rev->getSize(), 0, diff( tmpData, newData, method) );
-
 		rev->addChild( newRev );
 		newRev->setPrevious( rev );
 		newRev->setParent( origin );
@@ -529,7 +521,6 @@ throw"";
 		newRev->setIStream( origin->getIStreamLocation() );
 		newRev->setOStream( origin->getOStreamLocation() );
 		newRev->setLast( newRev );
-
 		createMutations( tmpData, newData, newRev->getOStream(), tableSize, method);
 
 		///Size

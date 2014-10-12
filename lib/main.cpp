@@ -23,20 +23,20 @@ int main(){
 
 
     vector<uint64_t> ids;
-    ids.push_back(940);
+    ids.push_back(950);
     r.setChunkIds( ids );
 
 
 ///Creation ressource
-    rHandler.newRevision(&r, str);
+//    rHandler.newRevision(&r, str);
 
 
 ///lecture
 
 
-//    r.setCurrentRevision(3);
-//    ofstream test("/home/toor/Desktop/2.html");
-//    string a=rHandler.buildRevision(r, 1);
-//    test<<a;
+    r.setCurrentRevision(2);
+    ofstream test("/home/toor/Desktop/2.html");
+    string a=rHandler.buildRevision(r, 2);
+    test<<a;
     return 0;
 }

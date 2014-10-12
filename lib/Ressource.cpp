@@ -174,7 +174,6 @@ Revision* RessourceHandler::buildAllRevisions(Ressource& r){
 
 	char c;
 	for(int i=0; i< chuncksTable.size(); i++){
-	cout<<chHandler.getFile( chuncksTable[i].getId() )<<endl;
 		ifstream tmpStream( chHandler.getFile( chuncksTable[i].getId() ).c_str() , ios::binary);
 		int length = chuncksTable[i].getSize();
 
@@ -208,15 +207,16 @@ Revision* RessourceHandler::buildAllRevisions(Ressource& r){
 
 //Input is the ressource content
 void RessourceHandler::newRevision( Ressource* r, string dataStr ){
-	vector< char > data;
+	vector< char > data = vector< char >(dataStr.size());
 	for(uint64_t i=0; i<dataStr.size(); i++)
-		data.push_back( dataStr[i] );
+		data[i] = dataStr[i];
 
 	RevisionHandler revHandler;
 	Revision* rev = buildAllRevisions( *r );
 	pair<Revision*, int> p = revHandler.bestOrigin( rev, data );
 	rev = p.first;
 	int method = p.second;
+cout<<"method"<<method<<endl;
 
 	///Maj de l'instance courrante
 	Revision* newRev = revHandler.newRevision( rev, method, data );
