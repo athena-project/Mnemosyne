@@ -20,7 +20,7 @@
 #ifndef RESSOURCE_H_INCLUDED
 #define RESSOURCE_H_INCLUDED
 
-//#include <boost/python.hpp>
+#include <boost/python.hpp>
 
 #include <string>
 #include <vector>
@@ -75,12 +75,12 @@ class Ressource{
 			chunks = chManager.get( chunkIds );
 		}
 
-//		void setChunkIdsFromList(boost::python::list& ns){
-//			vector<uint64_t> ids;
-//			for (int i = 0; i < len(ns); ++i)
-//				ids.push_back( boost::python::extract<uint64_t>(ns[i]) );
-//			setChunkIds( ids );
-//		}
+		void setChunkIdsFromList(boost::python::list& ns){
+			vector<uint64_t> ids;
+			for (int i = 0; i < len(ns); ++i)
+				ids.push_back( boost::python::extract<uint64_t>(ns[i]) );
+			setChunkIds( ids );
+		}
 
 		void setRevision(Revision* newRev){
 			delete rev;

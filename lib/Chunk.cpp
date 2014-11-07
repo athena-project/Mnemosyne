@@ -41,14 +41,34 @@ uint64_t ChunkManager::insert( Chunk chunk){
 }
 
 vector<uint64_t> ChunkManager::insert( vector< Chunk > chunks ){
-	vector<uint64_t> ids;
+    mysqlpp::Query query = conn.query();
+    mysqlpp::Query id_query = conn.query();
 
+	query<<"INSERT INTO chunk (size) VALUES ";
 	for(vector<Chunk>::iterator it=chunks.begin(); it!=chunks.end(); it++){
-		it->setId( insert( *it ) );
-		ids.push_back( it->getId() );
-	}
+        if( it != chunks.begin() )
+            query<<", ";
+        query<<"("<<(*it).getSize()<<")";
+    }
+    query<< ");";
+	vector<uint64_t> ids( chunks.size(), 0);
 
-	return ids;
+	if (mysqlpp::SimpleResult res = query.execute()){
+
+        id_query<<"SELECT  LAST_INSERT_ID() as id FROM chunk;";
+        mysqlpp::StoreQueryResult id_res = id_query.store();
+
+        uint64_t  i = 0;
+        uint64_t  I = (uint64_t)id_res[0]["id"];
+
+        for( uint64_t i =0; i<ids.size() ; i++)
+            ids[ ids.size()-i-1 ] = I-i;
+
+		return ids;
+	}else{
+		cerr << "Failed to get item list: " << query.error() << endl;
+		throw "";
+	}
 }
 
 Chunk ChunkManager::get(uint64_t id){
@@ -113,10 +133,23 @@ void ChunkManager::update( Chunk chunk){
 }
 
 void ChunkManager::update( vector< Chunk > chunks ){
-	for(vector<Chunk>::iterator it=chunks.begin(); it!=chunks.end(); it++)
-		 update( *it );
+	mysqlpp::Query query = conn.query();
+	query<<"INSERT INTO chunk (id, size) VALUES";
 
-	return;
+    for(vector<Chunk>::iterator it=chunks.begin(); it!=chunks.end(); it++){
+        if( it != chunks.begin() )
+            query<<", ";
+        query<<"("<<(*it).getId()<<", "<<(*it).getSize()<<")";
+    }
+
+    query<<"ON DUPLICATE KEY UPDATE size=VALUES( size )";
+
+	if (mysqlpp::SimpleResult res = query.execute())
+		return;
+	else{
+		cerr << "Failed to get item list: " << query.error() << endl;
+		throw "";
+	}
 }
 
 

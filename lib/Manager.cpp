@@ -4,8 +4,7 @@ Manager::Manager(){
 	conn = SQLFactory::getSQLConnexion();
 }
 
-Manager::Manager( mysqlpp::Connection& co ){
-	conn=co;
+Manager::~Manager(){
+    conn.disconnect();
+    delete &conn;
 }
-
-Manager::~Manager(){}

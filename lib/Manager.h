@@ -35,7 +35,6 @@ class Manager{
 
 	public :
 		Manager();
-		Manager( mysqlpp::Connection& co );
 		virtual ~Manager();
 };
 
