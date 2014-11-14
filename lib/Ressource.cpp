@@ -44,7 +44,7 @@ vector< TableElement> RessourceHandler::x_buildTable( Ressource& r ){
 
 	ofstream tableStream ( location.c_str(), ios::binary );
 
-	for( int i=0; i<chuncksTable.size(); i++){
+	for( uint64_t i=0; i<chuncksTable.size(); i++){
 		ifstream tmpStreamTable( chHandler.getFile( chuncksTable[i].getId() ).c_str(), ios::binary );
 		char* buffer = new char[ chuncksTable[i].getSize() ];
 		tmpStreamTable.read( buffer, chuncksTable[i].getSize() );
@@ -101,8 +101,7 @@ string RessourceHandler::buildRevision( Ressource& r, uint32_t n ){
 		 }
 
 		///Hydrating rev tree
-		 uint64_t lastMax = 0;
-		 for(int j=0; j<extrematIds.size(); j++){
+		 for(uint64_t j=0; j<extrematIds.size(); j++){
 			///Tmp file
 			std::time_t timestamp = std::time(0);  // t is an integer type
 			std::ostringstream tmpId;
@@ -115,7 +114,7 @@ string RessourceHandler::buildRevision( Ressource& r, uint32_t n ){
 			ofstream stream ( location.c_str(), ios::binary );
 
 			///Filling tmpfile
-			for(int k=extrematIds[j].first; k<=extrematIds[j].second; k++){
+			for(uint32_t k=extrematIds[j].first; k<=extrematIds[j].second; k++){
 				uint64_t size = chunks[ k ].getSize();
 				const char* tmpLocation = chHandler.getFile( chunks[ k ].getId() ).c_str();
 				ifstream tmpStream( tmpLocation, ios::binary);
@@ -141,7 +140,7 @@ string RessourceHandler::buildRevision( Ressource& r, uint32_t n ){
 	for(uint64_t j=0; j<data.size(); j++)
 		value<<data[j];
 
-	for( int l=0; l<tmpFiles.size() ; l++)
+	for( uint64_t l=0; l<tmpFiles.size() ; l++)
 		std::remove( tmpFiles[l].c_str() );
 
 	return value.str();
@@ -172,8 +171,7 @@ Revision* RessourceHandler::buildAllRevisions(Ressource& r){
 	RevisionHandler revHandler;
 	vector<Chunk> chuncksTable = chManager.get( r.getChunkIds() );
 
-	char c;
-	for(int i=0; i< chuncksTable.size(); i++){
+	for(uint64_t i=0; i< chuncksTable.size(); i++){
 		ifstream tmpStream( chHandler.getFile( chuncksTable[i].getId() ).c_str() , ios::binary);
 		int length = chuncksTable[i].getSize();
 
@@ -216,7 +214,6 @@ void RessourceHandler::newRevision( Ressource* r, string dataStr ){
 	pair<Revision*, int> p = revHandler.bestOrigin( rev, data );
 	rev = p.first;
 	int method = p.second;
-cout<<"method"<<method<<endl;
 
 	///Maj de l'instance courrante
 	Revision* newRev = revHandler.newRevision( rev, method, data );
@@ -235,4 +232,5 @@ cout<<"method"<<method<<endl;
 	cHandler.makeChunks( *currentStream, newRev->getIdBeginning()+sizeUpdateLastChunk, sizeUpdate-sizeUpdateLastChunk);
 
 	std::remove( rev->getIStreamLocation().c_str() );
+    delete newRev;
 }

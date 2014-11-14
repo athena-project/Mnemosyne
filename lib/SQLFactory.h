@@ -21,14 +21,10 @@
 #define SQLFACTORY_H_INCLUDED
 
 #include <mysql++/mysql++.h>
-
+#include <iostream>
 
 using namespace std;
 
-
-class SQLFactory{
-	public :
-		static mysqlpp::Connection getSQLConnexion();
-};
+mysqlpp::Connection getSQLConn();
 
 #endif // SQLFACTORY_H_INCLUDED

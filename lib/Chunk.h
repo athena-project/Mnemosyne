@@ -71,8 +71,6 @@ class ChunkManager : public Manager{
 
 class ChunkHandler : public Xz {
 	protected :
-		ChunkManager* cManager;
-
 		vector< string > files; ///All the tmpFiles which are created by this instance
 
 	public :

@@ -512,7 +512,7 @@
 
 		///Rev creation, size will be hydrate later
 		Revision* rev = (origin->getLast() != NULL ) ? origin->getLast() : origin;
-		cout<<diff( tmpData, newData, method) <<endl;
+
 		Revision* newRev= new Revision( tableSize+1, rev->getIdBeginning()+rev->getSize(), 0, diff( tmpData, newData, method) );
 		rev->addChild( newRev );
 		newRev->setPrevious( rev );

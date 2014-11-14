@@ -26,11 +26,13 @@ Chunk::Chunk( uint64_t id, uint32_t size){
 
 ChunkManager::ChunkManager(){}
 
-ChunkManager::~ChunkManager(){}
+ChunkManager::~ChunkManager(){
+    conn.disconnect();
+}
 
 uint64_t ChunkManager::insert( Chunk chunk){
 	mysqlpp::Query query = conn.query();
-	query<<"INSERT INTO chunk (size) VALUES (" <<chunk.getSize()<< ");";
+	query<<"INSERT INTO chunk (size) VALUES (" <<chunk.getSize()<< ")";
 
 	if (mysqlpp::SimpleResult res = query.execute())
 		return (uint64_t)res.insert_id();
@@ -41,24 +43,27 @@ uint64_t ChunkManager::insert( Chunk chunk){
 }
 
 vector<uint64_t> ChunkManager::insert( vector< Chunk > chunks ){
+    if( chunks.empty() )
+        return vector<uint64_t>();
+
     mysqlpp::Query query = conn.query();
     mysqlpp::Query id_query = conn.query();
 
 	query<<"INSERT INTO chunk (size) VALUES ";
+
 	for(vector<Chunk>::iterator it=chunks.begin(); it!=chunks.end(); it++){
         if( it != chunks.begin() )
             query<<", ";
         query<<"("<<(*it).getSize()<<")";
     }
-    query<< ");";
+
 	vector<uint64_t> ids( chunks.size(), 0);
 
 	if (mysqlpp::SimpleResult res = query.execute()){
 
-        id_query<<"SELECT  LAST_INSERT_ID() as id FROM chunk;";
+        id_query<<"SELECT  LAST_INSERT_ID() as id FROM chunk";
         mysqlpp::StoreQueryResult id_res = id_query.store();
 
-        uint64_t  i = 0;
         uint64_t  I = (uint64_t)id_res[0]["id"];
 
         for( uint64_t i =0; i<ids.size() ; i++)
@@ -133,6 +138,9 @@ void ChunkManager::update( Chunk chunk){
 }
 
 void ChunkManager::update( vector< Chunk > chunks ){
+    if( chunks.empty() )
+        return ;
+
 	mysqlpp::Query query = conn.query();
 	query<<"INSERT INTO chunk (id, size) VALUES";
 
@@ -152,18 +160,14 @@ void ChunkManager::update( vector< Chunk > chunks ){
 	}
 }
 
-
 /**
   * ChunkHandler
   */
 ChunkHandler::ChunkHandler(){
-	cManager = new ChunkManager();
 }
 
 ChunkHandler::~ChunkHandler(){
-	delete cManager;
-
-	for( int i=0; i<files.size(); i++)
+	for( uint32_t i=0; i<files.size(); i++)
 		std::remove( files[i].c_str() );
 }
 
@@ -211,6 +215,7 @@ void ChunkHandler::writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginnin
 }
 
 void ChunkHandler::updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size, uint64_t offset){
+	ChunkManager cManager;
 	idBeginning += offset; ///Table
 	idBeginning -= c.getSize(); ///chunk must be overwrite
 
@@ -241,7 +246,7 @@ void ChunkHandler::updateData(Chunk c, ifstream& stream, uint64_t idBeginning, u
 
 	///SQL UPDATE
 	c.setSize( c.getSize()-offset+size );
-	cManager->update( c );
+	cManager.update( c );
 
 	save( c.getId() );
 }
@@ -262,17 +267,17 @@ vector<Chunk> ChunkHandler::makeChunks( ifstream& stream, uint64_t idBeginning, 
 
 	///SQL insertion and writting on hard drive
 	vector<uint64_t> ids = cManager.insert( chunks );
-	uint32_t chunkSize = Chunk::CHUNK_SIZE_MAX;
-	for( uint64_t i=0; i<ids.size(); i++){
-		chunks[i].setId( ids[i] );
-
-		if( i == ids.size()-1 )
-			chunkSize = min( (uint64_t)Chunk::CHUNK_SIZE_MAX, size-(ids.size()-1)*(Chunk::CHUNK_SIZE_MAX) );
-		else
-			chunkSize = Chunk::CHUNK_SIZE_MAX;
-
-		writeChunk( ids[i], stream, idBeginning+i*(Chunk::CHUNK_SIZE_MAX), chunkSize);
-	}
+//	uint32_t chunkSize = Chunk::CHUNK_SIZE_MAX;
+//	for( uint64_t i=0; i<ids.size(); i++){
+//		chunks[i].setId( ids[i] );
+//
+//		if( i == ids.size()-1 )
+//			chunkSize = min( (uint64_t)Chunk::CHUNK_SIZE_MAX, size-(ids.size()-1)*(Chunk::CHUNK_SIZE_MAX) );
+//		else
+//			chunkSize = Chunk::CHUNK_SIZE_MAX;
+//
+//		writeChunk( ids[i], stream, idBeginning+i*(Chunk::CHUNK_SIZE_MAX), chunkSize);
+//	}
 
 	return chunks;
 }
