@@ -1,5 +1,6 @@
 #include "Chunk.h"
-
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 
 
 /**
@@ -24,7 +25,9 @@ Chunk::Chunk( uint64_t id, uint32_t size){
  *  ChunckManager
  */
 
-ChunkManager::ChunkManager(){}
+ChunkManager::ChunkManager(){
+    cout<<"hello"<<endl;
+}
 
 ChunkManager::~ChunkManager(){
     conn.disconnect();
@@ -163,9 +166,6 @@ void ChunkManager::update( vector< Chunk > chunks ){
 /**
   * ChunkHandler
   */
-ChunkHandler::ChunkHandler(){
-}
-
 ChunkHandler::~ChunkHandler(){
 	for( uint32_t i=0; i<files.size(); i++)
 		std::remove( files[i].c_str() );
@@ -190,8 +190,9 @@ void ChunkHandler::save( uint64_t id){
 	string chunkLocation2 = ChunkHandler::DIR()+"/"+chunckId.str()+".xz";
 	string chunkLocation = ChunkHandler::TMP_DIR()+"/"+chunckId.str();
 
-	files.push_back( chunkLocation );
-	compress( chunkLocation.c_str(), chunkLocation2.c_str());
+    files.push_back( chunkLocation );
+    compress( chunkLocation.c_str(), chunkLocation2.c_str());
+
 }
 
 void ChunkHandler::writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginning, uint64_t size){
@@ -199,7 +200,7 @@ void ChunkHandler::writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginnin
 	strId<<id;
 
 	string location = ChunkHandler::TMP_DIR()+"/"+strId.str();
-	ofstream oStream( location.c_str() );
+	ofstream oStream( location.c_str(), ios::out );
 
 	stream.seekg( idBeginning, stream.beg );
 
@@ -215,7 +216,6 @@ void ChunkHandler::writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginnin
 }
 
 void ChunkHandler::updateData(Chunk c, ifstream& stream, uint64_t idBeginning, uint64_t size, uint64_t offset){
-	ChunkManager cManager;
 	idBeginning += offset; ///Table
 	idBeginning -= c.getSize(); ///chunk must be overwrite
 
@@ -246,13 +246,12 @@ void ChunkHandler::updateData(Chunk c, ifstream& stream, uint64_t idBeginning, u
 
 	///SQL UPDATE
 	c.setSize( c.getSize()-offset+size );
-	cManager.update( c );
+	manager->update( c );
 
 	save( c.getId() );
 }
 
 vector<Chunk> ChunkHandler::makeChunks( ifstream& stream, uint64_t idBeginning, uint64_t size ){
-	ChunkManager cManager;
 	uint64_t nbrNeeded = ceil( (float)size / (float)(Chunk::CHUNK_SIZE_MAX) );
 	stream.seekg( idBeginning );
 
@@ -266,18 +265,19 @@ vector<Chunk> ChunkHandler::makeChunks( ifstream& stream, uint64_t idBeginning, 
 	}
 
 	///SQL insertion and writting on hard drive
-	vector<uint64_t> ids = cManager.insert( chunks );
-//	uint32_t chunkSize = Chunk::CHUNK_SIZE_MAX;
-//	for( uint64_t i=0; i<ids.size(); i++){
-//		chunks[i].setId( ids[i] );
-//
-//		if( i == ids.size()-1 )
-//			chunkSize = min( (uint64_t)Chunk::CHUNK_SIZE_MAX, size-(ids.size()-1)*(Chunk::CHUNK_SIZE_MAX) );
-//		else
-//			chunkSize = Chunk::CHUNK_SIZE_MAX;
-//
-//		writeChunk( ids[i], stream, idBeginning+i*(Chunk::CHUNK_SIZE_MAX), chunkSize);
-//	}
+	vector<uint64_t> ids = manager->insert( chunks );
+	uint32_t chunkSize = Chunk::CHUNK_SIZE_MAX;
+
+	for( uint64_t i=0; i<ids.size(); i++){
+		chunks[i].setId( ids[i] );
+
+		if( i == ids.size()-1 )
+			chunkSize = min( (uint64_t)Chunk::CHUNK_SIZE_MAX, size-(ids.size()-1)*(Chunk::CHUNK_SIZE_MAX) );
+		else
+			chunkSize = Chunk::CHUNK_SIZE_MAX;
+
+        writeChunk( ids[i], stream, idBeginning+i*(Chunk::CHUNK_SIZE_MAX), chunkSize);
+	}
 
 	return chunks;
 }

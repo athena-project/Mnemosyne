@@ -14,7 +14,7 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 * MA 02110-1301, USA.
 *
-* @autor Severus21
+* @author Severus21
 */
 
 #ifndef RESSOURCE_H_INCLUDED
@@ -70,9 +70,10 @@ class Ressource{
 
 		void setChunkIds( vector<uint64_t> ids){
 			chunkIds=ids;
+		}
 
-			ChunkManager chManager;
-			chunks = chManager.get( chunkIds );
+		void setChunkIds( vector<Chunk> v){
+			chunks=v;
 		}
 
 //		void setChunkIdsFromList(boost::python::list& ns){
@@ -95,9 +96,9 @@ class Ressource{
 
 class RessourceHandler{
 	protected :
-
+        ChunkManager* manager;
 	public :
-
+        RessourceHandler(ChunkManager* m) : manager(m){}
 		/**
 		 * @brief build the revisions' table of the current ressource,
 		 * only loading the needed chunk.

@@ -1,5 +1,6 @@
 #include "Ressource.h"
-
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 
 
 ///Ressource
@@ -19,8 +20,7 @@ bool Ressource::empty(){
 ///RessourceHandler
 
 vector< TableElement> RessourceHandler::x_buildTable( Ressource& r ){
-	ChunkHandler    chHandler;
-	ChunkManager    chManager;
+	ChunkHandler    chHandler( manager );
 	RevisionHandler revHandler;
 
 	/// Getting all chunks needed to the building of the table
@@ -31,7 +31,7 @@ vector< TableElement> RessourceHandler::x_buildTable( Ressource& r ){
 	vector< uint32_t > idChuncksTable;
 	for(uint32_t i = (chunkIds.size()-nbrChuncksTable-1) ; i<chunkIds.size()  ; i++ )
 		idChuncksTable.push_back( chunkIds[i] );
-	vector<Chunk> chuncksTable = chManager.get( chunkIds );
+	vector<Chunk> chuncksTable = r.getChunks();
 
 	///Tmp file
 	std::time_t timestamp = std::time(0);  // t is an integer type
@@ -67,8 +67,7 @@ string RessourceHandler::buildRevision( Ressource& r, uint32_t n ){
 		return r.getContent();
 
 	RevisionHandler revHandler;
-	ChunkHandler    chHandler;
-	ChunkManager    chManager;
+	ChunkHandler    chHandler( manager );
 	vector<Chunk> chunks = r.getChunks();
 	vector< string > tmpFiles; //All files which must be deleted
 	vector<char> data;
@@ -166,10 +165,9 @@ Revision* RessourceHandler::buildAllRevisions(Ressource& r){
 		return rev;
 	}
 
-	ChunkManager chManager;
-	ChunkHandler chHandler;
+	ChunkHandler chHandler( manager );
 	RevisionHandler revHandler;
-	vector<Chunk> chuncksTable = chManager.get( r.getChunkIds() );
+	vector<Chunk> chuncksTable = r.getChunks();
 
 	for(uint64_t i=0; i< chuncksTable.size(); i++){
 		ifstream tmpStream( chHandler.getFile( chuncksTable[i].getId() ).c_str() , ios::binary);
@@ -221,7 +219,7 @@ void RessourceHandler::newRevision( Ressource* r, string dataStr ){
 
 	///Création des nv chunk
 	vector< Chunk > chunks = r->getChunks();
-	ChunkHandler cHandler;
+	ChunkHandler cHandler( manager );
 	uint64_t sizeUpdate = newRev->getSize() + newRev->getLast()->getN()  * Revision::REVISION_SIZE_TABLE + 2;
 	uint64_t sizeUpdateLastChunk = (chunks.size() == 0) ? 0 : min(sizeUpdate, (uint64_t)Chunk::CHUNK_SIZE_MAX);
 	uint64_t offset = (newRev->getLast()->getN()-1) * Revision::REVISION_SIZE_TABLE + 2;

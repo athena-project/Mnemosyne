@@ -14,7 +14,7 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 * MA 02110-1301, USA.
 *
-* @autor Severus21
+* @author Severus21
 */
 
 #ifndef CHUNK_H_INCLUDED
@@ -71,10 +71,11 @@ class ChunkManager : public Manager{
 
 class ChunkHandler : public Xz {
 	protected :
+        ChunkManager* manager;
 		vector< string > files; ///All the tmpFiles which are created by this instance
 
 	public :
-		ChunkHandler();
+		ChunkHandler(ChunkManager* m ) : manager( m ){}
 		~ChunkHandler();
 
 		static string DIR(){ return "/home/toor/Desktop/chunks"; } ///Path of the directory for chunk

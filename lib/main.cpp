@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <vector>
 
-
+#include "Manager.h"
 #include "Ressource.h"
 #include "Revision.h"
 using namespace std;
@@ -17,9 +17,9 @@ int main(){
         str += c;
 
     Ressource r;
-    RessourceHandler rHandler;
 
-
+    ChunkManager* cManager = new ChunkManager();
+    RessourceHandler rHandler(cManager);
     vector<uint64_t> ids;
 //    ids.push_back(950);
 //    r.setChunkIds( ids );
@@ -27,11 +27,12 @@ int main(){
 
 ///Creation ressource
     try{
-        for(int i=0; i<510; i++){
+        for(int i=0; i<700; i++){
             rHandler.newRevision(&r, str);
         }
     }catch( const char* e){
     }
+    delete cManager;
 
 
 ///lecture

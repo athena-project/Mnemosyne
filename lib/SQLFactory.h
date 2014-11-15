@@ -14,7 +14,7 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 * MA 02110-1301, USA.
 *
-* @autor Severus21
+* @author Severus21
 */
 
 #ifndef SQLFACTORY_H_INCLUDED
