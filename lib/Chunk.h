@@ -54,6 +54,8 @@ class ChunkManager : public Manager{
 		ChunkManager();
 		~ChunkManager();
 
+        static ChunkManager* create () { return new ChunkManager; } //For python
+
 		uint64_t insert( Chunk chunk);
 		vector<uint64_t> insert( vector< Chunk > chunks );
 

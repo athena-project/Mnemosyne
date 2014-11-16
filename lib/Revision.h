@@ -99,12 +99,14 @@ class Revision{
 		void setNext( Revision* rev ){      next=rev; }
 		void setLast( Revision* rev ){      last=rev; }
 		void setIStream( string s ){
-            delete iStream;
+            if( iStream != NULL)
+                delete iStream;
 			iStreamLocation = s;
 			iStream=new ifstream( s.c_str() );
 		}
 		void setOStream( string s ){
-            delete oStream;
+            if( iStream != NULL)
+                delete oStream;
 			oStreamLocation = s;
 			oStream=new ofstream( s.c_str(), ios::app );
 		}

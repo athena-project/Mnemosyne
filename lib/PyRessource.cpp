@@ -35,22 +35,20 @@
 
 BOOST_PYTHON_MODULE(libpyRessource){
 	using namespace boost::python;
-	
-	
-	//class_<std::vector<uint64_t> >("VectorOfUint64_t")
-        ////.def(vector_indexing_suite<std::vector<uint64_t> >() )
-    //;
-	
+
+    class_<ChunkManager>("ChunkManager",no_init)
+        .def("create",&ChunkManager::create, return_value_policy<manage_new_object>());
+
     class_<Ressource>("Ressource", init<>())
         .def("getId", &Ressource::getId)
         .def("getCurrentRevision", &Ressource::getCurrentRevision)
-        .def("getChunkIds", &Ressource::getChunkIds)
+        .def("getChunkIdsList", &Ressource::getChunkIdsList)
         .def("setId", &Ressource::setId)
         .def("setCurrentRevision", &Ressource::setCurrentRevision)
         .def("setChunkIdsFromList", &Ressource::setChunkIdsFromList)
     ;
 
-    class_<RessourceHandler>("RessourceHandler", init<>())
+    class_<RessourceHandler>("RessourceHandler", init<ChunkManager*>())
         .def("buildRevision", &RessourceHandler::buildRevision)
         .def("newRevision", &RessourceHandler::newRevision)
     ;

@@ -2,11 +2,13 @@
 #include <fstream>
 #include <stdint.h>
 #include <vector>
+#include <fstream>
 
 #include "Manager.h"
 #include "Ressource.h"
 #include "Revision.h"
 using namespace std;
+
 
 int main(){
 
@@ -27,8 +29,8 @@ int main(){
 
 ///Creation ressource
     try{
-        for(int i=0; i<700; i++){
-            rHandler.newRevision(&r, str);
+        for(int i=0; i<1000; i++){
+            rHandler.newRevision(r, str);
         }
     }catch( const char* e){
     }

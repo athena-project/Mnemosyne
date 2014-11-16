@@ -32,7 +32,7 @@
     }
 
 	Revision::~Revision(){
-		for(int i=0; i<children.size(); i++)
+		for(uint32_t i=0; i<children.size(); i++)
 			delete children[i];
         if( oStream != NULL)
             delete oStream;
@@ -92,7 +92,7 @@
 
 	vector<int> RevisionHandler::extractChildren( vector< int >& origines, int parent ){
 		vector<int> children;
-		for(int i=0; i<origines.size(); i++)
+		for(uint32_t i=0; i<origines.size(); i++)
 			if( parent == origines[i] )
 				children.push_back( i );
 		return children;
@@ -106,7 +106,7 @@
 		Revision* current;
 		vector< vector<Revision*> > structur =  vector< vector<Revision*> >( table.size() ); /// Must not be deleted, it's used in revision tree
 		///Previous and root
-		for( int i=0 ; i<table.size() ; i++){
+		for( uint32_t i=0 ; i<table.size() ; i++){
 			current = new Revision( i+1, table[i].idBeginning, table[i].size, table[i].diff );
 			current->setPrevious( previous );
 			current->setRoot( previous->getRoot() );
@@ -128,9 +128,9 @@
 
 		///Children and parents
 		current = current->getRoot();
-		for( int i=0 ; i<table.size() ; i++){
+		for( uint32_t i=0 ; i<table.size() ; i++){
 			current->setChildren( structur[i] );
-			for( int j=0 ; j<structur[i].size() ; j++)
+			for( uint32_t j=0 ; j<structur[i].size() ; j++)
 				structur[i][j]->setParent( current );
 
 			current = current->getNext();
@@ -191,7 +191,6 @@
 
 	vector< uint64_t > RevisionHandler::stripLine( vector<char>& d ){ ///vector[last char of the line+1 ie begin of the new line]
 		vector< uint64_t > lines;
-		uint64_t size = 0;
 		if(d.empty())
 			return lines;
 
@@ -263,9 +262,9 @@
 
     uint64_t RevisionHandler::diff( vector<char>& origine, vector<char>& data, int method){
         if(method == METHODE_LINE)
-			diffLine( origine, data);
+			return diffLine( origine, data);
 		else
-			diffBlock( origine, data, method);
+			return diffBlock( origine, data, method);
 	}
 
 	vector< vector<uint64_t> > RevisionHandler::calculDifferences( Revision* rev,  vector<char>& data ){
@@ -278,7 +277,7 @@
 			applyMutations( tmpData, tmp);
 
 			tmpDifferences =  vector< uint64_t >( methodes.size()+1 );
-			for(int i=0; i<methodes.size() ; i++)
+			for(uint32_t i=0; i<methodes.size() ; i++)
 				tmpDifferences[i] =  diff(tmpData, data, i);
 			tmpDifferences[ methodes.size() ] =  diffLine(tmpData, data);
 			differences.push_back( tmpDifferences );
@@ -301,10 +300,10 @@
 		uint64_t tmpDiff = 0;
 		int tmpMethod = 0;
 
-		for( int i=0 ; i<differences.size() ; i++){
+		for( uint32_t i=0 ; i<differences.size() ; i++){
 			tmpDiff 	= differences[i][0];
 			tmpMethod	= 0;
-			for( int j=0; j<=methodes.size() ; j++){
+			for( uint32_t j=0; j<=methodes.size() ; j++){
 				if( tmpDiff > differences[i][j] ){
 					tmpDiff 	= differences[i][j];
 					tmpMethod	= (j==methodes.size()) ? METHODE_LINE : j;
@@ -319,7 +318,7 @@
 		Revision* tmpRev = rev->getRoot()->getNext();
 		tmpDiff 	= linearDiff[0];
 		int j=0;
-		for( int i=0; i<linearDiff.size(); i++){
+		for( uint32_t i=0; i<linearDiff.size(); i++){
 			if( tmpDiff > linearDiff[i] ){
 				tmpDiff = linearDiff[i];
 				j=i;
@@ -419,7 +418,6 @@
 
 		///Update first
 		uint64_t num = min( lineO.size(), lineD.size() );
-		uint64_t diff = 0;
 
 		uint64_t lastBegO(0), lastBegD(0);
 		uint64_t j(0), m(0), length(0);
@@ -505,7 +503,7 @@
 		///Building of origin
 		vector<char> tmpData;
 		vector< Revision* > parents = origin->getParents();
-        for( int i=0; i<parents.size() ; i++)
+        for( uint32_t i=0; i<parents.size() ; i++)
             applyMutations( tmpData, parents[i]);
         if( parents.empty() )//Data is now hydrate
             applyMutations( tmpData, origin);

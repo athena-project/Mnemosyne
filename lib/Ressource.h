@@ -20,7 +20,7 @@
 #ifndef RESSOURCE_H_INCLUDED
 #define RESSOURCE_H_INCLUDED
 
-//#include <boost/python.hpp>
+#include <boost/python.hpp>
 
 #include <string>
 #include <vector>
@@ -56,7 +56,7 @@ class Ressource{
 		Ressource();
 		virtual ~Ressource();
 
-		uint64_t getId(){ return id; }
+		uint64_t getId(){ return id;}
 		uint32_t getCurrentRevision(){ return currentRevision; }
 		vector<uint64_t> getChunkIds(){ return chunkIds; }
 		vector<Chunk> getChunks(){ return chunks; }
@@ -76,12 +76,18 @@ class Ressource{
 			chunks=v;
 		}
 
-//		void setChunkIdsFromList(boost::python::list& ns){
-//			vector<uint64_t> ids;
-//			for (int i = 0; i < len(ns); ++i)
-//				ids.push_back( boost::python::extract<uint64_t>(ns[i]) );
-//			setChunkIds( ids );
-//		}
+		boost::python::list getChunkIdsList(){
+			boost::python::list ids;
+			for (uint32_t i = 0; i < chunkIds.size(); ++i)
+				ids.append( chunkIds[i] );
+			return ids ;
+		}
+		void setChunkIdsFromList(boost::python::list& ns){
+			vector<uint64_t> ids;
+			for (int i = 0; i < len(ns); ++i)
+				ids.push_back( boost::python::extract<uint64_t>(ns[i]) );
+			setChunkIds( ids );
+		}
 
 		void setRevision(Revision* newRev){
 			delete rev;
@@ -99,12 +105,14 @@ class RessourceHandler{
         ChunkManager* manager;
 	public :
         RessourceHandler(ChunkManager* m) : manager(m){}
+        ~RessourceHandler(){}
 		/**
 		 * @brief build the revisions' table of the current ressource,
 		 * only loading the needed chunk.
 		 * @param r             - ressource
 		 * @return all the table
 		 */
+
 		vector< TableElement> x_buildTable( Ressource& r );
 
 		/**
@@ -127,7 +135,7 @@ class RessourceHandler{
 		 * @param rev           - ressource
 		 * @param dataStr       - new data
 		 */
-		void newRevision( Ressource* rev, string dataStr );
+		void newRevision( Ressource& rev, string dataStr );
 };
 
 

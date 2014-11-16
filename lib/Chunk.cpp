@@ -1,6 +1,5 @@
 #include "Chunk.h"
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+
 
 
 /**
@@ -25,9 +24,7 @@ Chunk::Chunk( uint64_t id, uint32_t size){
  *  ChunckManager
  */
 
-ChunkManager::ChunkManager(){
-    cout<<"hello"<<endl;
-}
+ChunkManager::ChunkManager(){}
 
 ChunkManager::~ChunkManager(){
     conn.disconnect();
@@ -202,6 +199,10 @@ void ChunkHandler::writeChunk(uint64_t id, ifstream& stream, uint64_t idBeginnin
 	string location = ChunkHandler::TMP_DIR()+"/"+strId.str();
 	ofstream oStream( location.c_str(), ios::out );
 
+    if( !oStream ){
+        cout << strerror(errno) << '\n';
+        throw"";
+    }
 	stream.seekg( idBeginning, stream.beg );
 
 	char* buffer = new char[ size ];
