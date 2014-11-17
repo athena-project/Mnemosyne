@@ -72,8 +72,11 @@ class Ressource{
 			chunkIds=ids;
 		}
 
-		void setChunkIds( vector<Chunk> v){
+		void setChunks( vector<Chunk> v){
 			chunks=v;
+			chunkIds=vector<uint64_t>();
+			for( uint32_t i=0 ; i<chunks.size() ; i++)
+                chunkIds.push_back( chunks[i].getId() );
 		}
 
 		boost::python::list getChunkIdsList(){
@@ -82,6 +85,7 @@ class Ressource{
 				ids.append( chunkIds[i] );
 			return ids ;
 		}
+
 		void setChunkIdsFromList(boost::python::list& ns){
 			vector<uint64_t> ids;
 			for (int i = 0; i < len(ns); ++i)

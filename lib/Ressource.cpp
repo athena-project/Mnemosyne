@@ -235,7 +235,7 @@ void RessourceHandler::newRevision( Ressource& r, string dataStr ){
     oStream.close();
 	if(chunks.size() > 0)
 		cHandler.updateData( chunks[ chunks.size()-1 ], *currentStream, newRev->getIdBeginning(), sizeUpdateLastChunk, offset);
-	cHandler.makeChunks( *currentStream, newRev->getIdBeginning()+sizeUpdateLastChunk, sizeUpdate-sizeUpdateLastChunk);
+	r.setChunks( cHandler.makeChunks( *currentStream, newRev->getIdBeginning()+sizeUpdateLastChunk, sizeUpdate-sizeUpdateLastChunk) );
 
 	std::remove( rev->getIStreamLocation().c_str() );
     delete rev->getRoot();
