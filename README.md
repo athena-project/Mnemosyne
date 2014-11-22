@@ -4,7 +4,11 @@ Mnemosyne-a C++ incremental file library
 
 Needed dependencies 
 ===================
-
+ -Boost.python
+ 
+ -MySQL++
+ 
+ -liblzma-dev
 Install
 =======
   $ ./install.sh
