@@ -225,14 +225,7 @@ void RessourceHandler::newRevision( Ressource& r, string dataStr ){
 	uint64_t sizeUpdateLastChunk = (chunks.size() == 0) ? 0 : min(sizeUpdate, (uint64_t)Chunk::CHUNK_SIZE_MAX);
 	uint64_t offset = (newRev->getLast()->getN()-1) * Revision::REVISION_SIZE_TABLE + 2;
 	ifstream* currentStream = newRev->getIStream();
-	ofstream oStream("/home/toor/Desktop/troll");
 
-
-    if( !(oStream) ){
-        cout <<"Fuck   " <<strerror(errno) << '\n';
-        throw"";
-    }
-    oStream.close();
 	if(chunks.size() > 0)
 		cHandler.updateData( chunks[ chunks.size()-1 ], *currentStream, newRev->getIdBeginning(), sizeUpdateLastChunk, offset);
 	r.setChunks( cHandler.makeChunks( *currentStream, newRev->getIdBeginning()+sizeUpdateLastChunk, sizeUpdate-sizeUpdateLastChunk) );

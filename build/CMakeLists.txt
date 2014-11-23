@@ -17,11 +17,11 @@ FILE( GLOB_RECURSE  source_files  ../lib/*)
 
 
 
-INCLUDE_DIRECTORIES( "/usr/local/mysql/lib" 
+INCLUDE_DIRECTORIES(  "/usr/local/mysql/lib" 
 						"/usr/include/mysql"
 						"/usr/include/python3.4" 
-						"/home/toor/Downloads/boost_1_56_0/stage/lib" 
-						"/home/toor/Github/Mnemosyne/trunk/lib" 
+						"/usr/opt/boost_1_56_0" 
+						"../lib"
 					)
 SET(Boost_USE_STATIC_LIBS OFF)
 SET(Boost_USE_MULTITHREADED ON)
@@ -42,8 +42,7 @@ ADD_DEFINITIONS("-std=c++11")
 
 ADD_LIBRARY(pyRessource SHARED ../lib/PyRessource.cpp)
 
-TARGET_LINK_LIBRARIES(pyRessource  "/home/toor/Downloads/boost_1_56_0/stage/lib/libboost_python3.so" 
-									"/home/toor/Downloads/boost_1_56_0/stage/lib/libboost_system.so" 
-									"/home/toor/Downloads/mysql++-3.2.1/libmysqlpp.so"
+TARGET_LINK_LIBRARIES(pyRessource  "/usr/opt/boost_1_56_0/libboost_python3.so" 
+									"/usr/lib/libmysqlpp.so"
 									"/usr/lib/x86_64-linux-gnu/liblzma.so")
 

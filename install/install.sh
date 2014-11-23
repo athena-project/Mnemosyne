@@ -1,19 +1,14 @@
-﻿#! /bin/sh
-
-if [ whoami!="root" ]
-then 
-	echo "Operation not permitted"
-	return 0
-fi
-
+﻿#! /bin/bash
 
 ###
 ### BEGIN DEPENDENCES
 ###
 
 # General
-apt-get install liblzma-dev libtar-dev
-apt-get install python3-dev
+mkdir /usr/opt
+apt-get update
+apt-get upgrade
+apt-get install build-essential g++ cmake make liblzma-dev libtar-dev python3-dev
 
 ##MySQL
 apt-get install mysql-server
@@ -29,7 +24,7 @@ ln -s /usr/lib/x86_64-linux-gnu/libmysqlclient.so   /usr/local/mysql/lib/libmysq
 wget http://tangentsoft.net/mysql++/releases/mysql++-3.2.1.tar.gz
 tar xvfz mysql++-3.2.1.tar.gz
 cd mysql++-3.2.1
-./configure --prefix=/usr
+sh configure --prefix=/usr
 make
 make install
 
@@ -38,11 +33,15 @@ rm -r mysql++-3.2.1
 rm mysql++-3.2.1.tar.gz
 
 ### Boost for python3.*
+apt-get install libboost-all-dev
 wget http://sourceforge.net/projects/boost/files/boost/1.56.0/boost_1_56_0.tar.gz/download -O boost_1_56_0.tar.gz
 tar xvfz boost_1_56_0.tar.gz
 cd boost_1_56_0
-./bootstrap.sh --prefix=/usr/opt --with-libraries=python --with-python-version=3.4 
-./b2
+sh bootstrap.sh --prefix=/usr/opt --with-libraries=python --with-python-version=3.4
+sh b2
+
+mkdir /usr/opt/boost_1_56_0
+cp stage/lib/* /usr/opt/boost_1_56_0/
 
 cd ..
 rm -r boost_1_56_0
@@ -55,13 +54,12 @@ rm boost_1_56_0.tar.gz
 ###
 ### BEGIN STRUCTURE
 ###
-mkdir /usr/opt
 mkdir /usr/opt/mnemosyne
 
-cd build
+cd ../build
 cmake .
 make 
-cp libRessource.so /usr/opt/mnemosyne
+cp libpyRessource.so /usr/opt/mnemosyne
 
 
 ###
