@@ -4,3 +4,6 @@
 0.2.0:
 	Bugfix : Number of SQL connections optimized
 	Bugfix : Memory leaks fixed 
+	
+0.2.1
+	Install script available
