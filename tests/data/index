@@ -1,0 +1,17 @@
+incremental_1 : livre 1 guerre gaules
+incremental_2 : livre 2 guerre gaules
+incremental_3 : 
+	- incremental_1
+	- echange de la 4 et 8
+	- echange de la 23 et 41
+	- duplication des 2 dernières lignes -> INSERT
+incremental_4 :
+	- incremental_2
+	- echange de la 15 et 1
+	- suppression 4 dernières lignes -> SUPR
+incremental_5 :
+	- incremental_3
+	- duplication dernière ligne
+incremental_6 :
+	- incremental_1
+	- decalage toutes les lignes de quatres lignes -> ie tous les calculs de diff=> tout à refaire
