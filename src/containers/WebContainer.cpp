@@ -4,6 +4,9 @@ void WebContainerIndex::build( AbstractContainer* abs){///here AbstractContainer
 	DirContainerIndex::build( abs );
 	
 	XMLElement* uri = xml->NewElement("uri");
+	xml->LinkEndChild( uri );
+
+	
 	uri->setText( abs->getUri() );
 	root->InsertLastElement( uri );
 

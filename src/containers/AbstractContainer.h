@@ -37,12 +37,16 @@ class AbstractContainer{
 			setLocation();
 			xml = new tx::XMLDocument();
 			root = xml->NewElement("AbstractContainer");
+			xml->LinkEndChild( root );
+
 		}
 
 		AbstractContainer(const char* name){
 			setLocation();
 			xml = new tx::XMLDocument();
 			root = xml->NewElement("AbstractContainer");
+			xml->LinkEndChild( root );
+
 		}
 
 

@@ -1,0 +1,55 @@
+#ifndef ABSTRACTCONTAINER_H_INCLUDED
+#define ABSTRACTCONTAINER_H_INCLUDED
+
+#include <stdint.h>
+#include <fstream>
+#include <boost/filesystem.hpp>
+
+#include "Content.h"
+
+using namespace std;
+namespace fs=boost::filesystem;
+
+class AbstractContainer{
+	protected:
+		uint64_t id;
+		uint64_t parent_id;
+		
+		AbstractContainer* parent = NULL;
+		
+		Content* content = NULL;	///Object that descript the content of the current container
+		
+		
+	public:
+		AbstractContainer(uint64_t i, uint64_t p) : id(i), parent_id(i){}
+		
+		virtual ~AbstractContainer(){
+			if(parent = NULL)
+				delete parent;
+			if(content = NULL)
+				delete content;
+		}
+		
+		
+		/**
+		 * Return the path where this container will be saved
+		 * @param dir - parent directory
+		 * @return path where this container will be saved, format /dir1/dir2/current_container
+		 */ 
+		virtual fs::path location( string dir );
+		
+		/**
+		 * Build the container file description on disk
+		 * @param dir - parent directory, format /dir1/dir2/dir3
+		 */ 
+		virtual void buildContent( fs::path dir ){}
+		
+		/**
+		 * Build the container architecture on disk
+		 * @param dir - parent directory, format /dir1/dir2/dir3
+		 */ 
+		virtual void build( string dir ){}
+		
+		
+};
+#endif // ABSTRACTCONTAINER_H_INCLUDED
