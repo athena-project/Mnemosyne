@@ -3,7 +3,7 @@
 CURRENT_DIR=`dirname $0` #Dossier parent du script d'installation
 
 
-
+libtinyxml2-dev
 
 ###
 ### BEGIN DEPENDENCES
@@ -22,7 +22,8 @@ apt-get install -y build-essential g++ cmake make liblzma-dev libtar-dev python3
 #config ?
 
 ##MySQL++
-apt-get install -y libmysqlclient-dev
+apt-get install -y libmariadbclient-dev  libmysql++-dev
+#libmysql++-dev
 mkdir -p /usr/local/mysql/lib
 ln -s /usr/lib/x86_64-linux-gnu/libmysqlclient.so   /usr/local/mysql/lib/libmysqlclient.so  #petit pb de lib
 	

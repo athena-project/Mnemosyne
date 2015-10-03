@@ -6,12 +6,12 @@
 
 BOOST_AUTO_TEST_CASE( my_test ){
 	/// INIT
-	WorkingRevision wr1( "data/incremental_1.html");
-	WorkingRevision wr2( "data/incremental_1.html");
-	WorkingRevision wr3( "data/incremental_1.html");
-	WorkingRevision wr4( "data/incremental_1.html");
-	WorkingRevision wr5( "data/incremental_1.html");
-	WorkingRevision wr6( "data/incremental_1.html");
+	WorkingRevision wr1( "data/incremental_1");
+	WorkingRevision wr2( "data/incremental_2");
+	WorkingRevision wr3( "data/incremental_3");
+	WorkingRevision wr4( "data/incremental_4");
+	WorkingRevision wr5( "data/incremental_5");
+	WorkingRevision wr6( "data/incremental_6");
 	
 	IncrementalFile incrFile( "" );
 	
