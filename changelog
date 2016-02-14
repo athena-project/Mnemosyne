@@ -1,9 +1,0 @@
-0.1.0:
-	Differential calculus per block and per line
-
-0.2.0:
-	Bugfix : Number of SQL connections optimized
-	Bugfix : Memory leaks fixed 
-	
-0.2.1
-	Install script available
