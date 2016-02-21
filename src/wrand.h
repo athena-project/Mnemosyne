@@ -8,7 +8,7 @@
  * modulo done because 64bits >= 0
  * Xn = a * Xn-1 + b mod 2^64
  */
-inline uint64_t wrand( uint64_t x0, uint64_t n){
+inline uint64_t wrand( uint64_t n, uint64_t x0 ){
 	uint64_t a = 6364136223846793005;
 	uint64_t b = 1; 
 	
