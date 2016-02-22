@@ -1,3 +1,4 @@
-
+Bugs :
+	-> Correct memory leaks in TCPServer
 Features :
 	-> Use CRUSH as placement algorithme to have optimal reorganization
