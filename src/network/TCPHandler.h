@@ -27,30 +27,40 @@
 #include <mutex> 
 #include <list> 
 #include <time.h>
+#include <string>
+
 
 using namespace std;
 
-enum msg_t{A,I};
+enum msg_t{
+	EXISTS_OBJECT, //client->cms value digest
+	EXISTS_OBJECTS, //client->cmsvalue nm_objs digst1 digsetn
+	OBJECT, //cms->client value digest exists(true-false : char)
+	OBJECTS, //cms->client value nm_objs digest1 exists1(true-false : char) digsetn existsn
+	ADD_OBJECTS, //client->cmsvalue nm_objs digst1 digsetn
+	ADD_OBJECT
+	};
 
 class Msg{
 	protected:
 		msg_t type;
 		
-		char* data = NULL;
-		bool data_owner = false;
-		
+		char* data = NULL;		
 		char* s_data = NULL;
 		
 		size_t length = 0;
 		
 	public:
-		Msg(msg_t t, char* d, size_t l) : type(t), data(d), length(l){
-			
+		//copy data because we do not know when msg will be send, the caller might be dead as the data free
+		Msg(msg_t t, char* d, size_t l) : type(t), length(l){
+			memcpy(data = new char[length], d, length);
 		}
 		
-		Msg(char* _s_data, size_t size){
-			data_owner = true;
-			
+		Msg(msg_t t, size_t l): type(t), length(l){
+			data = new char[length];
+		}
+		
+		Msg(char* _s_data){			
 			char* end = _s_data + uint64_s;
 			length = strtoull(_s_data, &end, 0);
 			
@@ -62,8 +72,9 @@ class Msg{
 		}
 		
 		~Msg(){
-			if( data != NULL && data_owner)
+			if( data != NULL )
 				delete[] data;
+		
 			printf("MSg died\n");
 			if( s_data != NULL)
 				delete[] s_data;
@@ -75,6 +86,8 @@ class Msg{
 			char* end = data + 2*uint64_s;
 			return static_cast<msg_t>(strtoull(data+uint64_s, &end, 0));
 		}
+		
+		char* get_data(){ return data; }
 		
 		char* serialize(){
 			if( s_data != NULL)
@@ -90,6 +103,8 @@ class Msg{
 		}
 };
 
+
+//Devient propiètaire du msg donc le détruit
 class Task{
 	public:
 		Msg* msg = NULL;
@@ -98,6 +113,11 @@ class Task{
 		
 		Task(){}
 		Task(Msg* _m, const char* _a, int _p) : msg(_m), host(_a), port(_p){}
+		
+		~Task(){
+			if( msg != NULL )
+				delete msg;
+		}
 };
 
 class Handler{
@@ -178,19 +198,15 @@ class TCPServer{
 		void pcallback();
 		
 		//called when finished to read
-		void rcallback(Handler* handler, msg_t type);
+		virtual void rcallback(Handler* handler, msg_t type);
 		
 		//called when finished to write
-		void wcallback(Handler* handler, msg_t type);
+		virtual void wcallback(Handler* handler, msg_t type);
 	
 		int run();
-		
-		void operator()(){
-			run();
-		}
 };
 
-void f(TCPServer* t){ (*t)(); }
+
 
 class TCPHandler{
 	protected:
@@ -203,11 +219,13 @@ class TCPHandler{
 		mutex m_tasks;
 		
 	public:
+		TCPHandler(){}
+	
 		TCPHandler(char* port){
 			pipe(pfds);
 			alive.store(true,std::memory_order_relaxed); 
 			server = new TCPServer(port, pfds[0], &alive, &tasks, &m_tasks);
-			t_server = std::thread( f,server );
+			t_server = std::thread( run_server,server );
 			t_server.detach();
 		}
 		
@@ -222,22 +240,24 @@ class TCPHandler{
 				close( pfds[0] );
 		}
 		
-		void send(Msg& msg, const char* _host, int port){
-			//char* host = inet_ntoa( _host );
-			//size_t len_host = strlen(host);
-			//char buff[ msg.s_length() + 2*int_s + len_host ];
-			//int offset = int_s;
-			
-			//sprintf(buff, "%d", port);
-			//sprintf(buff + offset, "%lu",  len_host); //permet de passer facilement de l'ipv6 à ipv4
-			//memcpy(buff + (offset+=size_s), host, len_host );
-			//memcpy(buff + (offset+=len_host), msg.serialize(),  msg.s_length() );
+		static void run_server(TCPServer* t){ t->run(); }
+		
+		void send(Msg msg, const char* _host, int port){
+			printf("Warning it's not optimal TCPHANDLER.H 235");
 			m_tasks.lock();
 			tasks.push_back( Task(&msg, _host, port) );
 			m_tasks.unlock();
 			
 			write(pfds[1], "0", 1);		
 			printf("send\n");	
+		}
+		
+		void send(Msg* msg, const char* _host, unsigned int port){
+			m_tasks.lock();
+			tasks.push_back( Task(msg, _host, port) );
+			m_tasks.unlock();
+			
+			write(pfds[1], "0", 1);		
 		}
 };
 #endif

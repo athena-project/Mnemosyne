@@ -53,19 +53,22 @@ vector<Chunk> ChunkFactory::split(const char* location){
 	if( !is )
 		throw FileError;
 		
+	bool cached = size_of_file( is ) < CACHING_THRESHOLD;
+		
 	int fisd=0;
 	buffer_size = i = current = size = 0;
 	list<uint64> index = chunksIndex();	
 	vector<Chunk> chunks(index.size()-1);///nbr de poteaux et d'intervalles
 	list<uint64>::iterator it=index.begin();
-	uint64 last = *(it++);
+	uint64_t last = *(it++);
 
 	shift();
 	char* pos=buffer;
 	char* data = new char[BUFFER_MAX_SIZE];
 	char* data_ptr = data;
+	uint64_t beg=0;
 
-	for(int j=0; it!=index.end(); (j++, last=*(it++))){
+	for(uint64_t j=0; it!=index.end(); (j++, last=*(it++))){
 		size = (*it)-last;
 		i += size;
 		if( i >= BUFFER_MAX_SIZE ){
@@ -79,8 +82,9 @@ vector<Chunk> ChunkFactory::split(const char* location){
 		}else 
 			data_ptr = pos;
 			
-		chunks[j] = Chunk(size, data_ptr);
+		chunks[j] = Chunk(beg, size, data_ptr, cached);
 		pos += size;
+		beg += size;
 	}
 	
 	buffer_size = i = current = size=0;
@@ -112,11 +116,11 @@ pair<Chunk, Chunk> min_2(vector<Chunk>& chunks){
 	return pair<Chunk, Chunk>( min1, min2 );
 }
 
-int main(){
-	/////g++ -g -std=c++11 -g -o3 chunk.cpp -o chunk -lssl -lcrypto  -lboost_serialization
-	ChunkFactory cf("krh.ser");
-	//ChunkFactory cf;
-	vector<Chunk> chunks = cf.split("zero.zero");
-	cout<<"num_chunks "<< chunks.size()<<endl; 
-	min_2(chunks);
-}
+//int main(){
+	///////g++ -g -std=c++11 -g -o3 chunk.cpp -o chunk -lssl -lcrypto  -lboost_serialization
+	//ChunkFactory cf("krh.ser");
+	////ChunkFactory cf;
+	//vector<Chunk> chunks = cf.split("zero.zero");
+	//cout<<"num_chunks "<< chunks.size()<<endl; 
+	//min_2(chunks);
+//}

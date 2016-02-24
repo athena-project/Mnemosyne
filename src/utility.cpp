@@ -1,6 +1,5 @@
-/**
- * 
- */
+#include <cstddef>
+#include <cstring>
 
 class UltraFastWindow{
 	protected:

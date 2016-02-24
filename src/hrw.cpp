@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <map>
 #include "wrand.h"
 
 using namespace std;
@@ -13,13 +14,18 @@ enum node_state{ ACTIVE, FULL, LOST };
 class Node{
 	protected:
 		uint64_t id = 0;
+		int port = 0;
+		const char* host = "";
 		node_state state = ACTIVE;
 	
 	public:
 		Node( uint64_t _id ) : id(_id){}
+		Node( uint64_t _id, int p, const char* h ) : id(_id), port(p), host(h){}
 		~Node(){}
 		
 		uint64_t get_id(){ return id; }
+		int get_port(){ return port; }
+		const char* get_host(){ return host; }
 		void set_state(node_state s){ state = s; }
 		
 		bool alive(){ return state != LOST; }
@@ -29,11 +35,20 @@ class Node{
 class NodeMap{
 	protected:
 		vector<Node*> nodes;	//non responsable des noeuds	
+		map<uint64_t, Node*> map_nodes;
+		
 		int n = 1; //nombre de noeuds à choisir
 	public:
+		NodeMap(){}
+		
 		NodeMap(int _n) : n(_n){}
 		
-		void add_node(Node* node){ nodes.push_back(node); }
+		void add_node(Node* node){ 
+			nodes.push_back(node); 
+			map_nodes[ node->get_id() ] = node;	
+		}
+		
+		Node* get_node(uint64_t key){ return map_nodes[key]; }
 		
 		
 		/////for lecture, pick the prime
@@ -56,6 +71,11 @@ class NodeMap{
 			}
 			
 			return current;
+		}
+		
+		Node* rallocate(char* key, size_t s){//troncature si trop long
+			char* end = key + (s>16 ? 16 : s);
+			return rallocate( strtoull(key, &key, 16));
 		}
 		
 		Node* find_prime(uint64_t key){
@@ -125,5 +145,11 @@ class NodeMap{
 				
 			return k_nodes;
 		}
+
+		vector<Node*> wallocate(char* key, size_t s){//troncature si trop long
+			char* end = key + (s>16 ? 16 : s);
+			return wallocate( strtoull(key, &key, 16));
+		}
+		
 };
 #endif
