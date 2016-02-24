@@ -1,34 +1,40 @@
 #include "Client.h"
 
 void TCPClientServer::wcallback(Handler* handler, msg_t type){
-	close( handler->get_fd() );
-	free( handler );
+	if( type == EXISTS_OBJECT || type == EXISTS_CHUNKS || type == ADD_CHUNKS || 
+	type == ADD_OBJECT ){
+		handler->clear();
+		register_event(handler, EPOLLIN, EPOLL_CTL_MOD);
+	}else{
+		close( handler->get_fd() );
+		free( handler );
+	}
 }
 
 void TCPClientServer::rcallback(Handler* handler, msg_t type){	
-	if( type ==  OBJECT){
-		Msg m( handler->get_in_data());
+	char* data = handler->get_in_data();
+	
+	if( type == OBJECT){
 		char digest[SHA224_DIGEST_LENGTH];
 		char exists;
-		memcpy(digest, m.get_data(), SHA224_DIGEST_LENGTH);
-		memcpy(&exists, m.get_data()+SHA224_DIGEST_LENGTH, sizeof(char));
+		
+		memcpy(digest, data, SHA224_DIGEST_LENGTH);
+		memcpy(&exists, data+SHA224_DIGEST_LENGTH, sizeof(char));
 		
 		m_objects->lock();
 		objects->push_back( make_pair(digest, exists) );
 		m_objects->unlock();
-	}else if( type == OBJECTS ){
-		Msg m( handler->get_in_data());
+	}else if( type == CHUNKS ){
 		size_t num = 0;
-		char* end = m.get_data() + sizeof(size_t);
-		num = strtoull(m.get_data(), &end, 0);
+		char* end = data + sizeof(size_t);
+		num = strtoull(data, &end, 0);
 		
-		int i = 0;
-		char* ptr = m.get_data() + sizeof(size_t);
-		for(; i<num; i++, ptr+=sizeof(char)+SHA224_DIGEST_LENGTH){
+		data += sizeof(size_t);
+		for(int i = 0 ; i<num; i++, data+=sizeof(char)+SHA224_DIGEST_LENGTH){
 			char digest[SHA224_DIGEST_LENGTH];
 			char exists;
-			memcpy(digest, ptr, SHA224_DIGEST_LENGTH);
-			memcpy(&exists, ptr+SHA224_DIGEST_LENGTH, 1);
+			memcpy(digest, data, SHA224_DIGEST_LENGTH);
+			memcpy(&exists, data+SHA224_DIGEST_LENGTH, 1);
 		
 			m_objects->lock();
 			objects->push_back( make_pair(digest, exists) );
@@ -36,24 +42,38 @@ void TCPClientServer::rcallback(Handler* handler, msg_t type){
 		}
 	}
 	
-	struct epoll_event listen_event;
-	listen_event.events = EPOLLOUT | EPOLLET;	
-	listen_event.data.ptr=static_cast<void*>( handler );
-	printf("Msg incomming : |");
-	write (1, handler->get_in_data(), handler->get_in_offset()); //Debug
-
-	s = epoll_ctl (efd, EPOLL_CTL_MOD, handler->get_fd(), &listen_event);
-	if(s == -1){
-		perror("epoll_ctl-rcallback");
-		close( handler->get_fd() );
-		free( handler );
-		abort();
-	}
-	
+	close( handler->get_fd() );
+	free( handler );
 }
 
 
 ///Save functions
+Client::Client(char* port, char* _nodes){
+	nodes = new NodeMap(3);
+	cf = new ChunkFactory("krh.ser");
+	
+	pipe(pfds);
+	alive.store(true,std::memory_order_relaxed); 
+	
+	server = new TCPClientServer(port, pfds[0], &alive, &tasks, &m_tasks,
+	&objects, &m_objects);
+	
+	t_server = std::thread( run_server,server );
+	t_server.detach();
+} 
+
+Client::~Client(){
+	delete nodes;
+	delete cf;
+}
+
+void Client::clear_objects(){
+	m_objects.lock();
+	objects.clear();
+	m_objects.unlock();
+}
+
+
 ///agregate digest in : sizedigest1digest2....
 void Client::build_digests(list<Chunk*>& chunks, char* digests){
 	list<Chunk*>::iterator it = chunks.begin();
@@ -166,7 +186,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 	for(map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
 	it != buffers.end(); it++){
 		size_t buffer_len = (it->second).size() * SHA224_DIGEST_LENGTH + sizeof(size_t);
-		Msg* m = new Msg(EXISTS_OBJECTS, buffer_len); //handle by send
+		Msg* m = new Msg(EXISTS_CHUNKS, buffer_len); //handle by send
 		
 		build_digests( it->second, m->get_data());
 		
@@ -209,7 +229,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 			uint64_t size_file = lseek(fd, 0, SEEK_END);
 			src = static_cast<char*>( 
 				mmap(NULL, size_file, PROT_READ, MAP_PRIVATE, fd, 0));
-			munmap( src, size_file);
+			
 			
 			for(list<Chunk*>::iterator it = to_dedup.begin() ; 
 			it != to_dedup.end(); it++){
@@ -219,7 +239,8 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 				c_file.write( src+(*it)->get_begin(), (*it)->get_length() );
 				c_file.close();
 			}
-			 
+			
+			munmap( src, size_file);
 			close( fd );	
 		}
 		
@@ -230,7 +251,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 		for(map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
 		it != buffers.end(); it++){
 			size_t buffer_len = (it->second).size() * SHA224_DIGEST_LENGTH + sizeof(size_t);
-			Msg* m = new Msg(ADD_OBJECTS, buffer_len); //handle by send
+			Msg* m = new Msg(ADD_CHUNKS, buffer_len); //handle by send
 			
 			build_digests( it->second, m->get_data());
 			
@@ -259,6 +280,33 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 	
 	if( !buildMetadata(name, chunks, path_dir) )
 		return false;
+	
+	return true;
+}
+
+bool Client::load(const char* name, const char* location, fs::path path_dir){
+	vector<Chunk> chunks;
+	extractChunks( name, chunks, path_dir);
+	ofstream os( location, ios::binary);	
+	
+	if( !os ){
+		perror("Client::load");
+		return false;
+	}
+	
+	char buffer[BUFFER_MAX_SIZE];
+	uint64_t b_length = 0;
+	
+	for(uint64_t i = 0 ; i<chunks.size() ; i++){
+		string tmp=(path_dir/fs::path(chunks[i].c_digest())).string();
+		ifstream is(tmp.c_str(), ios::binary);
+		
+		is.read( buffer, chunks[i].get_length() );
+		os.write( buffer, chunks[i].get_length() );
+		
+		is.close();
+	}
+	os.close();
 	
 	return true;
 }

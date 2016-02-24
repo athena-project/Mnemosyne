@@ -34,10 +34,10 @@ using namespace std;
 
 enum msg_t{
 	EXISTS_OBJECT, //client->cms value digest
-	EXISTS_OBJECTS, //client->cmsvalue nm_objs digst1 digsetn
+	EXISTS_CHUNKS, //client->cmsvalue nm_objs digst1 digsetn
 	OBJECT, //cms->client value digest exists(true-false : char)
-	OBJECTS, //cms->client value nm_objs digest1 exists1(true-false : char) digsetn existsn
-	ADD_OBJECTS, //client->cmsvalue nm_objs digst1 digsetn
+	CHUNKS, //cms->client value nm_objs digest1 exists1(true-false : char) digsetn existsn
+	ADD_CHUNKS, //client->cmsvalue nm_objs digst1 digsetn
 	ADD_OBJECT
 	};
 
@@ -159,6 +159,7 @@ class Handler{
 		int add_to_in(char* buf, int size);
 		
 		int out_write();
+		void clear();
 };
 
 
@@ -189,6 +190,8 @@ class TCPServer{
 			close (sfd);
 			close( pfd);
 		}
+	
+		bool register_event(Handler *handler, int option, int mod);
 	
 		int create_and_bind (char *port);
 

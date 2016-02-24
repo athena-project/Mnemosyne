@@ -56,30 +56,10 @@ class Client : public TCPHandler{
 		list< pair<char*, char> > objects; //sert pour savoir s'il existe ou non
 		mutex m_objects;		
 	public:
-		Client(char* port, char* _nodes){
-			nodes = new NodeMap(3);
-			cf = new ChunkFactory("krh.ser");
-			
-			pipe(pfds);
-			alive.store(true,std::memory_order_relaxed); 
-			
-			server = new TCPClientServer(port, pfds[0], &alive, &tasks, &m_tasks,
-			&objects, &m_objects);
-			
-			t_server = std::thread( run_server,server );
-			t_server.detach();
-		} 
+		Client(char* port, char* _nodes);
+		~Client();
 		
-		~Client(){
-			delete nodes;
-			delete cf;
-		}
-		
-		void clear_objects(){
-			m_objects.lock();
-			objects.clear();
-			m_objects.unlock();
-		}
+		void clear_objects();
 		
 		///agregate digest in : sizedigest1digest2....
 		void build_digests(list<Chunk*>& chunks, char* digests);
@@ -92,5 +72,10 @@ class Client : public TCPHandler{
 		///true : file already exists, else not
 		bool dedup_by_file(const char* location, char* file_digest);
 		bool save(const char* name, const char* location, fs::path path_dir);
+		
+		
+		///to load file
+		
+		bool load(const char* name, const char* location, fs::path path_dir);
 };
 #endif

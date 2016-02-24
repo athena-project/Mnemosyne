@@ -2,3 +2,6 @@ Bugs :
 	-> Correct memory leaks in TCPServer
 Features :
 	-> Use CRUSH as placement algorithme to have optimal reorganization
+	-> load partiel 
+	-> load_mem on retourne un m=pointeur en memoire( mmap )
+	-> Système de cache coté client ??

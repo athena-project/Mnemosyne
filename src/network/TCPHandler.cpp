@@ -20,6 +20,14 @@ int Handler::out_write(){
 	return write(fd, out_data + out_offset, out_length);
 }
 
+void Handler::clear(){
+	if( in_data != NULL )
+		delete[] in_data;
+		
+	out_data = in_data = NULL;
+	in_offset = out_offset = out_length = 0 ;
+	in_length = BUFF_SIZE ;
+}
 
 ///TCPServer
 TCPServer::TCPServer(char* port, int _pfd, std::atomic<bool>* _alive, 
@@ -61,6 +69,22 @@ list<Task>*_tasks, mutex* _m_tasks){
 	/* Buffer where events are returned */	
 	events = static_cast<struct epoll_event*>(calloc(MAXEVENTS, sizeof event));
 }
+
+bool TCPServer::register_event(Handler *handler, int option, int mod){
+	struct epoll_event _event;
+	_event.events 		= option;	
+	_event.data.ptr 	= static_cast<void*>( handler );
+
+	
+	if(epoll_ctl (efd, mod, handler->get_fd(), &_event) == -1){
+		perror("register_event");
+		close( handler->get_fd() );
+		free( handler );
+		return false;
+	}
+	return true;
+}
+
 	
 int TCPServer::create_and_bind (char *port){
 	struct addrinfo hints;
