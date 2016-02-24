@@ -1,12 +1,112 @@
 #include "Chunk.h"
 
-void print_sha_sum(const unsigned char* md) {
-    for(int i=0; i <SHA224_DIGEST_LENGTH; i++) {
-        printf("%02x",md[i]);
-    }
-    printf("\n");
+///Chunk
+Chunk::Chunk(){}
+
+Chunk::Chunk(int b, int l, const char* _data, bool cached) : length(l), begin(b){
+	if( cached ){
+		data = new char[length];
+		memcpy(data, _data, length);
+	}
+	
+	SHA224((unsigned char*)_data, length, digest);	
 }
 
+Chunk::Chunk(char* _s_data){			
+	char* end = _s_data + uint64_s;
+	begin = strtoull(_s_data, &end, 0);
+	
+	end += uint64_s;
+	length = strtoull(_s_data+uint64_s, &end, 0);
+
+	memcpy(digest, _s_data + 2*uint64_s, SHA224_DIGEST_LENGTH);
+}
+
+Chunk::~Chunk(){
+	if( data != NULL)
+		delete[] data;
+}
+
+
+uint64_t Chunk::get_length(){ return length; }
+uint64_t Chunk::get_begin(){ return begin; }
+char* Chunk::get_data(){ return data; }
+
+bool Chunk::operator<( const Chunk& c2) const{
+	return memcmp( digest, c2.digest, SHA224_DIGEST_LENGTH) < 0; //c1 < c2
+}
+
+unsigned char* Chunk::get_digest(){ return digest; }
+
+char* Chunk::_digest(){ 
+	char buffer[SHA224_DIGEST_LENGTH];
+	for(int i=0; i <SHA224_DIGEST_LENGTH; i++){
+		sprintf(buffer+i, "%02x", digest[i]);
+	}
+}
+
+const char* Chunk::c_digest(){ return _digest(); }
+
+size_t Chunk::s_length(){ return SHA224_DIGEST_LENGTH + 2 * uint64_s; }
+
+void Chunk::serialize(char* buff){			
+	sprintf(buff, "%" PRIu64 "", begin);
+	sprintf(buff + uint64_s, "%" PRIu64 "", length);
+	for(int i=0; i <SHA224_DIGEST_LENGTH; i++)
+		sprintf(buff + 2*uint64_s+i, "%02x", digest[i]);
+}
+
+///ChunkFactory
+ChunkFactory::ChunkFactory(){
+	hf = new KarpRabinHash<uint64>(WINDOW_LENGTH,AVERAGE_LENGTH );
+	buffer = new char[BUFFER_MAX_SIZE];
+	window = UltraFastWindow(WINDOW_LENGTH);
+}
+
+ChunkFactory::ChunkFactory( const char* location){
+	hf = new KarpRabinHash<uint64>(WINDOW_LENGTH,AVERAGE_LENGTH );
+	buffer = new char[BUFFER_MAX_SIZE];
+	window = UltraFastWindow(WINDOW_LENGTH);	
+	getFromFile(location);
+}
+	
+ChunkFactory::~ChunkFactory(){
+	if( hf != NULL)
+		delete hf;
+	if( buffer != NULL)
+		delete[] buffer;
+	if( is.is_open() )
+		is.close();
+}	
+
+void ChunkFactory::saveIntoFile(const char* file){
+	std::ofstream ofile(file);
+	if( !ofile )
+		perror("ChunkFactory::saveIntoFile");
+	boost::archive::binary_oarchive ar(ofile);
+
+	ar << (*hf);
+	ofile.close();
+	return;
+}
+
+void ChunkFactory::getFromFile(const char* file){
+	std::ifstream ifile(file);
+	if( !ifile )
+		perror("ChunkFactory::getFromFile");
+	boost::archive::binary_iarchive ar(ifile);
+
+	ar >> (*hf);
+	ifile.close();
+}
+	
+uint64 ChunkFactory::update_buffer(){
+	is.read(buffer, BUFFER_MAX_SIZE);
+	return is.gcount();
+}
+
+
+	
 		
 bool ChunkFactory::shift(){
 	if( not (i+WINDOW_LENGTH < buffer_size || (i=0, buffer_size=update_buffer())))
@@ -51,7 +151,7 @@ list<uint64> ChunkFactory::chunksIndex(){
 vector<Chunk> ChunkFactory::split(const char* location){
 	is.open(location, ios::binary);
 	if( !is )
-		throw FileError;
+		perror("ChunkFactory::split");
 		
 	bool cached = size_of_file( is ) < CACHING_THRESHOLD;
 		

@@ -7,7 +7,7 @@ LDFLAGS+= -lupscaledb -pthread
 
 EXEC= test55
 SRC= $(wildcard */*.cpp)
-#SRC+= $(wildcard *.cpp)
+SRC+= $(wildcard *.cpp)
 OBJ= $(SRC:.cpp=.o)
 
 all: $(EXEC)

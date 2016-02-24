@@ -1,3 +1,6 @@
+#ifndef MNEMOSYNE_UTILITY_FIFO
+#define MNEMOSYNE_UTILITY_FIFO
+
 #include <cstddef>
 #include <cstring>
 
@@ -101,3 +104,4 @@ class FastList{
 			}
 		}
 };
+#endif
