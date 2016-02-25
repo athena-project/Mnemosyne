@@ -38,7 +38,9 @@ enum msg_t{
 	OBJECT, //cms->client value digest exists(true-false : char)
 	CHUNKS, //cms->client value nm_objs digest1 exists1(true-false : char) digsetn existsn
 	ADD_CHUNKS, //client->cmsvalue nm_objs digst1 digsetn
-	ADD_OBJECT
+	ADD_OBJECT,
+	OBJECT_ADDED,
+	CHUNKS_ADDED
 	};
 
 class Msg{
@@ -51,6 +53,8 @@ class Msg{
 		size_t length = 0;
 		
 	public:
+		static const size_t HEADER_LENGTH = 2 * uint64_s;
+	
 		//copy data because we do not know when msg will be send, the caller might be dead as the data free
 		Msg(msg_t t, char* d, size_t l) : type(t), length(l){
 			memcpy(data = new char[length], d, length);

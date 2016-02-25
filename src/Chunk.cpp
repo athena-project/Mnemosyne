@@ -45,7 +45,16 @@ char* Chunk::_digest(){
 	}
 }
 
-const char* Chunk::c_digest(){ return _digest(); }
+const char* Chunk::c_digest(){ 
+	char buffer[SHA224_DIGEST_LENGTH + 1];
+	buffer[SHA224_DIGEST_LENGTH] = 0;
+	
+	for(int i=0; i <SHA224_DIGEST_LENGTH; i++){
+		sprintf(buffer+i, "%02x", digest[i]);
+	}
+	
+	//return buffer;
+}
 
 size_t Chunk::s_length(){ return SHA224_DIGEST_LENGTH + 2 * uint64_s; }
 

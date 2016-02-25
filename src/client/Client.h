@@ -29,16 +29,22 @@ using namespace std;
 
 class TCPClientServer : public TCPServer{
 	protected:
-		list< pair<char*, char> >* objects;
-		mutex* m_objects;
+		list< pair<char*, char> > *objects;
+		mutex *m_objects;
+		
+		map<string,bool> *additions;
+		mutex *m_additions;
 	
 	public: 
 		TCPClientServer(char* port, int _pfd, std::atomic<bool>* _alive, 
 		list<Task>* _tasks, mutex* _m_tasks, 
-		list< pair<char*, char> >* _objects, mutex* _m_objects){
+		list< pair<char*, char> >* _objects, mutex* _m_objects,
+		map<string, bool>* _additions, mutex* _m_additions){
 			TCPServer(port, _pfd, _alive, _tasks, _m_tasks);
 			objects = _objects;
 			m_objects = _m_objects;
+			additions = _additions;
+			m_additions = _m_additions;
 		}
 		
 		//called when finished to read
@@ -54,7 +60,11 @@ class Client : public TCPHandler{
 		ChunkFactory* cf = NULL;
 			
 		list< pair<char*, char> > objects; //sert pour savoir s'il existe ou non
-		mutex m_objects;		
+		mutex m_objects;	
+				
+		map<string,bool> additions;
+		mutex m_additions;
+			
 	public:
 		Client(char* port, char* _nodes);
 		~Client();
@@ -69,6 +79,11 @@ class Client : public TCPHandler{
 		void group_by_ids(list<Chunk*>& chunks, map<uint64_t, list<Chunk*> >& buffers);
 		///n act as a condition
 		bool wait_objects(int n);
+		bool wait_additions();
+		
+		void populate_additions( list<Chunk*>& chunks );
+		void populate_additions( char* digest );
+		
 		///true : file already exists, else not
 		bool dedup_by_file(const char* location, char* file_digest);
 		bool save(const char* name, const char* location, fs::path path_dir);

@@ -12,7 +12,7 @@ void TCPClientServer::wcallback(Handler* handler, msg_t type){
 }
 
 void TCPClientServer::rcallback(Handler* handler, msg_t type){	
-	char* data = handler->get_in_data();
+	char* data = handler->get_in_data() + Msg::HEADER_LENGTH;
 	
 	if( type == OBJECT){
 		char digest[SHA224_DIGEST_LENGTH];
@@ -40,6 +40,32 @@ void TCPClientServer::rcallback(Handler* handler, msg_t type){
 			objects->push_back( make_pair(digest, exists) );
 			m_objects->unlock();
 		}
+	}else if( type == OBJECT_ADDED ){
+		char digest[SHA224_DIGEST_LENGTH];
+		char exists;
+		
+		memcpy(digest, data, SHA224_DIGEST_LENGTH);
+		memcpy(&exists, data+SHA224_DIGEST_LENGTH, sizeof(char));
+		
+		m_additions->lock();
+		if( additions->find( string(digest) ) != additions->end() )
+			additions->erase( string(digest) );
+		m_additions->unlock();
+	}else if( type == CHUNKS_ADDED ){
+		size_t num = 0;
+		char* end = data + sizeof(size_t);
+		num = strtoull(data, &end, 0);
+		
+		data += sizeof(size_t);
+		for(int i = 0 ; i<num; i++, data+=sizeof(char)+SHA224_DIGEST_LENGTH){
+			char digest[SHA224_DIGEST_LENGTH];
+			memcpy(digest, data, SHA224_DIGEST_LENGTH);
+		
+			m_additions->lock();
+			if( additions->find( string(digest) ) != additions->end() )
+				additions->erase( string(digest) );
+			m_additions->unlock();
+		}
 	}
 	
 	close( handler->get_fd() );
@@ -56,7 +82,7 @@ Client::Client(char* port, char* _nodes){
 	alive.store(true,std::memory_order_relaxed); 
 	
 	server = new TCPClientServer(port, pfds[0], &alive, &tasks, &m_tasks,
-	&objects, &m_objects);
+	&objects, &m_objects,&additions, &m_additions);
 	
 	t_server = std::thread( run_server,server );
 	t_server.detach();
@@ -131,7 +157,7 @@ bool Client::wait_objects(int n){
 	req.tv_sec  = 0;
 	req.tv_nsec = DELAY; //0.001 s
 	
-	while( flag && duration < TIME_OUT){
+	while( !flag && duration < TIME_OUT){
 		nanosleep(&req, &rem);
 		duration += DELAY;
 		
@@ -141,6 +167,48 @@ bool Client::wait_objects(int n){
 	}
 	
 	return flag;
+}
+bool Client::wait_additions(){
+	struct timespec req, rem;
+	uint64_t duration = 0;
+	bool flag =false;
+	
+	req.tv_sec  = 0;
+	req.tv_nsec = DELAY; //0.001 s
+	
+	while( !flag && duration < TIME_OUT){
+		nanosleep(&req, &rem);
+		duration += DELAY;
+		
+		m_additions.lock();
+		flag = (additions.size() == 0 );
+		m_additions.unlock();
+	}
+	
+	return flag;
+}
+
+
+void Client::populate_additions( list<Chunk*>& chunks ){
+	list<Chunk*>::iterator it = chunks.begin();
+	
+	m_additions.lock();
+	for(; it != chunks.end() ; it++)
+		additions[ string((*it)->c_digest()) ] = true;
+	
+	m_additions.unlock();
+}
+void Client::populate_additions( char* digest ){
+	char buffer[SHA224_DIGEST_LENGTH + 1];
+	buffer[SHA224_DIGEST_LENGTH] = 0;
+	
+	for(int i=0; i <SHA224_DIGEST_LENGTH; i++)
+		sprintf(buffer+i, "%02x", digest[i]);
+	
+	
+	m_additions.lock();
+	additions[ string(buffer) ] = true;
+	m_additions.unlock();
 }
 
 ///true : file already exists, else not
