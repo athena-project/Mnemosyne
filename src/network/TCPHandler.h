@@ -135,7 +135,7 @@ class Task{
 class Handler{
 	protected:
 		int	fd;
-
+		char * aplha;
 		char* in_data = NULL; //owned
 		uint32_t in_offset = 0 ;
 		uint32_t in_length = BUFF_SIZE ;
@@ -151,11 +151,8 @@ class Handler{
 		} 
 		
 		~Handler(){ 
-			if( in_data != NULL)
-				delete[] in_data; 
-				
-			if( out_data != NULL)
-				delete[] out_data;
+			delete[] in_data;
+			delete[] out_data;
 		}
 		
 		int get_fd(){ return fd; }
@@ -215,7 +212,7 @@ class TCPServer{
 	public :
 		TCPServer(){}
 	
-		TCPServer(char* port, int _pfd, std::atomic<bool>* _alive, 
+		TCPServer(const char* port, int _pfd, std::atomic<bool>* _alive, 
 		list<Task>* _tasks, mutex* _m_tasks);
 		
 		~TCPServer(){
@@ -228,7 +225,7 @@ class TCPServer{
 	
 		bool register_event(Handler *handler, int option, int mod);
 	
-		int create_and_bind (char *port);
+		int create_and_bind (const char *port);
 
 		int make_non_blocking (int sfd);
 		
@@ -257,7 +254,7 @@ class TCPHandler{
 	public:
 		TCPHandler(){}
 	
-		TCPHandler(char* port){
+		TCPHandler(const char* port){
 			pipe(pfds);
 			alive.store(true,std::memory_order_relaxed); 
 			server = new TCPServer(port, pfds[0], &alive, &tasks, &m_tasks);

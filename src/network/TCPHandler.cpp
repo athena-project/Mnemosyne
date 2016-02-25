@@ -7,6 +7,10 @@ int Handler::add_to_in(char* buf, int size){
 		
 		char* tmp = new char[ 2 * in_length ];
 		memcpy(tmp, in_data, in_offset);
+	
+		delete[] in_data;
+		in_data = tmp;
+		
 		in_length << 1;
 	}
 	
@@ -30,7 +34,7 @@ void Handler::clear(){
 }
 
 ///TCPServer
-TCPServer::TCPServer(char* port, int _pfd, std::atomic<bool>* _alive, 
+TCPServer::TCPServer(const char* port, int _pfd, std::atomic<bool>* _alive, 
 list<Task>*_tasks, mutex* _m_tasks){
 	pfd= _pfd;
 	struct epoll_event event;
@@ -59,6 +63,7 @@ list<Task>*_tasks, mutex* _m_tasks){
 	}
 
 	event.data.fd = sfd;
+	event.data.ptr = NULL;
 	event.events = EPOLLIN | EPOLLET;
 	s = epoll_ctl (efd, EPOLL_CTL_ADD, sfd, &event);
 	if(s == -1){
@@ -79,14 +84,14 @@ bool TCPServer::register_event(Handler *handler, int option, int mod){
 	if(epoll_ctl (efd, mod, handler->get_fd(), &_event) == -1){
 		perror("register_event");
 		close( handler->get_fd() );
-		free( handler );
+		delete handler;
 		return false;
 	}
 	return true;
 }
 
 	
-int TCPServer::create_and_bind (char *port){
+int TCPServer::create_and_bind (const char *port){
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
 	int s, sfd;
@@ -96,7 +101,7 @@ int TCPServer::create_and_bind (char *port){
 	hints.ai_socktype = SOCK_STREAM; /* We want a TCP socket */
 	hints.ai_flags = AI_PASSIVE;     /* All interfaces */
 
-	s = getaddrinfo (NULL, port, &hints, &result);
+	s = getaddrinfo(NULL, port, &hints, &result);
 	if(s != 0){
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror (s));
 		return -1;
@@ -184,23 +189,25 @@ void TCPServer::pcallback(){
 
 void TCPServer::wcallback(Handler* handler, msg_t type){
 	close( handler->get_fd() );
-	free( handler );
+	delete handler;
 }
 
 void TCPServer::rcallback(Handler* handler, msg_t type){	
 	close( handler->get_fd() );
-	free( handler );
+	delete handler;
 }
-	
+
 int TCPServer::run(){
-	struct epoll_event send_event;
-	send_event.data.fd= pfd;
-	send_event.events = EPOLLIN;
-	s = epoll_ctl (efd, EPOLL_CTL_ADD, pfd, &send_event);
-	if(s == -1){
-		perror("epoll_ctl-TCPServer3");
-		abort();
-	}
+	//struct epoll_event send_event;
+	//send_event.data.fd= pfd;
+	//send_event.data.ptr= NULL;
+	//send_event.events = EPOLLIN;
+
+	//s = epoll_ctl (efd, EPOLL_CTL_ADD, pfd, &send_event);
+	//if(s == -1){
+		//perror("epoll_ctl-TCPServer3");
+		//abort();
+	//}
 	
 	while( alive->load(std::memory_order_relaxed) ){
 		int n, i;
@@ -212,16 +219,15 @@ int TCPServer::run(){
 				){
 				fprintf (stderr, "epoll error\n");
 				
-				if( events[i].data.ptr != NULL )
-					free(events[i].data.ptr);
+				delete static_cast<Handler*>(events[i].data.ptr);
 				close (events[i].data.fd);
 				
 				continue;
-			}else if( pfd == events[i].data.fd){
-				char buf[32];
-				printf("sending\n");
-				while( read(pfd, buf, sizeof buf) == sizeof(buf) ){}
-				pcallback();
+			//}else if( pfd == events[i].data.fd){
+				//char buf[32];
+				//printf("sending\n");
+				//while( read(pfd, buf, sizeof buf) == sizeof(buf) ){}
+				//pcallback();
 				
 			}else if(sfd == events[i].data.fd){//One or more connection
 				while (1){
@@ -256,6 +262,8 @@ int TCPServer::run(){
 						register_event( new Handler( infd ), EPOLLIN | EPOLLET, EPOLL_CTL_ADD);
 				}
 				continue;
+			}else if(events[i].data.ptr == NULL){
+				perror("event error unkown\n");
 			}else if(events[i].events & EPOLLIN){//Data waiting to be read
 				int done = 0;
 				Handler* handler = static_cast<Handler*>(events[i].data.ptr);
@@ -303,7 +311,7 @@ int TCPServer::run(){
 				}else if(-1 == ret){ //error
 					perror("write");
 					close( handler->get_fd() );
-					free( handler );
+					delete handler;
 				}else{ //entire data was written          
 					printf("\nAdding Read Event.\n");   
 					wcallback( handler, handler->get_out_type() );

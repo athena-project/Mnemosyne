@@ -12,7 +12,7 @@ Chunk::Chunk(int b, int l, const char* _data, bool cached) : length(l), begin(b)
 	SHA224((unsigned char*)_data, length, digest);	
 	
 	digest_to_char(digest_c, digest);
-	digest_str = digest_to_string( digest_c );
+	//digest_str = digest_to_string( digest_c );
 }
 
 Chunk::Chunk(char* _s_data){			
@@ -23,7 +23,7 @@ Chunk::Chunk(char* _s_data){
 	length = strtoull(_s_data+uint64_s, &end, 0);
 
 	memcpy(digest_c, _s_data + 2*uint64_s, SHA224_DIGEST_LENGTH);
-	digest_str = digest_to_string( digest_c );
+	//digest_str = digest_to_string( digest_c );
 
 }
 
@@ -64,21 +64,21 @@ void Chunk::serialize(char* buff){
 ChunkFactory::ChunkFactory(){
 	hf = new KarpRabinHash<uint64>(WINDOW_LENGTH,AVERAGE_LENGTH );
 	buffer = new char[BUFFER_MAX_SIZE];
-	window = UltraFastWindow(WINDOW_LENGTH);
+	window = new UltraFastWindow(WINDOW_LENGTH);
 }
 
 ChunkFactory::ChunkFactory( const char* location){
 	hf = new KarpRabinHash<uint64>(WINDOW_LENGTH,AVERAGE_LENGTH );
 	buffer = new char[BUFFER_MAX_SIZE];
-	window = UltraFastWindow(WINDOW_LENGTH);	
+	window = new UltraFastWindow(WINDOW_LENGTH);	
 	getFromFile(location);
 }
 	
 ChunkFactory::~ChunkFactory(){
-	if( hf != NULL)
-		delete hf;
-	if( buffer != NULL)
-		delete[] buffer;
+	delete hf;
+	delete window;
+	delete[] buffer;
+	
 	if( is.is_open() )
 		is.close();
 }	
@@ -110,7 +110,6 @@ uint64 ChunkFactory::update_buffer(){
 }
 
 
-	
 		
 bool ChunkFactory::shift(){
 	if( not (i+WINDOW_LENGTH < buffer_size || (i=0, buffer_size=update_buffer())))
@@ -142,7 +141,7 @@ list<uint64> ChunkFactory::chunksIndex(){
 		}
 
 	   ///Next step
-	   hf->update( window.add(buffer[i]), buffer[i]); 
+	   hf->update( window->add(buffer[i]), buffer[i]); 
 	}
 	
 	if( index.back() != current-1)

@@ -36,11 +36,10 @@ class TCPClientServer : public TCPServer{
 		mutex *m_additions;
 	
 	public: 
-		TCPClientServer(char* port, int _pfd, std::atomic<bool>* _alive, 
+		TCPClientServer(const char* port, int _pfd, std::atomic<bool>* _alive, 
 		list<Task>* _tasks, mutex* _m_tasks, 
 		list< pair<char*, char> >* _objects, mutex* _m_objects,
-		map<string, bool>* _additions, mutex* _m_additions){
-			TCPServer(port, _pfd, _alive, _tasks, _m_tasks);
+		map<string, bool>* _additions, mutex* _m_additions) : TCPServer(port, _pfd, _alive, _tasks, _m_tasks){
 			objects = _objects;
 			m_objects = _m_objects;
 			additions = _additions;
@@ -66,7 +65,7 @@ class Client : public TCPHandler{
 		mutex m_additions;
 			
 	public:
-		Client(char* port, char* _nodes);
+		Client(const char* port, NodeMap* _nodes);
 		~Client();
 		
 		void clear_objects();

@@ -1,9 +1,9 @@
-#include "dms.h"
+#include "MapServer.h"
 
 
 void TCPMapServer::wcallback(Handler* handler, msg_t type){
 	close( handler->get_fd() );
-	free( handler );
+	delete handler;
 }
 
 void TCPMapServer::rcallback(Handler* handler, msg_t type){	
@@ -75,12 +75,11 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
 		register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
 	}else{
 		close( handler->get_fd() );
-		free( handler );
+		delete handler;
 	}
 }
 
-MapServer::MapServer(char* port, char* _nodes){
-	nodes = new NodeMap(3);
+MapServer::MapServer(const char* port, NodeMap* _nodes) : nodes(_nodes){
 
 	pipe(pfds);
 	alive.store(true,std::memory_order_relaxed); 
@@ -92,6 +91,11 @@ MapServer::MapServer(char* port, char* _nodes){
 	t_server.detach();
 } 
 
-MapServer::~MapServer(){
-	delete nodes;
+MapServer::~MapServer(){printf("sdufg\n");}
+
+
+void MapServer::run(){
+	while( true ){
+		sleep( 5 );
+	}
 }

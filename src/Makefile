@@ -1,6 +1,6 @@
 CXX=g++
 #CXXFLAGS= -W -Wall -ansi -pedantic 
-CXXFLAGS= -std=c++11
+CXXFLAGS= -std=c++11 -g
 
 LDFLAGS= -lssl -lcrypto  -lboost_serialization  -lboost_filesystem -lboost_system
 LDFLAGS+= -lupscaledb -pthread

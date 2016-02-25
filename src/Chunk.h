@@ -81,7 +81,7 @@ class ChunkFactory{
 		char* buffer = NULL;
 
 		//FastList window;
-		UltraFastWindow window;
+		UltraFastWindow *window = NULL;
 		ifstream is;
 
 		KarpRabinHash<uint64>* hf = NULL;

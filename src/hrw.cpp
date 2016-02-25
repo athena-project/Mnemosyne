@@ -34,7 +34,7 @@ class Node{
 
 class NodeMap{
 	protected:
-		vector<Node*> nodes;	//non responsable des noeuds	
+		vector<Node*> nodes;	//owned	
 		map<uint64_t, Node*> map_nodes;
 		
 		int n = 1; //nombre de noeuds à choisir
@@ -42,6 +42,11 @@ class NodeMap{
 		NodeMap(){}
 		
 		NodeMap(int _n) : n(_n){}
+		
+		~NodeMap(){
+			for(size_t i=0; i<nodes.size() ; i++)
+				delete nodes[i];
+		}
 		
 		void add_node(Node* node){ 
 			nodes.push_back(node); 

@@ -7,7 +7,7 @@ void TCPClientServer::wcallback(Handler* handler, msg_t type){
 		register_event(handler, EPOLLIN, EPOLL_CTL_MOD);
 	}else{
 		close( handler->get_fd() );
-		free( handler );
+		delete handler;
 	}
 }
 
@@ -69,14 +69,13 @@ void TCPClientServer::rcallback(Handler* handler, msg_t type){
 	}
 	
 	close( handler->get_fd() );
-	free( handler );
+	delete handler;
 }
 
 
 ///Save functions
-Client::Client(char* port, char* _nodes){
-	nodes = new NodeMap(3);
-	cf = new ChunkFactory("krh.ser");
+Client::Client(const char* port, NodeMap* _nodes) : nodes(_nodes){
+	cf = new ChunkFactory("chunks_factory_conf.data");
 	
 	pipe(pfds);
 	alive.store(true,std::memory_order_relaxed); 
@@ -89,7 +88,6 @@ Client::Client(char* port, char* _nodes){
 } 
 
 Client::~Client(){
-	delete nodes;
 	delete cf;
 }
 
@@ -242,10 +240,10 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 	map<string, Chunk*> chunks_map; 
 	map<uint64_t, list<Chunk*> > buffers; //node_id => chunks of this node
 
-	
 	chunks = cf->split(location);
 	buid_digests_map( chunks, chunks_map);
-		
+	printf("end dedup\n");
+	return true;
 	///Send requests
 	group_by_id( chunks, buffers);
 	
@@ -320,6 +318,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 			char buffer[ buffer_len ];
 			
 			build_digests( it->second, buffer);
+			populate_additions( it->second );
 			
 			Node* node = nodes->get_node( it->first );
 			send(ADD_CHUNKS, buffer, buffer_len, node->get_host(), node->get_port());
@@ -329,10 +328,9 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 		vector<Node*> _nodes = nodes->wallocate( file_digest, SHA224_DIGEST_LENGTH );
 		for(int k=0 ; k< _nodes.size() ; k++)		
 			send(ADD_OBJECT, file_digest, SHA224_DIGEST_LENGTH, _nodes[k]->get_host(), _nodes[k]->get_port());
+		populate_additions( file_digest );
 		
-		//
-		// I	l faut vérifier que tous les serveurs distants aient répondu
-		//
+		wait_additions();
 	}
 	clear_objects();
 	

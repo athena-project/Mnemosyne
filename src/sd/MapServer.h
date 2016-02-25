@@ -22,11 +22,10 @@ class TCPMapServer : public TCPServer{
 		mutex* m_objects;
 	
 	public: 
-		TCPMapServer(char* port, int _pfd, std::atomic<bool>* _alive, 
+		TCPMapServer(const char* port, int _pfd, std::atomic<bool>* _alive, 
 		list<Task>* _tasks, mutex* _m_tasks, 
 		map<string, bool>* _objects, mutex* _m_objects,
-		map<string, bool>* _chunks, mutex* _m_chunks){
-			TCPServer(port, _pfd, _alive, _tasks, _m_tasks);
+		map<string, bool>* _chunks, mutex* _m_chunks) : TCPServer(port, _pfd, _alive, _tasks, _m_tasks){
 			objects = _objects;
 			m_objects = _m_objects;
 			chunks = _chunks;
@@ -50,8 +49,10 @@ class MapServer : TCPHandler{
 		mutex m_objects;
 	
 	public: 
-		MapServer(char* port, char* _nodes);
+		MapServer(const char* port, NodeMap* _nodes);
 		~MapServer();
+		
+		void run();
 };
 
 #endif //MNEMOSYNE_DMS_DMS_H
