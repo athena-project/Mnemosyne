@@ -43,96 +43,105 @@ enum msg_t{
 	CHUNKS_ADDED
 	};
 
-class Msg{
-	protected:
-		msg_t type;
+//class Msg{
+	//protected:
+		//msg_t type;
 		
-		char* data = NULL;		
-		char* s_data = NULL;
+		//char* data = NULL;		
+		//char* s_data = NULL;
 		
-		size_t length = 0;
+		//size_t length = 0;
 		
-	public:
-		static const size_t HEADER_LENGTH = 2 * uint64_s;
+	//public:
+		//static const size_t HEADER_LENGTH = 2 * uint64_s;
 	
-		//copy data because we do not know when msg will be send, the caller might be dead as the data free
-		Msg(msg_t t, char* d, size_t l) : type(t), length(l){
-			memcpy(data = new char[length], d, length);
-		}
+		////copy data because we do not know when msg will be send, the caller might be dead as the data free
+		//Msg(msg_t t, char* d, size_t l) : type(t), length(l){
+			//memcpy(data = new char[length], d, length);
+		//}
 		
-		Msg(msg_t t, size_t l): type(t), length(l){
-			data = new char[length];
-		}
+		//Msg(msg_t t, size_t l): type(t), length(l){
+			//data = new char[length];
+		//}
 		
-		Msg(char* _s_data){			
-			char* end = _s_data + uint64_s;
-			length = strtoull(_s_data, &end, 0);
+		//Msg(char* _s_data){			
+			//char* end = _s_data + uint64_s;
+			//length = strtoull(_s_data, &end, 0);
 			
-			end += uint64_s;
-			type = static_cast<msg_t>(strtoull(_s_data+uint64_s, &end, 0));
+			//end += uint64_s;
+			//type = static_cast<msg_t>(strtoull(_s_data+uint64_s, &end, 0));
 
-			data = new char[length];
-			memcpy(data, _s_data + 2*uint64_s, length);
-		}
+			//data = new char[length];
+			//memcpy(data, _s_data + 2*uint64_s, length);
+		//}
 		
-		~Msg(){
-			if( data != NULL )
-				delete[] data;
+		//~Msg(){
+			//if( data != NULL )
+				//delete[] data;
 		
-			printf("MSg died\n");
-			if( s_data != NULL)
-				delete[] s_data;
-		}
+			//printf("MSg died\n");
+			//if( s_data != NULL)
+				//delete[] s_data;
+		//}
 		
-		size_t s_length(){ return length + 2 * uint64_s; }
+		//size_t s_length(){ return length + 2 * uint64_s; }
 		
-		static msg_t get_type(char* data){
-			char* end = data + 2*uint64_s;
-			return static_cast<msg_t>(strtoull(data+uint64_s, &end, 0));
-		}
+		//static msg_t get_type(char* data){
+			//char* end = data + 2*uint64_s;
+			//return static_cast<msg_t>(strtoull(data+uint64_s, &end, 0));
+		//}
 		
-		char* get_data(){ return data; }
+		//char* get_data(){ return data; }
 		
-		char* serialize(){
-			if( s_data != NULL)
-				return s_data;
+		//char* serialize(){
+			//if( s_data != NULL)
+				//return s_data;
 				
-			s_data = new char[ length + uint64_s * 2 ];
+			//s_data = new char[ length + uint64_s * 2 ];
 
-			sprintf(s_data, "%" PRIu64 "", length);
-			sprintf(s_data+uint64_s, "%" PRIu64 "", static_cast<uint64_t>(type));
-			memcpy( s_data+uint64_s * 2, data, length );
-			printf("end");
-			return s_data;
-		}
-};
+			//sprintf(s_data, "%" PRIu64 "", length);
+			//sprintf(s_data+uint64_s, "%" PRIu64 "", static_cast<uint64_t>(type));
+			//memcpy( s_data+uint64_s * 2, data, length );
+			//printf("end");
+			//return s_data;
+		//}
+//};
+static const size_t HEADER_LENGTH = 2 * uint64_s;
 
-
-//Devient propiètaire du msg donc le détruit
 class Task{
-	public:
-		Msg* msg = NULL;
+	public:		
+		msg_t type;
+		uint64_t length;
+		char* data = NULL; //owned until transmit to handler
+		bool data_owned = true;
+		
 		const char* host;
-		int port;
+		unsigned int port;
 		
 		Task(){}
-		Task(Msg* _m, const char* _a, int _p) : msg(_m), host(_a), port(_p){}
 		
+		Task(msg_t _type, char* _data, uint64_t _length, const char* _host, 
+		unsigned int _port) : type(_type), data(_data), length(_length), 
+		host(_host), port(_port){}
+			
 		~Task(){
-			if( msg != NULL )
-				delete msg;
+			if( data != NULL && data_owned)
+				delete[] data;
 		}
+		
+		char* steal_data(){ data_owned = false; return data; }
 };
 
 class Handler{
 	protected:
 		int	fd;
-		
-		char* in_data = NULL;
+
+		char* in_data = NULL; //owned
 		uint32_t in_offset = 0 ;
 		uint32_t in_length = BUFF_SIZE ;
 		
-		char* out_data = NULL;
+		msg_t out_type;
+		char* out_data = NULL; //owned
 		uint32_t out_offset = 0;
 		uint32_t out_length = 0;
 		
@@ -144,16 +153,40 @@ class Handler{
 		~Handler(){ 
 			if( in_data != NULL)
 				delete[] in_data; 
+				
+			if( out_data != NULL)
+				delete[] out_data;
 		}
 		
 		int get_fd(){ return fd; }
-		char* get_in_data(){ return in_data; }
+		
+		msg_t get_int_type(){
+			char* end = in_data + 2*uint64_s;
+			return static_cast<msg_t>(strtoull(in_data+uint64_s, &end, 0));
+		}
+		char* get_in_data(){ return in_data+HEADER_LENGTH; }
 		uint32_t get_in_length(){ return in_length; }
 		uint32_t get_in_offset(){ return in_offset; }
+				
+		//Transfert ownership;
+		void set_out_data(msg_t _type, char* _data, uint64_t _length){ 
+			if( out_data != NULL)
+				delete[] out_data;
+			
+			out_type = _type;	
+			out_data = _data;
+			out_length = _length;
+		}
 		
-		char* get_out_data(){ return in_data; }
-		void set_out_data(char* d){ out_data = d; }
-		void set_out_length(size_t s){ out_length = s; }
+		//Transfert ownership;
+		void send(msg_t _type, char* _data, uint64_t _length){
+			sprintf(_data, "%" PRIu64 "", _length+HEADER_LENGTH);
+			sprintf(_data+uint64_s, "%" PRIu64 "", static_cast<uint64_t>(_type));
+			
+			set_out_data(_type, _data, _length);
+		}
+		
+		msg_t get_out_type(){ return out_type; }
 		uint32_t get_out_length(){ return out_length; }
 		uint32_t get_out_offset(){ return out_offset; }
 
@@ -165,8 +198,6 @@ class Handler{
 		int out_write();
 		void clear();
 };
-
-
 
 class TCPServer{
 	protected :
@@ -213,8 +244,6 @@ class TCPServer{
 		int run();
 };
 
-
-
 class TCPHandler{
 	protected:
 		int pfds[2];
@@ -249,22 +278,20 @@ class TCPHandler{
 		
 		static void run_server(TCPServer* t){ t->run(); }
 		
-		void send(Msg msg, const char* _host, int port){
-			printf("Warning it's not optimal TCPHANDLER.H 235");
+		
+		void send(msg_t _type, char* _data, uint64_t _length, const char* _host, unsigned int port){
+			char* buffer = new char[_length + HEADER_LENGTH];			
+			sprintf(buffer, "%" PRIu64 "", _length+HEADER_LENGTH);
+			sprintf(buffer+uint64_s, "%" PRIu64 "", static_cast<uint64_t>(_type));
+			memcpy(buffer+HEADER_LENGTH, _data, _length);
+			
 			m_tasks.lock();
-			tasks.push_back( Task(&msg, _host, port) );
+			tasks.push_back( Task(_type, buffer, _length+HEADER_LENGTH, _host, port) );
 			m_tasks.unlock();
 			
 			write(pfds[1], "0", 1);		
-			printf("send\n");	
 		}
 		
-		void send(Msg* msg, const char* _host, unsigned int port){
-			m_tasks.lock();
-			tasks.push_back( Task(msg, _host, port) );
-			m_tasks.unlock();
-			
-			write(pfds[1], "0", 1);		
-		}
+
 };
 #endif

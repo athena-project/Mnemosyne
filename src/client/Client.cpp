@@ -12,7 +12,7 @@ void TCPClientServer::wcallback(Handler* handler, msg_t type){
 }
 
 void TCPClientServer::rcallback(Handler* handler, msg_t type){	
-	char* data = handler->get_in_data() + Msg::HEADER_LENGTH;
+	char* data = handler->get_in_data();
 	
 	if( type == OBJECT){
 		char digest[SHA224_DIGEST_LENGTH];
@@ -217,11 +217,9 @@ bool Client::dedup_by_file(const char* location, char* file_digest){
 		perror("Hashing failed");
 		return false;
 	}
-	Node* prime;
-	
-	Msg m(EXISTS_OBJECT, file_digest, SHA224_DIGEST_LENGTH);
-	prime = nodes->rallocate( file_digest, SHA224_DIGEST_LENGTH);
-	send(m, prime->get_host(), prime->get_port());
+	Node* prime = nodes->rallocate( file_digest, SHA224_DIGEST_LENGTH);
+	send(EXISTS_OBJECT, file_digest, SHA224_DIGEST_LENGTH, prime->get_host(), 
+		prime->get_port());
 	
 	if( !wait_objects( 1 ) )
 		return false;
@@ -254,12 +252,12 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 	for(map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
 	it != buffers.end(); it++){
 		size_t buffer_len = (it->second).size() * SHA224_DIGEST_LENGTH + sizeof(size_t);
-		Msg* m = new Msg(EXISTS_CHUNKS, buffer_len); //handle by send
+		char buffer[buffer_len];
 		
-		build_digests( it->second, m->get_data());
+		build_digests( it->second, buffer);
 		
 		Node* node = nodes->get_node( it->first );
-		send(m, node->get_host(), node->get_port());
+		send(EXISTS_CHUNKS, buffer, buffer_len, node->get_host(), node->get_port());
 	}
 	
 	if( !wait_objects( chunks.size() ) )
@@ -319,24 +317,18 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 		for(map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
 		it != buffers.end(); it++){
 			size_t buffer_len = (it->second).size() * SHA224_DIGEST_LENGTH + sizeof(size_t);
-			Msg* m = new Msg(ADD_CHUNKS, buffer_len); //handle by send
+			char buffer[ buffer_len ];
 			
-			build_digests( it->second, m->get_data());
+			build_digests( it->second, buffer);
 			
 			Node* node = nodes->get_node( it->first );
-			send(m, node->get_host(), node->get_port());
+			send(ADD_CHUNKS, buffer, buffer_len, node->get_host(), node->get_port());
 		}
 		
 		///Send file digest
 		vector<Node*> _nodes = nodes->wallocate( file_digest, SHA224_DIGEST_LENGTH );
-		for(int k=0 ; k< _nodes.size() ; k++){
-			Msg* m = new Msg(ADD_OBJECT, SHA224_DIGEST_LENGTH); //handle by send
-			for(int i=0; i <SHA224_DIGEST_LENGTH; i++)
-				sprintf(m->get_data()+i, "%02x", file_digest[i]);
-		
-			send(m, _nodes[k]->get_host(), _nodes[k]->get_port());
-		}
-		
+		for(int k=0 ; k< _nodes.size() ; k++)		
+			send(ADD_OBJECT, file_digest, SHA224_DIGEST_LENGTH, _nodes[k]->get_host(), _nodes[k]->get_port());
 		
 		//
 		// I	l faut vérifier que tous les serveurs distants aient répondu

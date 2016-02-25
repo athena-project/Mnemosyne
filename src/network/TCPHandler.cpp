@@ -144,10 +144,11 @@ int TCPServer::make_non_blocking (int sfd){
 }
 
 void TCPServer::pcallback(){
-	Task t;
+	Task task;
 	m_tasks->lock();
-    for(int i=0; i<tasks->size(); i++){
-		t = tasks->front();
+	
+    while( tasks->size() > 0 ){
+		task = tasks->front();
 		tasks->pop_front();
 			
 		///Create sending socket
@@ -159,8 +160,8 @@ void TCPServer::pcallback(){
 		}
 		
 		addr.sin_family = AF_INET;	
-		inet_pton(AF_INET, t.host, &addr.sin_addr);
-		addr.sin_port = htons(t.port);
+		inet_pton(AF_INET, task.host, &addr.sin_addr);
+		addr.sin_port = htons(task.port);
 		
 		if(connect(sockfd, (sockaddr*)&addr, sizeof(addr)) < 0){
 			perror("ERROR connecting");
@@ -174,21 +175,10 @@ void TCPServer::pcallback(){
 		
 		Handler* n_handler = new Handler(sockfd);
 		
-		n_handler->set_out_data( (t.msg)->serialize() );
-		n_handler->set_out_length( (t.msg)->s_length() );
-
-		struct epoll_event out_event;
-		out_event.events = EPOLLOUT;
-		out_event.data.ptr=static_cast<void*>( n_handler );
-		s = epoll_ctl(efd, EPOLL_CTL_ADD, sockfd, &out_event);
-				
-		if(s == -1){
-			perror("epoll_ctl-pcallback2");
-			close( n_handler->get_fd() );
-			free( n_handler );
-			abort();
-		}
+		n_handler->set_out_data( task.type, task.steal_data(), task.length );
+		register_event(n_handler, EPOLLOUT, EPOLL_CTL_ADD);
 	}
+	
 	m_tasks->unlock();
 }
 
@@ -198,20 +188,8 @@ void TCPServer::wcallback(Handler* handler, msg_t type){
 }
 
 void TCPServer::rcallback(Handler* handler, msg_t type){	
-	struct epoll_event listen_event;
-	listen_event.events = EPOLLOUT | EPOLLET;	
-	listen_event.data.ptr=static_cast<void*>( handler );
-	printf("Msg incomming : |");
-	write (1, handler->get_in_data(), handler->get_in_offset()); //Debug
-
-	s = epoll_ctl (efd, EPOLL_CTL_MOD, handler->get_fd(), &listen_event);
-	if(s == -1){
-		perror("epoll_ctl-rcallback");
-		close( handler->get_fd() );
-		free( handler );
-		abort();
-	}
-	
+	close( handler->get_fd() );
+	free( handler );
 }
 	
 int TCPServer::run(){
@@ -274,20 +252,8 @@ int TCPServer::run(){
 								"(host=%s, port=%s)\n", infd, hbuf, sbuf);
 					}
 
-					s = make_non_blocking (infd);
-					if(s == -1)
-						abort();
-
-					struct epoll_event listen_event;
-					listen_event.events = EPOLLIN | EPOLLET;	
-					listen_event.data.ptr=static_cast<void*>( new Handler( infd ) );
-					
-					s = epoll_ctl (efd, EPOLL_CTL_ADD, infd, &listen_event);
-					if(s == -1){
-						perror("epoll_ctl-sfd");
-						free(events[i].data.ptr);
-						abort();
-					}
+					if(make_non_blocking(infd) != -1)
+						register_event( new Handler( infd ), EPOLLIN | EPOLLET, EPOLL_CTL_ADD);
 				}
 				continue;
 			}else if(events[i].events & EPOLLIN){//Data waiting to be read
@@ -317,7 +283,7 @@ int TCPServer::run(){
 				}
 
 				if(done)
-					rcallback( handler, Msg::get_type( handler->get_in_data() ) );
+					rcallback( handler, handler->get_int_type() );
 			}else if(events[i].events & EPOLLOUT){
 				int ret;				
 				Handler* handler = static_cast<Handler*>(events[i].data.ptr);
@@ -325,19 +291,9 @@ int TCPServer::run(){
 				ret = handler->out_write();
 	   
 				if( (-1 == ret && EINTR == errno) || 
-					ret < handler->get_out_length()){ //Sent partial data
+				ret < handler->get_out_length()){ //Sent partial data
 	   
-					struct epoll_event listen_event;
-					listen_event.events = EPOLLOUT | EPOLLET;	
-					listen_event.data.ptr=static_cast<void*>( handler );
-					
-					s = epoll_ctl (efd, EPOLL_CTL_ADD, handler->get_fd(), &listen_event);
-					if(s == -1){
-						perror("epoll_ctl-out");
-						close( handler->get_fd() );
-						free( handler );
-						abort();
-					}
+					register_event(handler,  EPOLLOUT | EPOLLET, EPOLL_CTL_MOD);
 				   					   
 					if(-1 != ret){//previous write : only partial data
 						handler->decr_out_length( ret );
@@ -348,10 +304,9 @@ int TCPServer::run(){
 					perror("write");
 					close( handler->get_fd() );
 					free( handler );
-					abort();
 				}else{ //entire data was written          
 					printf("\nAdding Read Event.\n");   
-					wcallback( handler, Msg::get_type( handler->get_out_data() ) );
+					wcallback( handler, handler->get_out_type() );
 				}
 	
 			}else{

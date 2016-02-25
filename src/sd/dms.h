@@ -8,6 +8,7 @@
 #include <openssl/sha.h>
 
 #include "../network/TCPHandler.h"
+#include "../utility/hash.cpp"
 #include "../hrw.cpp"
 
 using namespace std;

@@ -7,89 +7,71 @@ void TCPMapServer::wcallback(Handler* handler, msg_t type){
 }
 
 void TCPMapServer::rcallback(Handler* handler, msg_t type){	
-	char* data = handler->get_in_data() + Msg::HEADER_LENGTH;
+	char* data = handler->get_in_data();
 	
 	if( type == EXISTS_OBJECT){
-		char digest[SHA224_DIGEST_LENGTH+1];
-		digest[SHA224_DIGEST_LENGTH] = 0;
-		char exists;
+		char *buff = new char[SHA224_DIGEST_LENGTH + 1 + HEADER_LENGTH];
+		char* buffer = buff + HEADER_LENGTH;
+		memcpy(buffer, data, SHA224_DIGEST_LENGTH);
 		
-		memcpy(digest, data, SHA224_DIGEST_LENGTH);
 		m_objects->lock();
-		exists = ( objects->find( string(digest) ) != objects->end() );
+		buffer[SHA224_DIGEST_LENGTH] = ( objects->find( digest_to_string(data) ) != objects->end() );
 		m_objects->unlock();
 		
 		handler->clear();
 		
-		Msg m(OBJECT, SHA224_DIGEST_LENGTH + 1);
-		memcpy(m.get_data(), digest, SHA224_DIGEST_LENGTH);
-		m.get_data()[ SHA224_DIGEST_LENGTH ] = exists;
-
-		
-		handler->set_out_data( m.serialize() );
-		handler->set_out_length( m.s_length() );
+		handler->send(OBJECT, buff, SHA224_DIGEST_LENGTH+1); //transfert ownership
 		register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
 	}else if( type == EXISTS_CHUNKS ){
 		char* end = data + sizeof(uint64_t);
 		uint64_t num = strtoull(data, &end, 0);
 		
-		Msg m(CHUNKS, SHA224_DIGEST_LENGTH * num + num);
-		char digest[SHA224_DIGEST_LENGTH+1];
-		digest[SHA224_DIGEST_LENGTH] = 0;
-		char exists;
+		char *buf = new char[ SHA224_DIGEST_LENGTH * num + num + HEADER_LENGTH];
+		char *buffer = buf + HEADER_LENGTH;
 		
+		uint64_t pos = 0; 
 		data += sizeof(uint64_t);
-		for(int i = 0 ; i<num; i++, data+=SHA224_DIGEST_LENGTH){
-			memcpy(digest, data, SHA224_DIGEST_LENGTH);
-			
-			m_objects->lock();
-			exists = ( objects->find( string(digest) ) != objects->end() );
-			m_objects->unlock();
-			
-			memcpy(m.get_data() + i * (SHA224_DIGEST_LENGTH + 1), digest, 
-				SHA224_DIGEST_LENGTH);
-			m.get_data()[ i * (SHA224_DIGEST_LENGTH + 1) + SHA224_DIGEST_LENGTH] = exists;
-		}
 		
-		handler->set_out_data( m.serialize() );
-		handler->set_out_length( m.s_length() );
+		m_chunks->lock();
+		for(int i = 0 ; i<num; i++, data+=SHA224_DIGEST_LENGTH, 
+		pos += SHA224_DIGEST_LENGTH + 1){
+			memcpy(buffer + pos, data, SHA224_DIGEST_LENGTH);
+						
+			buffer[pos + SHA224_DIGEST_LENGTH] = ( 
+				chunks->find( digest_to_string(data) ) != objects->end() );
+		}
+		m_chunks->unlock();
+		
+		handler->send(CHUNKS, buf, SHA224_DIGEST_LENGTH * num + num);//transfert ownership
 		register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
 	}else if( type == ADD_OBJECT ){
-		char digest[SHA224_DIGEST_LENGTH];
+		char *buff = new char[SHA224_DIGEST_LENGTH + HEADER_LENGTH];
+		char *buffer = buff + HEADER_LENGTH;
+		memcpy(buffer, data, SHA224_DIGEST_LENGTH);
 		
-		memcpy(digest, data, SHA224_DIGEST_LENGTH);
 		m_objects->lock();
-		(*objects)[string(digest)]=true;
+		(*objects)[digest_to_string(buffer)]=true;
 		m_objects->unlock();
 		
 		handler->clear();
-		Msg m(OBJECT_ADDED, digest, SHA224_DIGEST_LENGTH);
 		
-		handler->set_out_data( m.serialize() );
-		handler->set_out_length( m.s_length() );
+		handler->send(OBJECT_ADDED, buffer, SHA224_DIGEST_LENGTH); //transfert ownership
 		register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
 	}
 	else if( type == ADD_CHUNKS ){
 		char* end = data + sizeof(uint64_t);
 		uint64_t num = strtoull(data, &end, 0);
 		
-		Msg m(CHUNKS_ADDED, SHA224_DIGEST_LENGTH * num + num);
-		char digest[SHA224_DIGEST_LENGTH];
-		
+		char *buff = new char[ SHA224_DIGEST_LENGTH * num + HEADER_LENGTH];
+		memcpy(buff + HEADER_LENGTH, handler->get_in_data(), SHA224_DIGEST_LENGTH * num);
+
 		data += sizeof(uint64_t);
-		for(int i = 0 ; i<num; i++, data+=SHA224_DIGEST_LENGTH){
-			memcpy(digest, data, SHA224_DIGEST_LENGTH);
-			
-			m_objects->lock();
-			(*objects)[ string(digest) ] = true,
-			m_objects->unlock();
-			
-			memcpy(m.get_data() + i * SHA224_DIGEST_LENGTH, digest, 
-				SHA224_DIGEST_LENGTH);
-		}
+		m_chunks->lock();
+		for(int i = 0 ; i<num; i++, data+=SHA224_DIGEST_LENGTH)					
+			(*chunks)[ digest_to_string(data) ] = true;
+		m_chunks->unlock();
 		
-		handler->set_out_data( m.serialize() );
-		handler->set_out_length( m.s_length() );
+		handler->send(CHUNKS_ADDED, buff, SHA224_DIGEST_LENGTH * num);//transfert ownership
 		register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
 	}else{
 		close( handler->get_fd() );
