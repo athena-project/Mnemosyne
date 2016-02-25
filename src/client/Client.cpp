@@ -107,20 +107,20 @@ void Client::build_digests(list<Chunk*>& chunks, char* digests){
 	sprintf(digests, "%lu", chunks.size());
 	
 	for(int k=sizeof(size_t); it != chunks.end() ; k += SHA224_DIGEST_LENGTH)
-		memcpy(digests+k, (*it)->_digest(), SHA224_DIGEST_LENGTH);
+		(*it)->_digest( digests+k );
 }
 
 void Client::buid_digests_map(vector<Chunk>& chunks, map<string, Chunk*>& map){
 	vector<Chunk>::iterator it = chunks.begin();
 
 	for(; it != chunks.end() ; it++)
-		map[ string(it->_digest()) ] = &(*it);
+		map[ it->str_digest() ] = &(*it);
 }
 
 void Client::group_by_id(vector<Chunk>& chunks, map<uint64_t, list<Chunk*> >& buffers){
 	uint64_t tmp_id;
 	for(int i=0; i<chunks.size(); i++){
-		tmp_id = nodes->rallocate( chunks[i]._digest(), SHA224_DIGEST_LENGTH )->get_id();
+		tmp_id = nodes->rallocate( chunks[i].ptr_digest(), SHA224_DIGEST_LENGTH )->get_id();
 		
 		if( buffers.find(tmp_id) == buffers.end() )
 			buffers[tmp_id]=list<Chunk*>();
@@ -135,7 +135,7 @@ void Client::group_by_ids(list<Chunk*>& chunks, map<uint64_t, list<Chunk*> >& bu
 	uint64_t tmp_id;
 	
 	for(; it != chunks.end() ; it++){
-		_nodes = nodes->wallocate( (*it)->_digest(), SHA224_DIGEST_LENGTH );
+		_nodes = nodes->wallocate( (*it)->ptr_digest(), SHA224_DIGEST_LENGTH );
 		
 		for( int k=0; k< _nodes.size(); k++){
 			tmp_id = _nodes[k]->get_id();
@@ -194,7 +194,7 @@ void Client::populate_additions( list<Chunk*>& chunks ){
 	
 	m_additions.lock();
 	for(; it != chunks.end() ; it++)
-		additions[ string((*it)->c_digest()) ] = true;
+		additions[ (*it)->str_digest() ] = true;
 	
 	m_additions.unlock();
 }
@@ -286,7 +286,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 		if( to_dedup.front()->get_data() != NULL ){
 			for(list<Chunk*>::iterator it = to_dedup.begin() ; 
 			it != to_dedup.end(); it++){	
-				string tmp=(path_dir/fs::path((*it)->c_digest())).string();
+				string tmp=(path_dir/fs::path((*it)->str_digest())).string();
 				ofstream c_file(tmp.c_str(), ios::binary);
 				c_file<< (*it)->get_data();
 			}
@@ -301,7 +301,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 			
 			for(list<Chunk*>::iterator it = to_dedup.begin() ; 
 			it != to_dedup.end(); it++){
-				string tmp=(path_dir/fs::path((*it)->c_digest())).string();
+				string tmp=(path_dir/fs::path((*it)->str_digest())).string();
 				ofstream c_file(tmp.c_str(), ios::binary);
 				
 				c_file.write( src+(*it)->get_begin(), (*it)->get_length() );
@@ -366,7 +366,7 @@ bool Client::load(const char* name, const char* location, fs::path path_dir){
 	uint64_t b_length = 0;
 	
 	for(uint64_t i = 0 ; i<chunks.size() ; i++){
-		string tmp=(path_dir/fs::path(chunks[i].c_digest())).string();
+		string tmp=(path_dir/fs::path(chunks[i].str_digest())).string();
 		ifstream is(tmp.c_str(), ios::binary);
 		
 		is.read( buffer, chunks[i].get_length() );

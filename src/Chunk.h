@@ -18,6 +18,7 @@
 #include "hash/rabinkarphash.h"
 #include "utility/fifo.cpp"
 #include "utility/filesystem.cpp"
+#include "utility/hash.cpp"
 
 #define MIN_LENGTH (1<<10) ///au minimun n-3<n<n+3 pour min<average<max
 #define MAX_LENGTH (1<<16)
@@ -39,7 +40,12 @@ class Chunk{
 		uint64_t length;
 		
 		unsigned char digest[SHA224_DIGEST_LENGTH];
+		char digest_c[SHA224_DIGEST_LENGTH];
+		string digest_str;
+		
+		
 		char* data = NULL; //used if file_size<CACHING_THRESHOLD
+		
 	public:
 		Chunk();
 		Chunk(int b, int l, const char* _data, bool cached=true);
@@ -55,9 +61,10 @@ class Chunk{
 		
 		unsigned char* get_digest();
 		
-		char* _digest();
+		void _digest(char* tmp);
 		
-		const char* c_digest();
+		string str_digest();
+		char* ptr_digest();
 		
 		static size_t s_length();
 		

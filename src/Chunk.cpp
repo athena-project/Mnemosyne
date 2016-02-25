@@ -10,6 +10,9 @@ Chunk::Chunk(int b, int l, const char* _data, bool cached) : length(l), begin(b)
 	}
 	
 	SHA224((unsigned char*)_data, length, digest);	
+	
+	digest_to_char(digest_c, digest);
+	digest_str = digest_to_string( digest_c );
 }
 
 Chunk::Chunk(char* _s_data){			
@@ -19,7 +22,9 @@ Chunk::Chunk(char* _s_data){
 	end += uint64_s;
 	length = strtoull(_s_data+uint64_s, &end, 0);
 
-	memcpy(digest, _s_data + 2*uint64_s, SHA224_DIGEST_LENGTH);
+	memcpy(digest_c, _s_data + 2*uint64_s, SHA224_DIGEST_LENGTH);
+	digest_str = digest_to_string( digest_c );
+
 }
 
 Chunk::~Chunk(){
@@ -36,24 +41,14 @@ bool Chunk::operator<( const Chunk& c2) const{
 	return memcmp( digest, c2.digest, SHA224_DIGEST_LENGTH) < 0; //c1 < c2
 }
 
-unsigned char* Chunk::get_digest(){ return digest; }
-
-char* Chunk::_digest(){ 
-	char buffer[SHA224_DIGEST_LENGTH];
-	for(int i=0; i <SHA224_DIGEST_LENGTH; i++){
-		sprintf(buffer+i, "%02x", digest[i]);
-	}
+void Chunk::_digest(char *tmp){ 
+	memcpy(tmp, digest_c, SHA224_DIGEST_LENGTH);
 }
 
-const char* Chunk::c_digest(){ 
-	char buffer[SHA224_DIGEST_LENGTH + 1];
-	buffer[SHA224_DIGEST_LENGTH] = 0;
-	
-	for(int i=0; i <SHA224_DIGEST_LENGTH; i++){
-		sprintf(buffer+i, "%02x", digest[i]);
-	}
-	
-	//return buffer;
+char* Chunk::ptr_digest(){ return digest_c; }
+
+string Chunk::str_digest(){
+	return digest_str;
 }
 
 size_t Chunk::s_length(){ return SHA224_DIGEST_LENGTH + 2 * uint64_s; }
