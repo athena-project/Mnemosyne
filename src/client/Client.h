@@ -37,7 +37,7 @@ class TCPClientServer : public TCPServer{
 	
 	public: 
 		TCPClientServer(const char* port, int _pfd, std::atomic<bool>* _alive, 
-		list<Task>* _tasks, mutex* _m_tasks, 
+		list<Task*>* _tasks, mutex* _m_tasks, 
 		list< pair<char*, char> >* _objects, mutex* _m_objects,
 		map<string, bool>* _additions, mutex* _m_additions) : TCPServer(port, _pfd, _alive, _tasks, _m_tasks){
 			objects = _objects;
@@ -73,8 +73,8 @@ class Client : public TCPHandler{
 		///agregate digest in : sizedigest1digest2....
 		void build_digests(list<Chunk*>& chunks, char* digests);
 		
-		void buid_digests_map(vector<Chunk>& chunks, map<string, Chunk*>& map);
-		void group_by_id(vector<Chunk>& chunks, map<uint64_t, list<Chunk*> >& buffers);
+		void buid_digests_map(vector<Chunk*>& chunks, map<string, Chunk*>& map);
+		void group_by_id(vector<Chunk*>& chunks, map<uint64_t, list<Chunk*> >& buffers);
 		void group_by_ids(list<Chunk*>& chunks, map<uint64_t, list<Chunk*> >& buffers);
 		///n act as a condition
 		bool wait_objects(int n);

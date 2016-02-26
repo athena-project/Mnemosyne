@@ -125,8 +125,8 @@ class Task{
 		host(_host), port(_port){}
 			
 		~Task(){
-			if( data != NULL && data_owned)
-				delete[] data;
+			if(	data_owned)
+				free( data );
 		}
 		
 		char* steal_data(){ data_owned = false; return data; }
@@ -207,13 +207,13 @@ class TCPServer{
 		struct epoll_event* events = NULL;
 	
 		atomic<bool>* alive;
-		list<Task>* tasks;
+		list<Task*>* tasks;
 		mutex* m_tasks;
 	public :
 		TCPServer(){}
 	
 		TCPServer(const char* port, int _pfd, std::atomic<bool>* _alive, 
-		list<Task>* _tasks, mutex* _m_tasks);
+		list<Task*>* _tasks, mutex* _m_tasks);
 		
 		~TCPServer(){
 			if( events == NULL )
@@ -248,7 +248,7 @@ class TCPHandler{
 		TCPServer* server = NULL;
 		atomic<bool> alive;
 		
-		list<Task> tasks;
+		list<Task*> tasks;
 		mutex m_tasks;
 		
 	public:
@@ -283,7 +283,7 @@ class TCPHandler{
 			memcpy(buffer+HEADER_LENGTH, _data, _length);
 			
 			m_tasks.lock();
-			tasks.push_back( Task(_type, buffer, _length+HEADER_LENGTH, _host, port) );
+			tasks.push_back( new Task(_type, buffer, _length+HEADER_LENGTH, _host, port) );
 			m_tasks.unlock();
 			
 			write(pfds[1], "0", 1);		

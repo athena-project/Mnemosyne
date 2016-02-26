@@ -10,7 +10,7 @@ const char* locationMetadata(const char *name, fs::path path_dir){
 	return (path_dir/fs::path(_name) ).string().c_str();
 }
 
-bool buildMetadata(const char *name, vector<Chunk>& chunks, fs::path path_dir){
+bool buildMetadata(const char *name, vector<Chunk*>& chunks, fs::path path_dir){
 	size_t s_length = Chunk::s_length();
 	char buffer[ BUFFER_LEN * s_length ];
 	ofstream meta_file(locationMetadata(name, path_dir), ios::binary);
@@ -27,7 +27,7 @@ bool buildMetadata(const char *name, vector<Chunk>& chunks, fs::path path_dir){
 			offset = 0;
 		}
 		
-		chunks[i].serialize( buffer+offset );
+		chunks[i]->serialize( buffer+offset );
 	}
 	
 	if( offset != 0)
@@ -36,7 +36,7 @@ bool buildMetadata(const char *name, vector<Chunk>& chunks, fs::path path_dir){
 	return true;
 }
 
-bool extractChunks(const char *name, vector<Chunk>& chunks, fs::path path_dir){
+bool extractChunks(const char *name, vector<Chunk*>& chunks, fs::path path_dir){
 	size_t s_length = Chunk::s_length();
 	char buffer[ BUFFER_LEN * s_length ];
 	ifstream meta_file(locationMetadata(name, path_dir), ios::binary);
@@ -50,13 +50,13 @@ bool extractChunks(const char *name, vector<Chunk>& chunks, fs::path path_dir){
 	while( meta_file.gcount() == BUFFER_LEN * s_length){
 		uint64_t offset = 0;
 		for(uint64_t i=0; i< BUFFER_LEN ; i++, offset+=s_length)
-			chunks.push_back( Chunk(buffer + offset) );
+			chunks.push_back( new Chunk(buffer + offset) );
 		
 	}
 
 	size_t size = meta_file.gcount() / s_length;
 	for(uint64_t i=0, offset = 0; i< size ; i++, offset+=s_length)
-		chunks.push_back( Chunk(buffer + offset) );
+		chunks.push_back( new Chunk(buffer + offset) );
 		
 	return true;
 }

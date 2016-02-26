@@ -14,13 +14,16 @@ int Handler::add_to_in(char* buf, int size){
 		in_length << 1;
 	}
 	
-		
+	printf("\nReading : ");
+	write(1, buf, size);
 	memcpy(in_data + in_offset, buf, size);
 	in_offset += size; 
 	return 0;
 }
 		
 int Handler::out_write(){
+	printf("\nWrittign : \n");
+	write(1, out_data + out_offset, out_length);
 	return write(fd, out_data + out_offset, out_length);
 }
 
@@ -35,7 +38,7 @@ void Handler::clear(){
 
 ///TCPServer
 TCPServer::TCPServer(const char* port, int _pfd, std::atomic<bool>* _alive, 
-list<Task>*_tasks, mutex* _m_tasks){
+list<Task*>*_tasks, mutex* _m_tasks){
 	pfd= _pfd;
 	struct epoll_event event;
 	alive = _alive;
@@ -62,8 +65,8 @@ list<Task>*_tasks, mutex* _m_tasks){
 		abort();
 	}
 
-	event.data.fd = sfd;
-	event.data.ptr = NULL;
+	//event.data.fd = sfd;
+	event.data.ptr = static_cast<void*>( new Handler(sfd));
 	event.events = EPOLLIN | EPOLLET;
 	s = epoll_ctl (efd, EPOLL_CTL_ADD, sfd, &event);
 	if(s == -1){
@@ -149,7 +152,7 @@ int TCPServer::make_non_blocking (int sfd){
 }
 
 void TCPServer::pcallback(){
-	Task task;
+	Task* task;
 	m_tasks->lock();
 	
     while( tasks->size() > 0 ){
@@ -165,8 +168,8 @@ void TCPServer::pcallback(){
 		}
 		
 		addr.sin_family = AF_INET;	
-		inet_pton(AF_INET, task.host, &addr.sin_addr);
-		addr.sin_port = htons(task.port);
+		inet_pton(AF_INET, task->host, &addr.sin_addr);
+		addr.sin_port = htons(task->port);
 		
 		if(connect(sockfd, (sockaddr*)&addr, sizeof(addr)) < 0){
 			perror("ERROR connecting");
@@ -180,10 +183,10 @@ void TCPServer::pcallback(){
 		
 		Handler* n_handler = new Handler(sockfd);
 		
-		n_handler->set_out_data( task.type, task.steal_data(), task.length );
+		n_handler->set_out_data( task->type, task->steal_data(), task->length );
 		register_event(n_handler, EPOLLOUT, EPOLL_CTL_ADD);
 	}
-	
+	delete task;
 	m_tasks->unlock();
 }
 
@@ -198,38 +201,46 @@ void TCPServer::rcallback(Handler* handler, msg_t type){
 }
 
 int TCPServer::run(){
-	//struct epoll_event send_event;
-	//send_event.data.fd= pfd;
-	//send_event.data.ptr= NULL;
-	//send_event.events = EPOLLIN;
+	struct epoll_event send_event;
+	send_event.data.ptr= new Handler(pfd );
+	send_event.events = EPOLLIN;
 
-	//s = epoll_ctl (efd, EPOLL_CTL_ADD, pfd, &send_event);
-	//if(s == -1){
-		//perror("epoll_ctl-TCPServer3");
-		//abort();
-	//}
+	s = epoll_ctl (efd, EPOLL_CTL_ADD, pfd, &send_event);
+	if(s == -1){
+		perror("epoll_ctl-TCPServer3");
+		abort();
+	}
 	
 	while( alive->load(std::memory_order_relaxed) ){
 		int n, i;
 
 		n = epoll_wait(efd, events, MAXEVENTS, -1);
+		Handler* handler = NULL;
 		for(i = 0; i < n; i++){
-			if( (events[i].events & EPOLLERR) ||
+			handler = static_cast<Handler*>(events[i].data.ptr);
+			
+			if( handler == NULL){
+				perror("epoll error unknown, no handler");
+			}else if( (events[i].events & EPOLLERR) ||
 				(events[i].events & EPOLLHUP) 
 				){
 				fprintf (stderr, "epoll error\n");
 				
-				delete static_cast<Handler*>(events[i].data.ptr);
+				if( pfd != handler->get_fd() )
+					delete handler;
 				close (events[i].data.fd);
 				
 				continue;
-			//}else if( pfd == events[i].data.fd){
-				//char buf[32];
-				//printf("sending\n");
-				//while( read(pfd, buf, sizeof buf) == sizeof(buf) ){}
-				//pcallback();
+			}else if( 	pfd == handler->get_fd() ){
+				printf("coucoucccccc");
 				
-			}else if(sfd == events[i].data.fd){//One or more connection
+				char buf[32];
+				printf("sending\n");
+				while( read(pfd, buf, sizeof buf) == sizeof(buf) ){}
+				pcallback();
+				
+			}else if(sfd == handler->get_fd() ){//One or more connection
+				printf("new connection incomming");
 				while (1){
 					struct sockaddr in_addr;
 					socklen_t in_len;
@@ -262,11 +273,8 @@ int TCPServer::run(){
 						register_event( new Handler( infd ), EPOLLIN | EPOLLET, EPOLL_CTL_ADD);
 				}
 				continue;
-			}else if(events[i].data.ptr == NULL){
-				perror("event error unkown\n");
-			}else if(events[i].events & EPOLLIN){//Data waiting to be read
+			}else if(events[i].events & EPOLLIN ){//Data waiting to be read
 				int done = 0;
-				Handler* handler = static_cast<Handler*>(events[i].data.ptr);
 
 				while (1){
 					ssize_t count;
@@ -292,9 +300,8 @@ int TCPServer::run(){
 
 				if(done)
 					rcallback( handler, handler->get_int_type() );
-			}else if(events[i].events & EPOLLOUT){
+			}else if(events[i].events & EPOLLOUT ){
 				int ret;				
-				Handler* handler = static_cast<Handler*>(events[i].data.ptr);
 				printf("begin writting\n");
 				ret = handler->out_write();
 	   
@@ -316,7 +323,6 @@ int TCPServer::run(){
 					printf("\nAdding Read Event.\n");   
 					wcallback( handler, handler->get_out_type() );
 				}
-	
 			}else{
 				printf("it is an other event\n");
 			}

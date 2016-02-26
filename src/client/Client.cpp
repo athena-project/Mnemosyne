@@ -15,11 +15,11 @@ void TCPClientServer::rcallback(Handler* handler, msg_t type){
 	char* data = handler->get_in_data();
 	
 	if( type == OBJECT){
-		char digest[SHA224_DIGEST_LENGTH];
+		char digest[DIGEST_LENGTH];
 		char exists;
 		
-		memcpy(digest, data, SHA224_DIGEST_LENGTH);
-		memcpy(&exists, data+SHA224_DIGEST_LENGTH, sizeof(char));
+		memcpy(digest, data, DIGEST_LENGTH);
+		memcpy(&exists, data + DIGEST_LENGTH, sizeof(char));
 		
 		m_objects->lock();
 		objects->push_back( make_pair(digest, exists) );
@@ -30,22 +30,22 @@ void TCPClientServer::rcallback(Handler* handler, msg_t type){
 		num = strtoull(data, &end, 0);
 		
 		data += sizeof(size_t);
-		for(int i = 0 ; i<num; i++, data+=sizeof(char)+SHA224_DIGEST_LENGTH){
-			char digest[SHA224_DIGEST_LENGTH];
+		for(int i = 0 ; i<num; i++, data+=sizeof(char)+DIGEST_LENGTH){
+			char digest[DIGEST_LENGTH];
 			char exists;
-			memcpy(digest, data, SHA224_DIGEST_LENGTH);
-			memcpy(&exists, data+SHA224_DIGEST_LENGTH, 1);
+			memcpy(digest, data, DIGEST_LENGTH);
+			memcpy(&exists, data+DIGEST_LENGTH, 1);
 		
 			m_objects->lock();
 			objects->push_back( make_pair(digest, exists) );
 			m_objects->unlock();
 		}
 	}else if( type == OBJECT_ADDED ){
-		char digest[SHA224_DIGEST_LENGTH];
+		char digest[DIGEST_LENGTH];
 		char exists;
 		
-		memcpy(digest, data, SHA224_DIGEST_LENGTH);
-		memcpy(&exists, data+SHA224_DIGEST_LENGTH, sizeof(char));
+		memcpy(digest, data, DIGEST_LENGTH);
+		memcpy(&exists, data+DIGEST_LENGTH, sizeof(char));
 		
 		m_additions->lock();
 		if( additions->find( string(digest) ) != additions->end() )
@@ -57,9 +57,9 @@ void TCPClientServer::rcallback(Handler* handler, msg_t type){
 		num = strtoull(data, &end, 0);
 		
 		data += sizeof(size_t);
-		for(int i = 0 ; i<num; i++, data+=sizeof(char)+SHA224_DIGEST_LENGTH){
-			char digest[SHA224_DIGEST_LENGTH];
-			memcpy(digest, data, SHA224_DIGEST_LENGTH);
+		for(int i = 0 ; i<num; i++, data+=sizeof(char)+DIGEST_LENGTH){
+			char digest[DIGEST_LENGTH];
+			memcpy(digest, data, DIGEST_LENGTH);
 		
 			m_additions->lock();
 			if( additions->find( string(digest) ) != additions->end() )
@@ -104,26 +104,26 @@ void Client::build_digests(list<Chunk*>& chunks, char* digests){
 	
 	sprintf(digests, "%lu", chunks.size());
 	
-	for(int k=sizeof(size_t); it != chunks.end() ; k += SHA224_DIGEST_LENGTH)
+	for(int k=sizeof(size_t); it != chunks.end() ; k += DIGEST_LENGTH, it++)
 		(*it)->_digest( digests+k );
 }
 
-void Client::buid_digests_map(vector<Chunk>& chunks, map<string, Chunk*>& map){
-	vector<Chunk>::iterator it = chunks.begin();
+void Client::buid_digests_map(vector<Chunk*>& chunks, map<string, Chunk*>& map){
+	vector<Chunk*>::iterator it = chunks.begin();
 
 	for(; it != chunks.end() ; it++)
-		map[ it->str_digest() ] = &(*it);
+		map[ (*it)->str_digest() ] = *it;
 }
 
-void Client::group_by_id(vector<Chunk>& chunks, map<uint64_t, list<Chunk*> >& buffers){
+void Client::group_by_id(vector<Chunk*>& chunks, map<uint64_t, list<Chunk*> >& buffers){
 	uint64_t tmp_id;
 	for(int i=0; i<chunks.size(); i++){
-		tmp_id = nodes->rallocate( chunks[i].ptr_digest(), SHA224_DIGEST_LENGTH )->get_id();
+		tmp_id = nodes->rallocate( chunks[i]->ptr_digest(), DIGEST_LENGTH )->get_id();
 		
 		if( buffers.find(tmp_id) == buffers.end() )
 			buffers[tmp_id]=list<Chunk*>();
 		
-		buffers[tmp_id].push_back( &chunks[i] );
+		buffers[tmp_id].push_back( chunks[i] );
 	}
 } 
 
@@ -133,7 +133,7 @@ void Client::group_by_ids(list<Chunk*>& chunks, map<uint64_t, list<Chunk*> >& bu
 	uint64_t tmp_id;
 	
 	for(; it != chunks.end() ; it++){
-		_nodes = nodes->wallocate( (*it)->ptr_digest(), SHA224_DIGEST_LENGTH );
+		_nodes = nodes->wallocate( (*it)->ptr_digest(), DIGEST_LENGTH );
 		
 		for( int k=0; k< _nodes.size(); k++){
 			tmp_id = _nodes[k]->get_id();
@@ -166,6 +166,7 @@ bool Client::wait_objects(int n){
 	
 	return flag;
 }
+
 bool Client::wait_additions(){
 	struct timespec req, rem;
 	uint64_t duration = 0;
@@ -196,29 +197,24 @@ void Client::populate_additions( list<Chunk*>& chunks ){
 	
 	m_additions.unlock();
 }
+
 void Client::populate_additions( char* digest ){
-	char buffer[SHA224_DIGEST_LENGTH + 1];
-	buffer[SHA224_DIGEST_LENGTH] = 0;
-	
-	for(int i=0; i <SHA224_DIGEST_LENGTH; i++)
-		sprintf(buffer+i, "%02x", digest[i]);
-	
-	
 	m_additions.lock();
-	additions[ string(buffer) ] = true;
+	additions[ digest_to_string(digest) ] = true;
 	m_additions.unlock();
 }
 
 ///true : file already exists, else not
 bool Client::dedup_by_file(const char* location, char* file_digest){
+	printf("fds");
 	if( !hashfile(location, file_digest) ){
 		perror("Hashing failed");
 		return false;
 	}
-	Node* prime = nodes->rallocate( file_digest, SHA224_DIGEST_LENGTH);
-	send(EXISTS_OBJECT, file_digest, SHA224_DIGEST_LENGTH, prime->get_host(), 
+	Node* prime = nodes->rallocate( file_digest, DIGEST_LENGTH);
+	send(EXISTS_OBJECT, file_digest, DIGEST_LENGTH, prime->get_host(), 
 		prime->get_port());
-	
+	printf("alpha\n");
 	if( !wait_objects( 1 ) )
 		return false;
 	
@@ -232,24 +228,23 @@ bool Client::dedup_by_file(const char* location, char* file_digest){
 }
 
 bool Client::save(const char* name, const char* location, fs::path path_dir){
-	char file_digest[SHA224_DIGEST_LENGTH];
+	char file_digest[DIGEST_LENGTH];
 	if( dedup_by_file(location, file_digest) )
 		return true;
-	
-	vector<Chunk> chunks;
+	return false;
+	vector<Chunk*> chunks;
 	map<string, Chunk*> chunks_map; 
 	map<uint64_t, list<Chunk*> > buffers; //node_id => chunks of this node
 
-	chunks = cf->split(location);
+	cf->split(location, chunks);
 	buid_digests_map( chunks, chunks_map);
-	printf("end dedup\n");
-	return true;
+
 	///Send requests
 	group_by_id( chunks, buffers);
 	
 	for(map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
 	it != buffers.end(); it++){
-		size_t buffer_len = (it->second).size() * SHA224_DIGEST_LENGTH + sizeof(size_t);
+		size_t buffer_len = (it->second).size() * DIGEST_LENGTH + sizeof(size_t);
 		char buffer[buffer_len];
 		
 		build_digests( it->second, buffer);
@@ -258,8 +253,11 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 		send(EXISTS_CHUNKS, buffer, buffer_len, node->get_host(), node->get_port());
 	}
 	
-	if( !wait_objects( chunks.size() ) )
+	if( !wait_objects( chunks.size() ) ){
+		for(size_t i = 0; i<chunks.size() ; i++)
+			delete chunks[i];
 		return false;
+	}
 	
 	///Select chunks to dedup
 	list<Chunk*> to_dedup;
@@ -276,7 +274,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 		objects.pop_front();
 	}
 	m_objects.unlock();
-	
+
 	///Store chunks
 	if( to_dedup.size() > 0){				
 		if( to_dedup.front()->get_data() != NULL ){
@@ -284,13 +282,13 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 			it != to_dedup.end(); it++){	
 				string tmp=(path_dir/fs::path((*it)->str_digest())).string();
 				ofstream c_file(tmp.c_str(), ios::binary);
-				c_file<< (*it)->get_data();
+				c_file.write( (*it)->get_data(), (*it)->get_length() );
 			}
 		}
 		else{	
 			char *src;
 			int fd = open(location, O_RDONLY);
-			uint64_t size_file = lseek(fd, 0, SEEK_END);
+			uint64_t size_file = size_of_file(fd);
 			src = static_cast<char*>( 
 				mmap(NULL, size_file, PROT_READ, MAP_PRIVATE, fd, 0));
 			
@@ -307,14 +305,15 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 			munmap( src, size_file);
 			close( fd );	
 		}
-		
+			return false;
+
 		///Send new chunk to sd
 		map<uint64_t, list<Chunk*> > _buffers;
 		group_by_ids( to_dedup, _buffers);
 		
 		for(map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
 		it != buffers.end(); it++){
-			size_t buffer_len = (it->second).size() * SHA224_DIGEST_LENGTH + sizeof(size_t);
+			size_t buffer_len = (it->second).size() * DIGEST_LENGTH + sizeof(size_t);
 			char buffer[ buffer_len ];
 			
 			build_digests( it->second, buffer);
@@ -325,25 +324,31 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 		}
 		
 		///Send file digest
-		vector<Node*> _nodes = nodes->wallocate( file_digest, SHA224_DIGEST_LENGTH );
+		vector<Node*> _nodes = nodes->wallocate( file_digest, DIGEST_LENGTH );
 		for(int k=0 ; k< _nodes.size() ; k++)		
-			send(ADD_OBJECT, file_digest, SHA224_DIGEST_LENGTH, _nodes[k]->get_host(), _nodes[k]->get_port());
+			send(ADD_OBJECT, file_digest, DIGEST_LENGTH, _nodes[k]->get_host(), _nodes[k]->get_port());
 		populate_additions( file_digest );
 		
-		wait_additions();
+		if( !wait_additions() ){
+			for(size_t i = 0; i<chunks.size() ; i++)
+				delete chunks[i];
+			return false;
+		}
 	}
 	clear_objects();
 	
 	
 	
-	if( !buildMetadata(name, chunks, path_dir) )
+	if( !buildMetadata(name, chunks, path_dir) ){
+		for(size_t i = 0; i<chunks.size() ; i++)
+			delete chunks[i];
 		return false;
-	
+	}
 	return true;
 }
 
 bool Client::load(const char* name, const char* location, fs::path path_dir){
-	vector<Chunk> chunks;
+	vector<Chunk*> chunks;
 	extractChunks( name, chunks, path_dir);
 	ofstream os( location, ios::binary);	
 	
@@ -356,11 +361,11 @@ bool Client::load(const char* name, const char* location, fs::path path_dir){
 	uint64_t b_length = 0;
 	
 	for(uint64_t i = 0 ; i<chunks.size() ; i++){
-		string tmp=(path_dir/fs::path(chunks[i].str_digest())).string();
+		string tmp=(path_dir/fs::path(chunks[i]->str_digest())).string();
 		ifstream is(tmp.c_str(), ios::binary);
 		
-		is.read( buffer, chunks[i].get_length() );
-		os.write( buffer, chunks[i].get_length() );
+		is.read( buffer, chunks[i]->get_length() );
+		os.write( buffer, chunks[i]->get_length() );
 		
 		is.close();
 	}

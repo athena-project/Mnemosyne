@@ -3,16 +3,10 @@
 ///Chunk
 Chunk::Chunk(){}
 
+Chunk::Chunk(int b, int l) : length(l), begin(b){}
+
 Chunk::Chunk(int b, int l, const char* _data, bool cached) : length(l), begin(b){
-	if( cached ){
-		data = new char[length];
-		memcpy(data, _data, length);
-	}
-	
-	SHA224((unsigned char*)_data, length, digest);	
-	
-	digest_to_char(digest_c, digest);
-	//digest_str = digest_to_string( digest_c );
+	update( _data, cached);
 }
 
 Chunk::Chunk(char* _s_data){			
@@ -22,27 +16,39 @@ Chunk::Chunk(char* _s_data){
 	end += uint64_s;
 	length = strtoull(_s_data+uint64_s, &end, 0);
 
-	memcpy(digest_c, _s_data + 2*uint64_s, SHA224_DIGEST_LENGTH);
-	//digest_str = digest_to_string( digest_c );
+	memcpy(digest_c, _s_data + 2*uint64_s, DIGEST_LENGTH);
+	digest_str = digest_to_string( digest_c );
+
+}
+
+void Chunk::update(const char* _data, bool cached){
+	if( cached ){
+		inner_data = new char[length];
+		memcpy(inner_data, _data, length);
+	}
+	
+	SHA224((unsigned char*)_data, length, digest);	
+	
+	digest_to_char(digest_c, digest);
+	digest_str = digest_to_string( digest_c );
 
 }
 
 Chunk::~Chunk(){
-	if( data != NULL)
-		delete[] data;
+	free( inner_data  );
 }
 
 
 uint64_t Chunk::get_length(){ return length; }
 uint64_t Chunk::get_begin(){ return begin; }
-char* Chunk::get_data(){ return data; }
+char* Chunk::get_data(){ return inner_data; }
 
 bool Chunk::operator<( const Chunk& c2) const{
 	return memcmp( digest, c2.digest, SHA224_DIGEST_LENGTH) < 0; //c1 < c2
 }
 
 void Chunk::_digest(char *tmp){ 
-	memcpy(tmp, digest_c, SHA224_DIGEST_LENGTH);
+	memcpy(tmp, digest_c, DIGEST_LENGTH);
 }
 
 char* Chunk::ptr_digest(){ return digest_c; }
@@ -51,13 +57,12 @@ string Chunk::str_digest(){
 	return digest_str;
 }
 
-size_t Chunk::s_length(){ return SHA224_DIGEST_LENGTH + 2 * uint64_s; }
+size_t Chunk::s_length(){ return DIGEST_LENGTH + 2 * uint64_s; }
 
 void Chunk::serialize(char* buff){			
 	sprintf(buff, "%" PRIu64 "", begin);
 	sprintf(buff + uint64_s, "%" PRIu64 "", length);
-	for(int i=0; i <SHA224_DIGEST_LENGTH; i++)
-		sprintf(buff + 2*uint64_s+i, "%02x", digest[i]);
+	memcpy(buff, digest_c, DIGEST_LENGTH);
 }
 
 ///ChunkFactory
@@ -108,8 +113,6 @@ uint64 ChunkFactory::update_buffer(){
 	is.read(buffer, BUFFER_MAX_SIZE);
 	return is.gcount();
 }
-
-
 		
 bool ChunkFactory::shift(){
 	if( not (i+WINDOW_LENGTH < buffer_size || (i=0, buffer_size=update_buffer())))
@@ -124,17 +127,16 @@ bool ChunkFactory::shift(){
 	return true;
 }
 
-list<uint64> ChunkFactory::chunksIndex(){
-	list<uint64> index;
+void ChunkFactory::chunksIndex(vector<Chunk*>& index){
 	buffer_size=update_buffer();
 	shift();
-	
-	index.push_back( 0 );
-	
+		
+	uint64_t begin = 0;
 	///Body
 	for( ; i<buffer_size || (i=0, buffer_size=update_buffer()) ; (i++, current++, size++)){
 		if( (size > MIN_LENGTH) && (hf->hashvalue == 0 || size>=MAX_LENGTH) ){ /// p = 1/2^AVERAGE_LENGTH
-			index.push_back( current );
+			index.push_back( new Chunk(begin, size) );
+			begin = current;
 			size = 0;
 			if( not shift())
 				break;
@@ -144,56 +146,32 @@ list<uint64> ChunkFactory::chunksIndex(){
 	   hf->update( window->add(buffer[i]), buffer[i]); 
 	}
 	
-	if( index.back() != current-1)
-		index.push_back( current );
-		
-	return index;
+	if( begin != current-1)
+		index.push_back( new Chunk(begin, size) );
 }
 
 ///File to chunks
-vector<Chunk> ChunkFactory::split(const char* location){
+void ChunkFactory::split(const char* location, vector<Chunk*>& chunks){
 	is.open(location, ios::binary);
 	if( !is )
 		perror("ChunkFactory::split");
-		
-	bool cached = size_of_file( is ) < CACHING_THRESHOLD;
-		
-	int fisd=0;
-	buffer_size = i = current = size = 0;
-	list<uint64> index = chunksIndex();	
-	vector<Chunk> chunks(index.size()-1);///nbr de poteaux et d'intervalles
-	list<uint64>::iterator it=index.begin();
-	uint64_t last = *(it++);
-
-	shift();
-	char* pos=buffer;
-	char* data = new char[BUFFER_MAX_SIZE];
-	char* data_ptr = data;
-	uint64_t beg=0;
-
-	for(uint64_t j=0; it!=index.end(); (j++, last=*(it++))){
-		size = (*it)-last;
-		i += size;
-		if( i >= BUFFER_MAX_SIZE ){
-			strcpy(data, pos);
-			int length = (i - BUFFER_MAX_SIZE);
-			shift();
-			pos=buffer;
-			
-			strcpy(data + length, pos);
-			data_ptr = data;
-		}else 
-			data_ptr = pos;
-			
-		chunks[j] = Chunk(beg, size, data_ptr, cached);
-		pos += size;
-		beg += size;
-	}
-	
-	buffer_size = i = current = size=0;
-	delete[] data;
+	chunksIndex( chunks );
 	is.close();
-	return chunks;
+	
+	int fd = open(location, O_RDONLY);
+	uint64_t size_file = size_of_file(fd);
+	bool cached = size_file < CACHING_THRESHOLD;
+	char* src = static_cast<char*>( 
+		mmap(NULL, size_file, PROT_READ, MAP_PRIVATE, fd, 0));
+	char* ptr_src = src;
+	
+	for(uint64_t i = 0 ; i<chunks.size() ; i++){
+		chunks[i]->update(ptr_src, cached);
+		ptr_src += chunks[i]->get_length();
+	}
+			
+	munmap( src, size_file);
+	close( fd );	
 }
 
 void ChunkFactory::save(const char* location){

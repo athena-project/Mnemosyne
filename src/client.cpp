@@ -22,9 +22,10 @@ int main(){
 	
 	std::thread t1(fct, &ms1);
 	std::thread t2(fct, &ms2);
-	std::thread t3(fct, &ms3);
+	//std::thread t3(fct, &ms3);
 	
 	client.save("a1", "/home/severus/Downloads/cir_38300.pdf", fs::path("test_storage"));
-	
+	printf("\n\n end\n\n");
 	t1.join();
+	t2.join();
 }

@@ -3,6 +3,8 @@
 
 #include <fstream>
 #include <inttypes.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 inline uint64_t size_of_file(std::istream& is){
 	uint64_t last = is.tellg();
@@ -12,6 +14,13 @@ inline uint64_t size_of_file(std::istream& is){
 	size = is.tellg();
 	is.seekg(last);
 	
+	return size;
+}
+
+inline uint64_t size_of_file(unsigned int fd){
+	uint64_t tmp = lseek(fd, 0, SEEK_CUR);
+	uint64_t size = lseek(fd, 0, SEEK_END);
+	lseek(fd, tmp, SEEK_SET);
 	return size;
 }
 

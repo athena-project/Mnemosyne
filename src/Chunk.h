@@ -8,7 +8,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <inttypes.h>
-
+#include <sys/mman.h>
+#include <fcntl.h>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -40,18 +41,20 @@ class Chunk{
 		uint64_t length;
 		
 		unsigned char digest[SHA224_DIGEST_LENGTH];
-		char digest_c[SHA224_DIGEST_LENGTH];
-		string digest_str;
+		char digest_c[DIGEST_LENGTH];		
+		std::string digest_str;
 		
-		
-		char* data = NULL; //used if file_size<CACHING_THRESHOLD
+		char* inner_data = NULL; //used if file_size<CACHING_THRESHOLD
 		
 	public:
 		Chunk();
+		Chunk(int b, int l);
 		Chunk(int b, int l, const char* _data, bool cached=true);
 		Chunk(char* _s_data);
 			
 		~Chunk();
+		
+		void update(const char* _data, bool cached=true);
 		
 		uint64_t get_length();
 		uint64_t get_begin();
@@ -100,9 +103,9 @@ class ChunkFactory{
 		
 		bool shift();
 		
-		list<uint64> chunksIndex();
+		void chunksIndex(vector<Chunk*>& index);
 		
-		vector<Chunk> split(const char* location);
+		void split(const char* location, vector<Chunk*>& chunks);
 		
 		void save(const char* location);
 };

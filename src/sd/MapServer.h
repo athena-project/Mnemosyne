@@ -23,7 +23,7 @@ class TCPMapServer : public TCPServer{
 	
 	public: 
 		TCPMapServer(const char* port, int _pfd, std::atomic<bool>* _alive, 
-		list<Task>* _tasks, mutex* _m_tasks, 
+		list<Task*>* _tasks, mutex* _m_tasks, 
 		map<string, bool>* _objects, mutex* _m_objects,
 		map<string, bool>* _chunks, mutex* _m_chunks) : TCPServer(port, _pfd, _alive, _tasks, _m_tasks){
 			objects = _objects;
