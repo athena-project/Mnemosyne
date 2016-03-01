@@ -25,6 +25,7 @@
 #include <thread>
 #include <atomic> 
 #include <mutex> 
+#include <limits> 
 #include <list> 
 #include <time.h>
 #include <string>
@@ -179,12 +180,19 @@ class Handler{
 		void send(msg_t _type, char* _data, uint64_t _length){
 			sprintf(_data, "%" PRIu64 "", _length+HEADER_LENGTH);
 			sprintf(_data+uint64_s, "%" PRIu64 "", static_cast<uint64_t>(_type));
-			
-			set_out_data(_type, _data, _length);
+
+			set_out_data(_type, _data, _length+HEADER_LENGTH);
 		}
 		
 		msg_t get_out_type(){ return out_type; }
 		uint32_t get_out_length(){ return out_length; }
+		uint64_t get_expected_in_length(){ 
+			if( in_offset < size_s )
+				return std::numeric_limits<uint64_t>::max();
+				
+			char *end=in_data + size_s;
+			return strtoull(in_data, &end, 0); 
+		}
 		uint32_t get_out_offset(){ return out_offset; }
 
 		void decr_out_length( uint32_t ret ){ out_length-= ret; }

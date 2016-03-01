@@ -13,14 +13,16 @@ void TCPClientServer::wcallback(Handler* handler, msg_t type){
 
 void TCPClientServer::rcallback(Handler* handler, msg_t type){	
 	char* data = handler->get_in_data();
-	
+ 
 	if( type == OBJECT){
 		char digest[DIGEST_LENGTH];
 		char exists;
-		
+
 		memcpy(digest, data, DIGEST_LENGTH);
 		memcpy(&exists, data + DIGEST_LENGTH, sizeof(char));
 		
+		std::string alpha  = digest_to_string( digest) ;
+		printf("ff : %s\n", digest);
 		m_objects->lock();
 		objects->push_back( make_pair(digest, exists) );
 		m_objects->unlock();
@@ -117,6 +119,7 @@ void Client::buid_digests_map(vector<Chunk*>& chunks, map<string, Chunk*>& map){
 
 void Client::group_by_id(vector<Chunk*>& chunks, map<uint64_t, list<Chunk*> >& buffers){
 	uint64_t tmp_id;
+	printf("nodes_%d\n", nodes->size());
 	for(int i=0; i<chunks.size(); i++){
 		tmp_id = nodes->rallocate( chunks[i]->ptr_digest(), DIGEST_LENGTH )->get_id();
 		
@@ -187,7 +190,6 @@ bool Client::wait_additions(){
 	return flag;
 }
 
-
 void Client::populate_additions( list<Chunk*>& chunks ){
 	list<Chunk*>::iterator it = chunks.begin();
 	
@@ -231,7 +233,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 	char file_digest[DIGEST_LENGTH];
 	if( dedup_by_file(location, file_digest) )
 		return true;
-	return false;
+
 	vector<Chunk*> chunks;
 	map<string, Chunk*> chunks_map; 
 	map<uint64_t, list<Chunk*> > buffers; //node_id => chunks of this node
@@ -253,6 +255,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 		send(EXISTS_CHUNKS, buffer, buffer_len, node->get_host(), node->get_port());
 	}
 	
+	printf("Before waiting!!!!!!!! %d\n", buffers.size());
 	if( !wait_objects( chunks.size() ) ){
 		for(size_t i = 0; i<chunks.size() ; i++)
 			delete chunks[i];
@@ -274,7 +277,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 		objects.pop_front();
 	}
 	m_objects.unlock();
-
+	return false;
 	///Store chunks
 	if( to_dedup.size() > 0){				
 		if( to_dedup.front()->get_data() != NULL ){

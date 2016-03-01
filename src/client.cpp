@@ -9,16 +9,16 @@ namespace fs = boost::filesystem;
 void fct(MapServer* mp){ mp->run(); }
 
 int main(){
-	NodeMap map(3);
-	map.add_node(new Node(55, 1987, "127.0.1.1") );
-	map.add_node(new Node(575, 1988, "127.0.1.1") );
-	map.add_node(new Node(4, 1989, "127.0.1.1") );
+	NodeMap map(2);
+	map.add_node(new Node(55, 19207, "127.0.1.1") );
+	map.add_node(new Node(575, 19208, "127.0.1.1") );
+	//map.add_node(new Node(4, 1989, "127.0.1.1") );
 
-	Client client("1956", &map);
+	Client client("1926", &map);
 	
-	MapServer ms1("1987", &map);
-	MapServer ms2("1988", &map);
-	MapServer ms3("1989", &map);
+	MapServer ms1("19207", &map);
+	MapServer ms2("19208", &map);
+	//MapServer ms3("1989", &map);
 	
 	std::thread t1(fct, &ms1);
 	std::thread t2(fct, &ms2);

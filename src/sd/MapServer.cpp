@@ -6,15 +6,21 @@ void TCPMapServer::wcallback(Handler* handler, msg_t type){
 	delete handler;
 }
 
-void TCPMapServer::rcallback(Handler* handler, msg_t type){	
+void TCPMapServer::rcallback(Handler* handler, msg_t type){		
 	char* data = handler->get_in_data();
 	
+	
+	printf("\n\n");
+	for(int i=0; i<72; i++)
+		printf("%c", data[i]);
+	printf("\n");
 	if( type == EXISTS_OBJECT){
 		char *buff = new char[DIGEST_LENGTH + 1 + HEADER_LENGTH];
 		char* buffer = buff + HEADER_LENGTH;
 		memcpy(buffer, data, DIGEST_LENGTH);
 		
 		m_objects->lock();
+		std::string stre = digest_to_string(data);
 		buffer[DIGEST_LENGTH] = ( objects->find( digest_to_string(data) ) != objects->end() );
 		m_objects->unlock();
 		
@@ -42,7 +48,7 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
 		}
 		m_chunks->unlock();
 		
-		handler->send(CHUNKS, buf, DIGEST_LENGTH * num + num);//transfert ownership
+		handler->send(CHUNKS, buf, DIGEST_LENGTH * num + num + HEADER_LENGTH);//transfert ownership
 		register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
 	}else if( type == ADD_OBJECT ){
 		char *buff = new char[DIGEST_LENGTH + HEADER_LENGTH];
@@ -55,7 +61,7 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
 		
 		handler->clear();
 		
-		handler->send(OBJECT_ADDED, buffer, DIGEST_LENGTH); //transfert ownership
+		handler->send(OBJECT_ADDED, buffer, DIGEST_LENGTH + HEADER_LENGTH); //transfert ownership
 		register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
 	}
 	else if( type == ADD_CHUNKS ){
@@ -71,7 +77,7 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
 			(*chunks)[ digest_to_string(data) ] = true;
 		m_chunks->unlock();
 		
-		handler->send(CHUNKS_ADDED, buff, DIGEST_LENGTH * num);//transfert ownership
+		handler->send(CHUNKS_ADDED, buff, DIGEST_LENGTH * num + HEADER_LENGTH);//transfert ownership
 		register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
 	}else{
 		close( handler->get_fd() );

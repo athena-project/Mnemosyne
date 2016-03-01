@@ -7,31 +7,32 @@ int Handler::add_to_in(char* buf, int size){
 		
 		char* tmp = new char[ 2 * in_length ];
 		memcpy(tmp, in_data, in_offset);
-	
-		delete[] in_data;
+		
+		free( in_data );
 		in_data = tmp;
 		
-		in_length << 1;
+		in_length = in_length << 1;
 	}
 	
-	printf("\nReading : ");
-	write(1, buf, size);
+	//printf("\nReading : ");
+	//write(1, buf, size);
 	memcpy(in_data + in_offset, buf, size);
 	in_offset += size; 
 	return 0;
 }
 		
 int Handler::out_write(){
-	printf("\nWrittign : \n");
-	write(1, out_data + out_offset, out_length);
+	//printf("\nWrittign : \n");
+	//write(1, out_data + out_offset, out_length);
 	return write(fd, out_data + out_offset, out_length);
 }
 
 void Handler::clear(){
-	if( in_data != NULL )
-		delete[] in_data;
+	delete( out_data );
+	delete( in_data );
 		
-	out_data = in_data = NULL;
+	out_data = NULL;
+	in_data = new char[in_length];
 	in_offset = out_offset = out_length = 0 ;
 	in_length = BUFF_SIZE ;
 }
@@ -231,11 +232,9 @@ int TCPServer::run(){
 				close (events[i].data.fd);
 				
 				continue;
-			}else if( 	pfd == handler->get_fd() ){
-				printf("coucoucccccc");
-				
+			}else if( 	pfd == handler->get_fd() ){				
 				char buf[32];
-				printf("sending\n");
+				//printf("sending\n");
 				while( read(pfd, buf, sizeof buf) == sizeof(buf) ){}
 				pcallback();
 				
@@ -280,14 +279,11 @@ int TCPServer::run(){
 					ssize_t count;
 					char buf[BUFF_SIZE];
 					count = read(handler->get_fd(), buf, sizeof buf);
-					if(count == -1){
-						if(errno != EAGAIN){//All data read
-							perror("read");
-							done = 1;
-						}
-						break;
-					}else if(count == 0){//End-Of-File, connection closed
+					if(handler->get_in_offset() == handler->get_expected_in_length()){//All data read
+						printf("all read \n");
 						done = 1;
+						break;
+					}else if(count == -1 || count == 0){
 						break;
 					}
 
@@ -297,12 +293,17 @@ int TCPServer::run(){
 						abort();
 					}
 				}
+				
+				if(done){
+														printf("%ull _get\n", handler->get_in_offset());
 
-				if(done)
 					rcallback( handler, handler->get_int_type() );
+				}
 			}else if(events[i].events & EPOLLOUT ){
 				int ret;				
-				printf("begin writting\n");
+									printf("%ull _send\n", handler->get_out_length());
+
+				//printf("begin writting\n");
 				ret = handler->out_write();
 	   
 				if( (-1 == ret && EINTR == errno) || 
@@ -320,7 +321,7 @@ int TCPServer::run(){
 					close( handler->get_fd() );
 					delete handler;
 				}else{ //entire data was written          
-					printf("\nAdding Read Event.\n");   
+					//printf("\nAdding Read Event.\n");   
 					wcallback( handler, handler->get_out_type() );
 				}
 			}else{

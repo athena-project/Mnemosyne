@@ -48,6 +48,8 @@ class NodeMap{
 				delete nodes[i];
 		}
 		
+        size_t size(){ return nodes.size(); }
+        
 		void add_node(Node* node){ 
 			nodes.push_back(node); 
 			map_nodes[ node->get_id() ] = node;	
