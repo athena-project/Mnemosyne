@@ -3,7 +3,7 @@ CXX=g++
 CXXFLAGS= -std=c++11 -g
 
 LDFLAGS= -lssl -lcrypto  -lboost_serialization  -lboost_filesystem -lboost_system
-LDFLAGS+= -lupscaledb -pthread
+LDFLAGS+= -pthread
 
 EXEC= test55
 SRC= $(wildcard */*.cpp)
