@@ -5,6 +5,8 @@
 
 #include <fstream>
 #include "Chunk.h"
+#include "utility/hash.cpp"
+
 #define BUFFER_LEN 4096
 
 #include <boost/filesystem.hpp>

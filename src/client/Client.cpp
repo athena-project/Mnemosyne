@@ -15,57 +15,43 @@ void TCPClientServer::rcallback(Handler* handler, msg_t type){
     char* data = handler->get_in_data();
  
     if( type == OBJECT){
-        char digest[DIGEST_LENGTH];
-        char exists;
-
-        memcpy(digest, data, DIGEST_LENGTH);
-        memcpy(&exists, data + DIGEST_LENGTH, sizeof(char));
+        char exists = data[DIGEST_LENGTH];
         
-        std::string alpha  = digest_to_string( digest) ;
-        printf("ff : %s\n", digest);
         m_objects->lock();
-        objects->push_back( make_pair(digest, exists) );
+        objects->push_back( make_pair(digest_to_string(data), exists) );
         m_objects->unlock();
     }else if( type == CHUNKS ){
-        size_t num = 0;
-        char* end = data + sizeof(size_t);
+        uint64_t num = 0;
+        char* end = data + uint64_s;
         num = strtoull(data, &end, 0);
-        printf("Getting chunks!!!!!!!!!!!!!!!!!! %d_%d", num, handler->get_in_offset());
-        data += sizeof(size_t);
+
+        data += uint64_s;
         for(int i = 0 ; i<num; i++, data+=sizeof(char)+DIGEST_LENGTH){
-            char digest[DIGEST_LENGTH];
-            char exists;
-            memcpy(digest, data, DIGEST_LENGTH);
-            memcpy(&exists, data+DIGEST_LENGTH, 1);
-        
+            char exists = data[DIGEST_LENGTH];
+
             m_objects->lock();
-            objects->push_back( make_pair(digest, exists) );
+            objects->push_back( make_pair(digest_to_string(data), exists) );
             m_objects->unlock();
         }
     }else if( type == OBJECT_ADDED ){
-        char digest[DIGEST_LENGTH];
-        char exists;
-        
-        memcpy(digest, data, DIGEST_LENGTH);
-        memcpy(&exists, data+DIGEST_LENGTH, sizeof(char));
-        
+        std::string digest = digest_to_string( data );
+
         m_additions->lock();
-        if( additions->find( string(digest) ) != additions->end() )
-            additions->erase( string(digest) );
+        if( additions->find( digest ) != additions->end() )
+            additions->erase( digest );
         m_additions->unlock();
     }else if( type == CHUNKS_ADDED ){
-        size_t num = 0;
-        char* end = data + sizeof(size_t);
+        uint64_t num = 0;
+        char* end = data + uint64_s;
         num = strtoull(data, &end, 0);
-        
-        data += sizeof(size_t);
-        for(int i = 0 ; i<num; i++, data+=sizeof(char)+DIGEST_LENGTH){
-            char digest[DIGEST_LENGTH];
-            memcpy(digest, data, DIGEST_LENGTH);
-        
+
+        data += uint64_s;
+        for(int i = 0 ; i<num; i++, data+=DIGEST_LENGTH){
+            std::string digest = digest_to_string( data );
+
             m_additions->lock();
-            if( additions->find( string(digest) ) != additions->end() )
-                additions->erase( string(digest) );
+            if( additions->find( digest ) != additions->end() )
+                additions->erase( digest );
             m_additions->unlock();
         }
     }
@@ -104,22 +90,22 @@ void Client::clear_objects(){
 void Client::build_digests(list<Chunk*>& chunks, char* digests){
     list<Chunk*>::iterator it = chunks.begin();
     
-    sprintf(digests, "%lu", chunks.size());
+    sprintf(digests, "%" PRIu64 "", chunks.size());
     
-    for(int k=sizeof(size_t); it != chunks.end() ; k += DIGEST_LENGTH, it++)
+    for(int k=uint64_s; it != chunks.end() ; k += DIGEST_LENGTH, it++)
         (*it)->_digest( digests+k );
 }
 
-void Client::buid_digests_map(vector<Chunk*>& chunks, map<string, Chunk*>& map){
+void Client::buid_digests_unordered_map(vector<Chunk*>& chunks, unordered_map<string, Chunk*>& unordered_map){
     vector<Chunk*>::iterator it = chunks.begin();
 
     for(; it != chunks.end() ; it++)
-        map[ (*it)->str_digest() ] = *it;
+        unordered_map[ (*it)->str_digest() ] = *it;
 }
 
-void Client::group_by_id(vector<Chunk*>& chunks, map<uint64_t, list<Chunk*> >& buffers){
+void Client::group_by_id(vector<Chunk*>& chunks, unordered_map<uint64_t, list<Chunk*> >& buffers){
     uint64_t tmp_id;
-    printf("nodes_%d\n", nodes->size());
+
     for(int i=0; i<chunks.size(); i++){
         tmp_id = nodes->rallocate( chunks[i]->ptr_digest(), DIGEST_LENGTH )->get_id();
         
@@ -130,7 +116,7 @@ void Client::group_by_id(vector<Chunk*>& chunks, map<uint64_t, list<Chunk*> >& b
     }
 } 
 
-void Client::group_by_ids(list<Chunk*>& chunks, map<uint64_t, list<Chunk*> >& buffers){
+void Client::group_by_ids(list<Chunk*>& chunks, unordered_map<uint64_t, list<Chunk*> >& buffers){
     list<Chunk*>::iterator it = chunks.begin();
     vector<Node*> _nodes;
     uint64_t tmp_id;
@@ -161,7 +147,7 @@ bool Client::wait_objects(int n){
     while( !flag && duration < TIME_OUT){
         nanosleep(&req, &rem);
         duration += DELAY;
-        //printf("size : %d\n", objects.size());
+
         m_objects.lock();
         flag = (objects.size() == n);
         m_objects.unlock();
@@ -181,7 +167,7 @@ bool Client::wait_additions(){
     while( !flag && duration < TIME_OUT){
         nanosleep(&req, &rem);
         duration += DELAY;
-        
+
         m_additions.lock();
         flag = (additions.size() == 0 );
         m_additions.unlock();
@@ -235,62 +221,60 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
         return true;
 
     vector<Chunk*> chunks;
-    map<string, Chunk*> chunks_map; 
-    map<uint64_t, list<Chunk*> > buffers; //node_id => chunks of this node
+    unordered_map<string, Chunk*> chunks_map; 
+    unordered_map<uint64_t, list<Chunk*> > buffers; //node_id => chunks of this node
 
     cf->split(location, chunks);
-    buid_digests_map( chunks, chunks_map);
+    buid_digests_unordered_map( chunks, chunks_map);
 
     ///Send requests
     group_by_id( chunks, buffers);
     
-    for(map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
+    for(unordered_map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
     it != buffers.end(); it++){
-        size_t buffer_len = (it->second).size() * DIGEST_LENGTH + sizeof(size_t);
+        size_t buffer_len = (it->second).size() * DIGEST_LENGTH + uint64_s;
         char buffer[buffer_len];
-        
+
         build_digests( it->second, buffer);
         
         Node* node = nodes->get_node( it->first );
         send(EXISTS_CHUNKS, buffer, buffer_len, node->get_host(), node->get_port());
     }
     
-    printf("Before waiting!!!!!!!! %d\n", chunks.size());
     if( !wait_objects( chunks.size() ) ){
         for(size_t i = 0; i<chunks.size() ; i++)
             delete chunks[i];
         return false;
     }
-    printf("End of waiting\n");
+
     ///Select chunks to dedup
     list<Chunk*> to_dedup;
-    char* tmp_digest;
+    std::string tmp_digest;
     char tmp_exists;
     
     m_objects.lock();
-    for(int i=0; i<objects.size(); i++){
-        printf("%d\n", i);
+    for(int i=0, num = objects.size() ; i<num ; i++){
         tmp_digest = objects.front().first;
         tmp_exists = objects.front().second;
+        
         if( !tmp_exists && chunks_map.find(tmp_digest) != chunks_map.end()){
             to_dedup.push_back( chunks_map[ tmp_digest ] );
         }
         objects.pop_front();
     }
-    printf("end_of_save\n");
     m_objects.unlock();
-    return false;
+
     ///Store chunks
     if( to_dedup.size() > 0){               
-        if( to_dedup.front()->get_data() != NULL ){
-            for(list<Chunk*>::iterator it = to_dedup.begin() ; 
+        if( to_dedup.front()->get_data() != NULL ){ ///Chunks' cache enable 
+            for(list<Chunk*>::iterator it = to_dedup.begin() ; //maybe we can compress chunk ?
             it != to_dedup.end(); it++){    
                 string tmp=(path_dir/fs::path((*it)->str_digest())).string();
                 ofstream c_file(tmp.c_str(), ios::binary);
                 c_file.write( (*it)->get_data(), (*it)->get_length() );
             }
         }
-        else{   
+        else{   ///Chunks' cache not enable : file too big
             char *src;
             int fd = open(location, O_RDONLY);
             uint64_t size_file = size_of_file(fd);
@@ -302,7 +286,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
             it != to_dedup.end(); it++){
                 string tmp=(path_dir/fs::path((*it)->str_digest())).string();
                 ofstream c_file(tmp.c_str(), ios::binary);
-                
+
                 c_file.write( src+(*it)->get_begin(), (*it)->get_length() );
                 c_file.close();
             }
@@ -310,15 +294,14 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
             munmap( src, size_file);
             close( fd );    
         }
-            return false;
 
         ///Send new chunk to sd
-        map<uint64_t, list<Chunk*> > _buffers;
+        unordered_map<uint64_t, list<Chunk*> > _buffers;
         group_by_ids( to_dedup, _buffers);
         
-        for(map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
+        for(unordered_map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
         it != buffers.end(); it++){
-            size_t buffer_len = (it->second).size() * DIGEST_LENGTH + sizeof(size_t);
+            size_t buffer_len = (it->second).size() * DIGEST_LENGTH + uint64_s;
             char buffer[ buffer_len ];
             
             build_digests( it->second, buffer);
@@ -341,14 +324,13 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
         }
     }
     clear_objects();
-    
-    
-    
+        
     if( !buildMetadata(name, chunks, path_dir) ){
         for(size_t i = 0; i<chunks.size() ; i++)
             delete chunks[i];
         return false;
     }
+
     return true;
 }
 
@@ -362,9 +344,8 @@ bool Client::load(const char* name, const char* location, fs::path path_dir){
         return false;
     }
     
-    char buffer[BUFFER_MAX_SIZE];
-    uint64_t b_length = 0;
-    
+    char* buffer = static_cast<char*>(malloc(BUFFER_MAX_SIZE)); //because new failed
+
     for(uint64_t i = 0 ; i<chunks.size() ; i++){
         string tmp=(path_dir/fs::path(chunks[i]->str_digest())).string();
         ifstream is(tmp.c_str(), ios::binary);
@@ -375,6 +356,6 @@ bool Client::load(const char* name, const char* location, fs::path path_dir){
         is.close();
     }
     os.close();
-    
+    free(buffer);
     return true;
 }

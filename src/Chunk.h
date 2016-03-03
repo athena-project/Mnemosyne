@@ -29,6 +29,7 @@
 
 ///taille max d'un fichier completement conserver en mémoire, 1Mo
 #define CACHING_THRESHOLD 1048576
+//#define CACHING_THRESHOLD 10485760
 
 #define uint64_s sizeof(uint64_t)
 using namespace std;
@@ -36,77 +37,77 @@ using namespace std;
 ///si le fichier n'est pas trop gros on en stocke dans les chunks, 
 ///sinon on en stocke qu'une partie..
 class Chunk{
-	protected:
-		uint64_t begin;	
-		uint64_t length;
-		
-		unsigned char digest[SHA224_DIGEST_LENGTH];
-		char digest_c[DIGEST_LENGTH];		
-		std::string digest_str;
-		
-		char* inner_data = NULL; //used if file_size<CACHING_THRESHOLD
-		
-	public:
-		Chunk();
-		Chunk(int b, int l);
-		Chunk(int b, int l, const char* _data, bool cached=true);
-		Chunk(char* _s_data);
-			
-		~Chunk();
-		
-		void update(const char* _data, bool cached=true);
-		
-		uint64_t get_length();
-		uint64_t get_begin();
-		char* get_data();
-		
-		bool operator<( const Chunk& c2) const;
-		
-		unsigned char* get_digest();
-		
-		void _digest(char* tmp);
-		
-		string str_digest();
-		char* ptr_digest();
-		
-		static size_t s_length();
-		
-		void serialize(char* buff);
+    protected:
+        uint64_t begin; 
+        uint64_t length;
+        
+        unsigned char digest[SHA224_DIGEST_LENGTH];
+        char digest_c[DIGEST_LENGTH];       
+        std::string digest_str;
+        
+        char* inner_data = NULL; //used if file_size<CACHING_THRESHOLD
+        
+    public:
+        Chunk();
+        Chunk(int b, int l);
+        Chunk(int b, int l, const char* _data, bool cached=true);
+        Chunk(char* _s_data);
+            
+        ~Chunk();
+        
+        void update(const char* _data, bool cached=true);
+        
+        uint64_t get_length();
+        uint64_t get_begin();
+        char* get_data();
+        
+        bool operator<( const Chunk& c2) const;
+        
+        unsigned char* get_digest();
+        
+        void _digest(char* tmp);
+        
+        string str_digest();
+        char* ptr_digest();
+        
+        static size_t s_length();
+        
+        void serialize(char* buff);
 };
 
 class ChunkFactory{
-	protected:
-		uint32 buffer_size = 0;
-		uint32 i =0; ///position buffer
+    protected:
+        uint32 buffer_size = 0;
+        uint32 i =0; ///position buffer
 
-		uint64 current=0;///position dans le fichier
-		uint64 size=0; ///taille du chunk courant
-		char* buffer = NULL;
+        uint64 current=0;///position dans le fichier
+        uint64 size=0; ///taille du chunk courant
+        char* buffer = NULL;
 
-		//FastList window;
-		UltraFastWindow *window = NULL;
-		ifstream is;
+        //FastList window;
+        UltraFastWindow *window = NULL;
+        ifstream is;
 
-		KarpRabinHash<uint64>* hf = NULL;
-	public:
-		ChunkFactory();
-		
-		ChunkFactory( const char* location);
-			
-		~ChunkFactory();
-	
-		void saveIntoFile(const char* file);
+        KarpRabinHash<uint64>* hf = NULL;
+    public:
+        ChunkFactory();
+        
+        ChunkFactory( const char* location);
+            
+        ~ChunkFactory();
+    
+        void saveIntoFile(const char* file);
 
-		void getFromFile(const char* file);
-			
-		uint64 update_buffer();
-		
-		bool shift();
-		
-		void chunksIndex(vector<Chunk*>& index);
-		
-		void split(const char* location, vector<Chunk*>& chunks);
-		
-		void save(const char* location);
+        void getFromFile(const char* file);
+            
+        uint64 update_buffer();
+        
+        bool shift();
+        
+        void chunksIndex(vector<Chunk*>& index);
+        
+        void split(const char* location, vector<Chunk*>& chunks);
+        
+        void save(const char* location);
 };
 #endif
