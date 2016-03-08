@@ -1,5 +1,16 @@
 Features :
-	-> Use CRUSH as placement algorithme to have optimal reorganization
-	-> load partiel 
-	-> load_mem on retourne un m=pointeur en memoire( mmap )
-	-> Système de cache coté client ??
+    ->segmentation en bundle se fait par socket
+    ->on commence a envoyé les hashs avant la fin de la segmentation, et on active le multitrheading pour la segmentation
+    
+    -> Use CRUSH as placement algorithme to have optimal reorganization ?
+    -> load partiel 
+    -> load_mem on retourne un m=pointeur en memoire( mmap )
+    -> Système de cache coté client ??
+    -> Fichier de conf et de log
+    -> Biding python ?
+    -> SSE instruction
+    -> code correction metadata
+    
+    
+Bug :
+    -> max_sendings bad use

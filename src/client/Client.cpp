@@ -6,8 +6,7 @@ void TCPClientServer::wcallback(Handler* handler, msg_t type){
         handler->clear();
         register_event(handler, EPOLLIN, EPOLL_CTL_MOD);
     }else{
-        close( handler->get_fd() );
-        delete handler;
+        TCPServer::wcallback(handler, type);
     }
 }
 
@@ -56,8 +55,7 @@ void TCPClientServer::rcallback(Handler* handler, msg_t type){
         }
     }
     
-    close( handler->get_fd() );
-    delete handler;
+    TCPServer::rcallback(handler, type);
 }
 
 
@@ -103,35 +101,53 @@ void Client::buid_digests_unordered_map(vector<Chunk*>& chunks, unordered_map<st
         unordered_map[ (*it)->str_digest() ] = *it;
 }
 
-void Client::group_by_id(vector<Chunk*>& chunks, unordered_map<uint64_t, list<Chunk*> >& buffers){
+void Client::group_by_id(vector<Chunk*>& chunks, unordered_map<uint64_t, list< list<Chunk*> > >& buffers){
+    vector<Chunk*>::iterator it = chunks.begin();
     uint64_t tmp_id;
+    
+    list< Chunk* >* current ;
 
-    for(int i=0; i<chunks.size(); i++){
-        tmp_id = nodes->rallocate( chunks[i]->ptr_digest(), DIGEST_LENGTH )->get_id();
+    for(; it != chunks.end() ; it++){
+        tmp_id = nodes->rallocate( (*it)->ptr_digest(), DIGEST_LENGTH )->get_id();
         
-        if( buffers.find(tmp_id) == buffers.end() )
-            buffers[tmp_id]=list<Chunk*>();
+        if( buffers.find(tmp_id) == buffers.end() ){
+            buffers[tmp_id]=list< list<Chunk*> >( );
+            buffers[tmp_id].push_front( list<Chunk*>() );
+        }
+
+        current = &buffers[tmp_id].back();
+        if( current->size() >= BUNDLE_MAX_SIZE ){
+            buffers[tmp_id].push_back( list<Chunk*>() );
+            current = &buffers[tmp_id].back();
+        }
         
-        buffers[tmp_id].push_back( chunks[i] );
+        current->push_back( (*it) );
+
     }
 } 
 
-void Client::group_by_ids(list<Chunk*>& chunks, unordered_map<uint64_t, list<Chunk*> >& buffers){
+void Client::group_by_id(list<Chunk*>& chunks, unordered_map<uint64_t, list< list<Chunk*> > >& buffers){
     list<Chunk*>::iterator it = chunks.begin();
-    vector<Node*> _nodes;
     uint64_t tmp_id;
     
+    list< Chunk* >* current ;
+
     for(; it != chunks.end() ; it++){
-        _nodes = nodes->wallocate( (*it)->ptr_digest(), DIGEST_LENGTH );
+        tmp_id = nodes->rallocate( (*it)->ptr_digest(), DIGEST_LENGTH )->get_id();
         
-        for( int k=0; k< _nodes.size(); k++){
-            tmp_id = _nodes[k]->get_id();
-            
-            if( buffers.find(tmp_id) == buffers.end() )
-                buffers[tmp_id]=list<Chunk*>();
-            
-            buffers[tmp_id].push_back( (*it) );
+        if( buffers.find(tmp_id) == buffers.end() ){
+            buffers[tmp_id]=list< list<Chunk*> >( );
+            buffers[tmp_id].push_front( list<Chunk*>() );
         }
+
+        current = &buffers[tmp_id].back();
+        if( current->size() >= BUNDLE_MAX_SIZE ){
+            buffers[tmp_id].push_back( list<Chunk*>() );
+            current = &buffers[tmp_id].back();
+        }
+        
+        current->push_back( (*it) );
+
     }
 } 
 
@@ -139,21 +155,27 @@ void Client::group_by_ids(list<Chunk*>& chunks, unordered_map<uint64_t, list<Chu
 bool Client::wait_objects(int n){
     struct timespec req, rem;
     uint64_t duration = 0;
-    bool flag =false;
+
+    m_objects.lock();
+    uint64_t last_n = objects.size();
+    m_objects.unlock();
     
     req.tv_sec  = 0;
-    req.tv_nsec = DELAY; //0.001 s
+    req.tv_nsec = DELAY;
     
-    while( !flag && duration < TIME_OUT){
+    while( last_n != n && duration < TIME_OUT){
         nanosleep(&req, &rem);
         duration += DELAY;
 
         m_objects.lock();
-        flag = (objects.size() == n);
-        m_objects.unlock();
+        
+        duration += (last_n  == objects.size()) ? DELAY : 0;
+        last_n = objects.size();
+       
+        m_objects.unlock();        
     }
     
-    return flag;
+    return last_n == n;
 }
 
 bool Client::wait_additions(){
@@ -222,28 +244,32 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 
     vector<Chunk*> chunks;
     unordered_map<string, Chunk*> chunks_map; 
-    unordered_map<uint64_t, list<Chunk*> > buffers; //node_id => chunks of this node
+    unordered_map<uint64_t, list< list<Chunk*> > > buffers; //node_id => chunks of this node
 
     cf->split(location, chunks);
     buid_digests_unordered_map( chunks, chunks_map);
 
     ///Send requests
     group_by_id( chunks, buffers);
-    
-    for(unordered_map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
-    it != buffers.end(); it++){
-        size_t buffer_len = (it->second).size() * DIGEST_LENGTH + uint64_s;
-        char buffer[buffer_len];
 
-        build_digests( it->second, buffer);
-        
-        Node* node = nodes->get_node( it->first );
-        send(EXISTS_CHUNKS, buffer, buffer_len, node->get_host(), node->get_port());
+    for(unordered_map<uint64_t, list< list<Chunk*> > >::iterator it = buffers.begin() ; 
+    it != buffers.end(); it++){
+        for(list< list<Chunk*> >::iterator it_bundle = (it->second).begin() ; it_bundle != (it->second).end(); it_bundle++){ 
+            size_t buffer_len = it_bundle->size() * DIGEST_LENGTH + uint64_s;
+            char buffer[buffer_len];
+
+            build_digests( *it_bundle, buffer);
+
+            Node* node = nodes->get_node( it->first );
+            send(EXISTS_CHUNKS, buffer, buffer_len, node->get_host(), node->get_port());
+        }
     }
+    buffers.clear();
     
     if( !wait_objects( chunks.size() ) ){
         for(size_t i = 0; i<chunks.size() ; i++)
             delete chunks[i];
+
         return false;
     }
 
@@ -296,20 +322,23 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
         }
 
         ///Send new chunk to sd
-        unordered_map<uint64_t, list<Chunk*> > _buffers;
-        group_by_ids( to_dedup, _buffers);
+        unordered_map<uint64_t, list< list<Chunk*> > > _buffers;
+        group_by_id( to_dedup, _buffers);
         
-        for(unordered_map<uint64_t, list<Chunk*> >::iterator it = buffers.begin() ; 
+        for(unordered_map<uint64_t, list< list<Chunk*> > >::iterator it = buffers.begin() ; 
         it != buffers.end(); it++){
-            size_t buffer_len = (it->second).size() * DIGEST_LENGTH + uint64_s;
-            char buffer[ buffer_len ];
-            
-            build_digests( it->second, buffer);
-            populate_additions( it->second );
-            
-            Node* node = nodes->get_node( it->first );
-            send(ADD_CHUNKS, buffer, buffer_len, node->get_host(), node->get_port());
+            for(list< list<Chunk*> >::iterator it_bundle = (it->second).begin() ; it_bundle != (it->second).end(); it_bundle++){ 
+                size_t buffer_len = it_bundle->size() * DIGEST_LENGTH + uint64_s;
+                char buffer[ buffer_len ];
+                
+                build_digests( *it_bundle, buffer);
+                populate_additions( *it_bundle );
+              
+                Node* node = nodes->get_node( it->first );
+                send(ADD_CHUNKS, buffer, buffer_len, node->get_host(), node->get_port());
+            }
         }
+        _buffers.clear();
         
         ///Send file digest
         vector<Node*> _nodes = nodes->wallocate( file_digest, DIGEST_LENGTH );
@@ -325,7 +354,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
     }
     clear_objects();
         
-    if( !buildMetadata(name, chunks, path_dir) ){
+    if( !buildMetadata(name, file_digest, chunks, path_dir) ){
         for(size_t i = 0; i<chunks.size() ; i++)
             delete chunks[i];
         return false;
@@ -336,7 +365,8 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 
 bool Client::load(const char* name, const char* location, fs::path path_dir){
     vector<Chunk*> chunks;
-    extractChunks( name, chunks, path_dir);
+    char file_digest[ DIGEST_LENGTH ];
+    extractChunks( name, file_digest, chunks, path_dir);
     ofstream os( location, ios::binary);    
     
     if( !os ){
@@ -357,5 +387,15 @@ bool Client::load(const char* name, const char* location, fs::path path_dir){
     }
     os.close();
     free(buffer);
+    
+    char restored_digest[ DIGEST_LENGTH ];
+    if( !hashfile(location, restored_digest) ){
+        perror("Hashing failed");
+        return false;
+    }
+    
+    if( memcmp(file_digest, restored_digest, DIGEST_LENGTH) != 0) //file corrupted
+        return false;
+    
     return true;
 }

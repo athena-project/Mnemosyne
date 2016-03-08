@@ -1,9 +1,8 @@
 #include "MapServer.h"
 
 
-void TCPMapServer::wcallback(Handler* handler, msg_t type){
-    close( handler->get_fd() );
-    delete handler;
+void TCPMapServer::wcallback(Handler* wcallback, msg_t type){
+    TCPServer::wcallback(wcallback, type);
 }
 
 void TCPMapServer::rcallback(Handler* handler, msg_t type){     
@@ -78,8 +77,7 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
         handler->send(CHUNKS_ADDED, buff, DIGEST_LENGTH * num + HEADER_LENGTH + uint64_s);//transfert ownership
         register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
     }else{
-        close( handler->get_fd() );
-        delete handler;
+        TCPServer::rcallback(handler, type);
     }
 }
 

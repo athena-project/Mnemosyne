@@ -2,8 +2,12 @@
 #define MNEMOSYNE_NETWORK_TCPCLIENT_H
 
 #define MAXEVENTS 64
-#define BUFF_SIZE 1024
+#define BUFF_SIZE 8192
 #define MAX_SIZE_IN 65536
+
+//max send en même temps
+#define MAX_SOCKETS 500 
+#define EPOLL_TIMEOUT 1
 
 #define uint64_s sizeof(uint64_t)
 #define int_s sizeof(int)
@@ -29,7 +33,6 @@
 #include <list> 
 #include <time.h>
 #include <string>
-
 
 using namespace std;
 
@@ -75,13 +78,13 @@ class Handler{
         int fd;
         char * aplha;
         char* in_data = NULL; //owned
-        uint32_t in_offset = 0 ;
-        uint32_t in_length = BUFF_SIZE ;
+        uint64_t in_offset = 0 ;
+        uint64_t in_length = BUFF_SIZE ;
         
         msg_t out_type;
         char* out_data = NULL; //owned
-        uint32_t out_offset = 0;
-        uint32_t out_length = 0;
+        uint64_t out_offset = 0;
+        uint64_t out_length = 0;
         
     public:
         Handler(int _fd) : fd(_fd){
@@ -100,8 +103,8 @@ class Handler{
             return static_cast<msg_t>(strtoull(in_data+uint64_s, &end, 0));
         }
         char* get_in_data(){ return in_data+HEADER_LENGTH; }
-        uint32_t get_in_length(){ return in_length; }
-        uint32_t get_in_offset(){ return in_offset; }
+        uint64_t get_in_length(){ return in_length; }
+        uint64_t get_in_offset(){ return in_offset; }
                 
         //Transfert ownership;
         void set_out_data(msg_t _type, char* _data, uint64_t _length){ 
@@ -122,7 +125,7 @@ class Handler{
         }
         
         msg_t get_out_type(){ return out_type; }
-        uint32_t get_out_length(){ return out_length; }
+        uint64_t get_out_length(){ return out_length; }
         uint64_t get_expected_in_length(){ 
             if( in_offset < size_s )
                 return std::numeric_limits<uint64_t>::max();
@@ -130,10 +133,10 @@ class Handler{
             char *end=in_data + size_s;
             return strtoull(in_data, &end, 0); 
         }
-        uint32_t get_out_offset(){ return out_offset; }
+        uint64_t get_out_offset(){ return out_offset; }
 
-        void decr_out_length( uint32_t ret ){ out_length-= ret; }
-        void incr_out_offset( uint32_t ret ){ out_offset+= ret; }  
+        void decr_out_length( uint64_t ret ){ out_length-= ret; }
+        void incr_out_offset( uint64_t ret ){ out_offset+= ret; }  
         
         int add_to_in(char* buf, int size);
         
@@ -148,9 +151,10 @@ class TCPServer{
         int s;
         
         int pfd;
+        size_t current_sockets = 0;
         
         struct epoll_event* events = NULL;
-    
+        
         atomic<bool>* alive;
         list<Task*>* tasks;
         mutex* m_tasks;
@@ -168,6 +172,7 @@ class TCPServer{
         }
     
         bool register_event(Handler *handler, int option, int mod);
+        bool unregister_event(Handler *handler);
     
         int create_and_bind (const char *port);
 

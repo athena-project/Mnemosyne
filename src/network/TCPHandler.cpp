@@ -5,7 +5,9 @@ int Handler::add_to_in(char* buf, int size){
         if( 2*in_length > MAX_SIZE_IN )
             return -1;
         
-        char* tmp = new char[ 2 * in_length ];
+        //char* tmp = new char[ 2 * in_length ];
+        printf("try_alloc %d\n", 2 * in_length);
+        char* tmp = static_cast<char*>(malloc( 2 * in_length ));
         memcpy(tmp, in_data, in_offset);
         
         free( in_data );
@@ -79,17 +81,34 @@ bool TCPServer::register_event(Handler *handler, int option, int mod){
     struct epoll_event _event;
     _event.events       = option;   
     _event.data.ptr     = static_cast<void*>( handler );
-
     
-    if(epoll_ctl (efd, mod, handler->get_fd(), &_event) == -1){
+    if(epoll_ctl(efd, mod, handler->get_fd(), &_event) == -1){
         perror("register_event");
         close( handler->get_fd() );
         delete handler;
         return false;
     }
+    
+    if(mod == EPOLL_CTL_ADD)
+        current_sockets++;
+
     return true;
 }
 
+bool TCPServer::unregister_event(Handler *handler){
+    if(epoll_ctl (efd, EPOLL_CTL_DEL, handler->get_fd(), NULL) == -1){
+        perror("unregister_event");
+        close( handler->get_fd() );
+        delete handler;
+        return false;
+    }
+    
+    current_sockets--;
+    close( handler->get_fd() );
+    delete handler;
+    
+    return true;
+}
     
 int TCPServer::create_and_bind (const char *port){
     struct addrinfo hints;
@@ -152,7 +171,7 @@ void TCPServer::pcallback(){
     Task* task;
     m_tasks->lock();
     
-    while( tasks->size() > 0 ){
+    while( tasks->size() > 0 && current_sockets < MAX_SOCKETS){
         task = tasks->front();
         tasks->pop_front();
             
@@ -182,19 +201,18 @@ void TCPServer::pcallback(){
         
         n_handler->set_out_data( task->type, task->steal_data(), task->length );
         register_event(n_handler, EPOLLOUT, EPOLL_CTL_ADD);
+        delete task;
     }
-    delete task;
+   
     m_tasks->unlock();
 }
 
 void TCPServer::wcallback(Handler* handler, msg_t type){
-    close( handler->get_fd() );
-    delete handler;
+    unregister_event( handler );
 }
 
 void TCPServer::rcallback(Handler* handler, msg_t type){    
-    close( handler->get_fd() );
-    delete handler;
+    unregister_event( handler );
 }
 
 int TCPServer::run(){
@@ -211,7 +229,7 @@ int TCPServer::run(){
     while( alive->load(std::memory_order_relaxed) ){
         int n, i;
 
-        n = epoll_wait(efd, events, MAXEVENTS, -1);
+        n = epoll_wait(efd, events, MAXEVENTS, EPOLL_TIMEOUT);
         Handler* handler = NULL;
         for(i = 0; i < n; i++){
             handler = static_cast<Handler*>(events[i].data.ptr);
@@ -224,8 +242,7 @@ int TCPServer::run(){
                 fprintf (stderr, "epoll error\n");
                 
                 if( pfd != handler->get_fd() )
-                    delete handler;
-                close (events[i].data.fd);
+                    unregister_event( handler );
                 
                 continue;
             }else if(   pfd == handler->get_fd() ){             
@@ -257,10 +274,10 @@ int TCPServer::run(){
                                     sbuf, sizeof sbuf,
                                     NI_NUMERICHOST | NI_NUMERICSERV);
 
-                    if(s == 0){
-                        printf("Accepted connection on descriptor %d "
-                                "(host=%s, port=%s)\n", infd, hbuf, sbuf);
-                    }
+                    //if(s == 0){
+                        //printf("Accepted connection on descriptor %d "
+                                //"(host=%s, port=%s)\n", infd, hbuf, sbuf);
+                    //}
 
                     if(make_non_blocking(infd) != -1)
                         register_event( new Handler( infd ), EPOLLIN | EPOLLET, EPOLL_CTL_ADD);
@@ -306,8 +323,7 @@ int TCPServer::run(){
                    
                 }else if(-1 == ret){ //error
                     perror("write");
-                    close( handler->get_fd() );
-                    delete handler;
+                    unregister_event( handler );
                 }else{ //entire data was written          
                     wcallback( handler, handler->get_out_type() );
                 }
@@ -315,18 +331,11 @@ int TCPServer::run(){
                 printf("it is an other event\n");
             }
         }
+        
+        m_tasks->lock();
+        bool flag = tasks->size() > 0;
+        m_tasks->unlock();
+        if( flag )
+            pcallback();
     }
 }
-
-
-//int main(){
-    //TCPHandler t("1599");
-    //struct timespec req, rem;
-    //req.tv_sec  = 0;
-    //req.tv_nsec = 11999999;
-    //while(1){  
-        //Msg m(I, "coucou", strlen("coucou"));
-        //t.send(m, "127.0.1.1", 1597);
-        //nanosleep(&req, &rem);
-    //}
-//}

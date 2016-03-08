@@ -11,15 +11,19 @@
 #include <unordered_map>
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <list>
 
 #include <sys/mman.h>
 #include "../Metadata.h"
+#include "../utility/bench.cpp"
+
 
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
 using namespace std;
 
+#define BUNDLE_MAX_SIZE 100
 #define FILE_BUFFER 65536
 //nano seconde, 0.001s
 #define DELAY 1000000 
@@ -75,8 +79,8 @@ class Client : public TCPHandler{
         void build_digests(list<Chunk*>& chunks, char* digests);
         
         void buid_digests_unordered_map(vector<Chunk*>& chunks, unordered_map<string, Chunk*>& unordered_map);
-        void group_by_id(vector<Chunk*>& chunks, unordered_map<uint64_t, list<Chunk*> >& buffers);
-        void group_by_ids(list<Chunk*>& chunks, unordered_map<uint64_t, list<Chunk*> >& buffers);
+        void group_by_id(vector<Chunk*>& chunks, unordered_map<uint64_t, list< list<Chunk*> > >& buffers);
+        void group_by_id(list<Chunk*>& chunks, unordered_map<uint64_t, list< list<Chunk*> > >& buffers);
         ///n act as a condition
         bool wait_objects(int n);
         bool wait_additions();
@@ -88,9 +92,29 @@ class Client : public TCPHandler{
         bool dedup_by_file(const char* location, char* file_digest);
         bool save(const char* name, const char* location, fs::path path_dir);
         
+        bool save_bench(const char* name, const char* location, fs::path path_dir){
+            Timer t;
+            bool flag = save(name, location, path_dir);
+            double delay = t.elapsed();
+            printf("\nSave operation : \n \
+                       time : %lf\n  \
+                       size : %" PRIu64 "\n", delay, size_of_file(location));
+            
+            return flag;
+        }
+        
         
         ///to load file
         
         bool load(const char* name, const char* location, fs::path path_dir);
+        bool load_bench(const char* name, const char* location, fs::path path_dir){
+            Timer t;
+            bool flag = load(name, location, path_dir);
+            double delay = t.elapsed();
+            printf("\nSave operation : \n \
+                       time : %lf\n  \
+                       size : %" PRIu64 "\n", delay, size_of_file(location));
+            return flag;
+        }
 };
 #endif
