@@ -92,8 +92,8 @@ class Handler{
         } 
         
         ~Handler(){ 
-            free( in_data);
-            free( out_data);
+            delete[] in_data;
+            delete[] out_data;
         }
         
         int get_fd(){ return fd; }

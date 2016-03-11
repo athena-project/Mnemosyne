@@ -13,7 +13,7 @@
 namespace fs = boost::filesystem;
 using namespace std;
 
-const char* locationMetadata(const char *name, fs::path path_dir);
+string locationMetadata(const char *name, fs::path path_dir);
 bool buildMetadata(const char *name, char* digest, vector<Chunk*>& chunks, fs::path path_dir);
 bool extractChunks(const char *name, char* digest, vector<Chunk*>& chunks, fs::path path_dir);
 #endif

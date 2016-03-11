@@ -1,18 +1,18 @@
 #include "Metadata.h"
-const char* locationMetadata(const char *name, fs::path path_dir){
+string locationMetadata(const char *name, fs::path path_dir){
     unsigned char digest_name[ SHA224_DIGEST_LENGTH ];
     char nname[DIGEST_LENGTH];
         
     SHA224((unsigned char*)name, strlen(name), digest_name);    
     digest_to_char(nname, digest_name);
 
-    return (path_dir/fs::path(nname) ).string().c_str();
+    return (path_dir/fs::path(nname) ).string();
 }
 
 bool buildMetadata(const char *name, char* digest, vector<Chunk*>& chunks, fs::path path_dir){
     size_t s_length = Chunk::s_length();
     char buffer[ BUFFER_LEN * s_length ];
-    ofstream meta_file(locationMetadata(name, path_dir));
+    ofstream meta_file( locationMetadata(name, path_dir).c_str() );
 
     if( !meta_file ){
         perror("buildMeta");
@@ -41,7 +41,7 @@ bool buildMetadata(const char *name, char* digest, vector<Chunk*>& chunks, fs::p
 bool extractChunks(const char *name, char* digest, vector<Chunk*>& chunks, fs::path path_dir){
     size_t s_length = Chunk::s_length();
     char buffer[ BUFFER_LEN * s_length ];
-    ifstream meta_file(locationMetadata(name, path_dir), ios::binary);
+    ifstream meta_file(locationMetadata(name, path_dir).c_str(), ios::binary);
     
     if( !meta_file ){
         perror("extractChunks");

@@ -26,8 +26,8 @@ int Handler::out_write(){
 }
 
 void Handler::clear(){
-    delete( out_data );
-    delete( in_data );
+    delete[] out_data;
+    delete[] in_data;
         
     out_data = NULL;
     in_data = new char[in_length];
