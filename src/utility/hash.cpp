@@ -10,7 +10,7 @@
 
 #define FILE_BUFFER 65536
 ///unsigned char* to char*
-#define DIGEST_LENGTH SHA224_DIGEST_LENGTH * 2
+#define DIGEST_LENGTH (SHA224_DIGEST_LENGTH * 2)
 
 
 
@@ -21,14 +21,14 @@ inline void print_sha_sum(const unsigned char* md) {
     printf("\n");
 }
 
-inline void digest_to_char(char* buffer, const unsigned char* digest){	
-	for(int i=0; i <SHA224_DIGEST_LENGTH; i++)
-		sprintf(buffer+2*i, "%02x", digest[i]);
-}	
+inline void digest_to_char(char* buffer, const unsigned char* digest){  
+    for(int i=0; i <SHA224_DIGEST_LENGTH; i++)
+        sprintf(buffer+2*i, "%02x", digest[i]);
+}   
 
 ///on considere feja onversion avec %x0 etc
 inline std::string digest_to_string(const char* digest){
-	return std::string( digest, DIGEST_LENGTH);
+    return std::string( digest, DIGEST_LENGTH);
 }
 
 inline bool hashfile(const char* filename, char* buffer){
@@ -49,7 +49,7 @@ inline bool hashfile(const char* filename, char* buffer){
     SHA224_Final (digest,&context);
     
     fclose (inFile);    
-	digest_to_char(buffer, digest);
+    digest_to_char(buffer, digest);
     
     return true;
 }
