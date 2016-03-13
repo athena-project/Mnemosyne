@@ -165,6 +165,15 @@ bool Block::exists(char* digest){
     return false;
 }
 
+void Block::print(int step){
+    if( step ==0)
+    printf("\n\n*************************************************************\n");
+    for(int i=0; i<step; i++)
+        printf("    ");
+    printf("Block %08X name=%d size=%d id:%s\n", reinterpret_cast<intptr_t>(this), name, size, id); 
+    if( step ==0)
+    printf("\n\n*************************************************************\n");
+}
 
 ///LRU
 LRU::~LRU(){}
@@ -201,10 +210,8 @@ BNode::BNode(string _path, BNode* left, BNode* right){
 }
 
 BNode::BNode(string _path, BNode** data, uint64_t size){
-    //memmove( children, data, size * sizeof(BNode*))
-    for(int i=0; i<size; i++)
-        children[i]=data[i];
-        
+    memcpy( &children[0], &data[0], size * sizeof(BNode*));
+    
     size_c = size;
     leaf = false;
     path = _path;
@@ -214,9 +221,7 @@ BNode::BNode(string _path, BNode** data, uint64_t size){
 }
 
 BNode::BNode(string _path, Block** data, uint64_t size){
-    //memmove( blocks, data, size * sizeof(Block*));
-    for(int i=0; i<size; i++)
-        blocks[i]=data[i];
+    memcpy( &blocks[0], &data[0], size * sizeof(Block*));
         
     size_b = size;
     path = _path;
@@ -318,7 +323,7 @@ BNode* BNode::split(){
         size_c = m;
         
         
-        if( size_b > 0)
+        if( size_c > 0)
             memcpy(id, (children[size_c-1])->get_id(), DIGEST_LENGTH);
         else
             memset(id, 0, DIGEST_LENGTH);
@@ -339,7 +344,7 @@ BNode* BNode::split(){
 }
 
 bool BNode::add_digest(char* digest, LRU* cache){
-    if( memcmp( digest, id, DIGEST_LENGTH) > 0 )
+    if( (size_b+size_c) == 0 ||  memcmp( digest, id, DIGEST_LENGTH) > 0 )
         memcpy( id, digest, DIGEST_LENGTH);
     
     if( leaf ){
@@ -414,17 +419,22 @@ bool BNode::exists_digest(char* digest, LRU* cache){
 }
 
 void BNode::print(int step){
-
+if( step ==0)
     printf("\n\n====================================================================\n");
 
     for(int i=0; i<step; i++)
         printf("    ");
-    printf("BNode %08X size_b=%d size_c=%d leaf:%s\n", reinterpret_cast<intptr_t>(this), size_b, size_c, leaf ? "true" : "false"); 
+    printf("BNode %08X size_b=%d size_c=%d leaf:%s id:%s\n", reinterpret_cast<intptr_t>(this), size_b, size_c, leaf ? "true" : "false", id); 
     for(int i=0; i<step; i++)
         printf("    ");
     printf("Children\n");
     for(int i=0; i<size_c; i++)
         children[i]->print(step+1);
+    
+    printf("Blocks\n");
+    for(int i=0; i<size_b; i++)
+        blocks[i]->print(step+1);
+        if( step ==0)
     printf("====================================================================\n\n");
 }
 
@@ -451,4 +461,8 @@ bool BTree::add_digest(char* digest){
 
 bool BTree::exists_digest(char* digest){
     return root->exists_digest( digest, cache );
+}
+
+void BTree::print(){
+    root->print(0);
 }

@@ -14,10 +14,10 @@
 namespace fs = boost::filesystem;
 using namespace std;
 //~224Ko
-#define MAX_DIGESTS 5
+#define MAX_DIGESTS 3 //>2
 #define uint64_s sizeof(uint64_t)
-#define d 2 // à remplacer par template ??, strictement supérieur à 1
-#define CACHE_SIZE 100 //en block
+#define d 2 //strictement supérieur à 1
+#define CACHE_SIZE 1 //en block
 
 class Block{
     protected:
@@ -63,6 +63,8 @@ class Block{
         bool add(char* digest);
         
         bool exists(char* digest);
+        
+        void print(int step);
 };
 
 class LRU{
@@ -149,6 +151,8 @@ class BTree{
         bool add_digest(char* digest);
         
         bool exists_digest(char* digest);
+        
+        void print();
 };
 
 #endif //MNEMOSYNE_INDEX_DYNAMICINDEX_H
