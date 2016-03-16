@@ -1,9 +1,11 @@
 #include "DynamicIndex.h"
 
-/// Begin block
+/**
+ *  Begin Block part
+ */
 int Block::alpha_id = 1;
 
-Block::Block(string _path, char* data, uint64_t _size): name( Block::alpha_id++ ){
+Block::Block(const char* _path, char* data, uint64_t _size): name( Block::alpha_id++ ){
     path = _path;
     init();
     size = _size;
@@ -42,10 +44,8 @@ void Block::clean(){
     }
 }
 
-bool Block::is_full(){ return size >= MAX_DIGESTS-1; } ///-1 très important
-
+bool Block::is_full(){ return size >= MAX_DIGESTS-1; }
 bool Block::is_loaded(){ return buffer != NULL; }
-
 char* Block::get_id(){ return id; }
 
 Block* Block::split(){
@@ -99,7 +99,6 @@ bool Block::store(){
     return true;
 }
 
-///assume tha block is load, for search
 int Block::get_pos_s(char* digest){
     int a = 0;
     int b = size-1;
@@ -111,7 +110,7 @@ int Block::get_pos_s(char* digest){
         m = (a + b) / 2;
         flag = memcmp(digest, buffer + m * DIGEST_LENGTH, DIGEST_LENGTH);
 
-        if( flag < 0 ) //digest<buffer+a*...
+        if( flag < 0 )
             b = m-1;
         else if(flag > 0 )
             a = m+1;
@@ -123,7 +122,6 @@ int Block::get_pos_s(char* digest){
 
 }
 
-///assume tha block is load, for inserting
 int Block::get_pos_i(char* digest, int pos_s){
     if( size == 0)
         return 0;
@@ -175,7 +173,11 @@ void Block::print(int step){
     printf("\n\n*************************************************************\n");
 }
 
-///LRU
+
+/**
+ *  Begin LRU part
+ */
+ 
 LRU::~LRU(){}
 
 void LRU::add(Block* item){
@@ -199,8 +201,11 @@ void LRU::add(Block* item){
 }
 
 
-///BNode
-BNode::BNode(string _path, BNode* left, BNode* right){
+/**
+ *  Begin BNode part
+ */
+ 
+BNode::BNode(const char* _path, BNode* left, BNode* right){
     children[0] = left;
     children[1] = right;
     leaf = false;
@@ -209,7 +214,7 @@ BNode::BNode(string _path, BNode* left, BNode* right){
     size_c += 2;
 }
 
-BNode::BNode(string _path, BNode** data, uint64_t size){
+BNode::BNode(const char* _path, BNode** data, uint64_t size){
     memcpy( &children[0], &data[0], size * sizeof(BNode*));
     
     size_c = size;
@@ -220,7 +225,7 @@ BNode::BNode(string _path, BNode** data, uint64_t size){
         memcpy(id, children[size_c-1]->get_id(), DIGEST_LENGTH);
 }
 
-BNode::BNode(string _path, Block** data, uint64_t size){
+BNode::BNode(const char* _path, Block** data, uint64_t size){
     memcpy( &blocks[0], &data[0], size * sizeof(Block*));
         
     size_b = size;
@@ -256,7 +261,7 @@ int BNode::get_child_pos_s(char* digest){
         m = (a + b) / 2;
         flag = memcmp(digest, children[m]->get_id(), DIGEST_LENGTH );
         
-        if( flag < 0 ) //digest<buffer+a*...
+        if( flag < 0 )
             b = m-1;
         else if(flag > 0 )
             a = m+1;
@@ -292,7 +297,7 @@ int BNode::get_block_pos_s(char* digest){
 
         flag = memcmp(digest, blocks[m]->get_id(), DIGEST_LENGTH );
         
-        if( flag < 0 ) //digest<buffer+a*...
+        if( flag < 0 )
             b = m-1;
         else if(flag > 0 )
             a = m+1;
@@ -439,7 +444,10 @@ if( step ==0)
 }
 
 
-///BTree
+/**
+ *  Begin BTree part
+ */
+ 
 BTree::~BTree(){
     if( root != NULL )
         delete root;
@@ -464,5 +472,5 @@ bool BTree::exists_digest(char* digest){
 }
 
 void BTree::print(){
-    root->print(0);
+    root->print();
 }

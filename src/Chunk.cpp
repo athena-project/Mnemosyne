@@ -196,12 +196,3 @@ pair<Chunk, Chunk> min_2(vector<Chunk>& chunks){
     
     return pair<Chunk, Chunk>( min1, min2 );
 }
-
-//int main(){
-    ///////g++ -g -std=c++11 -g -o3 chunk.cpp -o chunk -lssl -lcrypto  -lboost_serialization
-    //ChunkFactory cf("krh.ser");
-    ////ChunkFactory cf;
-    //vector<Chunk> chunks = cf.split("zero.zero");
-    //cout<<"num_chunks "<< chunks.size()<<endl; 
-    //min_2(chunks);
-//}
