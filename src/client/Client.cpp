@@ -291,7 +291,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
     m_objects.unlock();
 
     ///Store chunks
-    if( to_dedup.size() > 0){               
+    if( to_dedup.size() > 0){  
         if( to_dedup.front()->get_data() != NULL ){ ///Chunks' cache enable 
             for(list<Chunk*>::iterator it = to_dedup.begin() ; //maybe we can compress chunk ?
             it != to_dedup.end(); it++){    
@@ -324,9 +324,11 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
         ///Send new chunk to sd
         unordered_map<uint64_t, list< list<Chunk*> > > _buffers;
         group_by_id( to_dedup, _buffers);
-        
-        for(unordered_map<uint64_t, list< list<Chunk*> > >::iterator it = buffers.begin() ; 
-        it != buffers.end(); it++){
+            printf("to_dedup %d", _buffers.size());
+
+        for(unordered_map<uint64_t, list< list<Chunk*> > >::iterator it = _buffers.begin() ; 
+        it != _buffers.end(); it++){
+            printf("sending\n");
             for(list< list<Chunk*> >::iterator it_bundle = (it->second).begin() ; it_bundle != (it->second).end(); it_bundle++){ 
                 size_t buffer_len = it_bundle->size() * DIGEST_LENGTH + uint64_s;
                 char buffer[ buffer_len ];

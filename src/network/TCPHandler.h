@@ -223,7 +223,6 @@ class TCPHandler{
         
         static void run_server(TCPServer* t){ t->run(); }
         
-        
         void send(msg_t _type, char* _data, uint64_t _length, const char* _host, unsigned int port){
             char* buffer = new char[_length + HEADER_LENGTH];           
             sprintf(buffer, "%" PRIu64 "", _length+HEADER_LENGTH);
@@ -236,7 +235,5 @@ class TCPHandler{
             
             write(pfds[1], "0", 1);     
         }
-        
-
 };
 #endif

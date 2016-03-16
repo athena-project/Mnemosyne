@@ -85,7 +85,7 @@ bool Block::load(){
     
 bool Block::store(){
     file = fopen(location.c_str(), "wb");
-    printf("storing_location %s\n", location.c_str());
+
     if( file == NULL)
         return false;
 

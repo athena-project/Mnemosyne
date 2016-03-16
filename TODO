@@ -1,4 +1,9 @@
 Features :
+    -> DIGEST_LENGTH => double de la taille necessaire
+    -> comparer LFU/LRU/ARC
+    -> supprimer les fuites mémoires de TCPHandler
+    -> suppression dans BNode
+    -> doc de BNode
     ->segmentation en bundle se fait par socket
     ->on commence a envoyé les hashs avant la fin de la segmentation, et on active le multitrheading pour la segmentation
     -> ARC au lieu de LRU??

@@ -14,10 +14,10 @@
 namespace fs = boost::filesystem;
 using namespace std;
 //~224Ko
-#define MAX_DIGESTS 3 //>2
+#define MAX_DIGESTS 200 //>2
 #define uint64_s sizeof(uint64_t)
-#define d 2 //strictement supérieur à 1
-#define CACHE_SIZE 1 //en block
+#define d 10 //strictement supérieur à 1
+#define CACHE_SIZE 100 //en block >=1
 
 class Block{
     protected:

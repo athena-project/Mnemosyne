@@ -10,14 +10,17 @@
 #include "../network/TCPHandler.h"
 #include "../utility/hash.cpp"
 #include "../hrw.cpp"
+#include "../index/DynamicIndex.h"
 
 using namespace std;
 
 
 class TCPMapServer : public TCPServer{
     protected:
-        unordered_map<string, bool>* chunks;
+        //unordered_map<string, bool>* chunks;
+        BTree* chunks;
         mutex* m_chunks;
+        
         unordered_map<string, bool>* objects;
         mutex* m_objects;
     
@@ -25,7 +28,7 @@ class TCPMapServer : public TCPServer{
         TCPMapServer(const char* port, int _pfd, std::atomic<bool>* _alive, 
         list<Task*>* _tasks, mutex* _m_tasks, 
         unordered_map<string, bool>* _objects, mutex* _m_objects,
-        unordered_map<string, bool>* _chunks, mutex* _m_chunks) : TCPServer(port, _pfd, _alive, _tasks, _m_tasks){
+        BTree* _chunks, mutex* _m_chunks) : TCPServer(port, _pfd, _alive, _tasks, _m_tasks){
             objects = _objects;
             m_objects = _m_objects;
             chunks = _chunks;
@@ -43,13 +46,14 @@ class MapServer : TCPHandler{
     protected:
         NodeMap* nodes = NULL; //3-replication
 
-        unordered_map<string, bool> chunks;
+        BTree chunks;
         mutex m_chunks;
+        
         unordered_map<string, bool> objects;
         mutex m_objects;
     
     public: 
-        MapServer(const char* port, NodeMap* _nodes);
+        MapServer(const char* port, NodeMap* _nodes, const char* path);
         ~MapServer();
         
         void run();
