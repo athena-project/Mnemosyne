@@ -41,7 +41,7 @@ void fct(MapServer* mp){ mp->run(); }
 
 int main(){
     BTree b("/home/severus/test_tmp");
-
+    b.recover();
     //b.add_digest("8b14eca05af22f19c4afffc0531a72bf2d11b63d15417ca14a475354");
     
     //b.add_digest("8b14eca05af22f19c4afaac0531a72bf2d11b63d17db7ca14a475354");
@@ -82,18 +82,18 @@ int main(){
     
     
     
-    ChunkFactory c("chunks_factory_conf.data");
-    vector<Chunk*> chunks;
-    c.split("/home/severus/Downloads/test_1.avi", chunks);
-    Timer t;
-    for(int i=0; i<chunks.size(); i++){
-        b.add_digest(chunks[i]->ptr_digest());
-        //delete chunks[i];
-    }
+    //ChunkFactory c("chunks_factory_conf.data");
+    //vector<Chunk*> chunks;
+    //c.split("/home/severus/Downloads/test_1.avi", chunks);
+    //Timer t;
+    //for(int i=0; i<chunks.size(); i++){
+        //b.add_digest(chunks[i]->ptr_digest());
+        ////delete chunks[i];
+    //}
     
-    for(int i=0; i<chunks.size(); i++){
-        b.remove_digest(chunks[i]->ptr_digest());
-        delete chunks[i];
-    }
-    cout<<t.elapsed()<<endl;
+    //for(int i=0; i<chunks.size(); i++){
+        //b.remove_digest(chunks[i]->ptr_digest());
+        //delete chunks[i];
+    //}
+    //cout<<t.elapsed()<<endl;
 }

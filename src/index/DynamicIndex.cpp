@@ -3,7 +3,7 @@
 /**
  *  Begin Block part
  */
-int Block::alpha_id = 1;
+uint64_t Block::alpha_id = 1;
 
 Block::Block(const char* _path, const char* data, uint64_t _size): name( Block::alpha_id++ ){
     path = _path;
@@ -65,6 +65,7 @@ Block* Block::split(){
 bool Block::load(bool degraded_mod){
     buffer = new char[ MAX_DIGESTS * DIGEST_LENGTH];
     file = fopen(location.c_str(), "rb"); 
+
     if( file == NULL)
         return false;
         
@@ -78,7 +79,7 @@ bool Block::load(bool degraded_mod){
     size = f / DIGEST_LENGTH;
 
     if( degraded_mod && size > 0)
-        memcpy(id, + buffer + (size-1) * DIGEST_LENGTH, DIGEST_LENGTH);
+        memcpy(id, buffer + (size-1) * DIGEST_LENGTH, DIGEST_LENGTH);
     
     
     fclose( file );
@@ -475,6 +476,39 @@ bool BNode::add_digest(const char* digest, LRU* cache){
     }
 }
 
+bool BNode::add_block(Block* block, const char* digest){
+    if( (size_b+size_c) == 0 ||  memcmp( digest, id, DIGEST_LENGTH) > 0 )
+        memcpy( id, digest, DIGEST_LENGTH);
+    
+    if( leaf ){
+        int pos_b = get_block_pos_s( digest );            
+        
+        if( size_b != 0)
+            memmove(&blocks[pos_b+1], &blocks[pos_b], (size_b-pos_b) * sizeof(Block*)); 
+            
+        blocks[pos_b] = block;
+        size_b++;
+        return true;
+    }else{
+        int pos_c = get_child_pos_s( digest );
+        
+        BNode* current_c = children[ pos_c ];
+        if( !current_c->add_block( block, digest) )
+            return false;
+
+        if( current_c->is_full()){
+            BNode* right = current_c->split();
+
+            if( size_c != 0 && pos_c!=2*d)
+                memmove(&children[pos_c+2], &children[pos_c+1], (size_c-pos_c-1) * sizeof(BNode*)); //+1 tjs garantie par la gestion de is_full
+
+            children[pos_c+1] = right;
+            size_c++;
+        }
+        return true;
+    }
+}
+
 void BNode::remove_block(int pos, LRU* cache){
     cache->remove( blocks[pos] );
     delete blocks[pos];
@@ -759,6 +793,31 @@ bool  BTree::remove_digest(const char* digest){
     //BTree* right = new BTree( path, right_root );
     //return right;
 //}
+
+bool BTree::recover(){
+    fs::directory_iterator end_iter;
+    Block* tmp = NULL;
+    char* tmp_name = NULL;
+    char* tmp_end = NULL;
+    
+    for( fs::directory_iterator dir_iter( fs_path ) ; dir_iter != end_iter ; ++dir_iter){
+        if( fs::is_regular_file(dir_iter->status()) ){
+            tmp_name = strdup(dir_iter->path().filename().string().c_str());
+            tmp_end  = tmp_name+sizeof(uint64_t);
+
+            tmp = new Block( path.c_str(), strtoull(tmp_name, &tmp_end, 0));
+            root->add_block( tmp, tmp->get_id());
+            if( root->is_full() ){
+                BNode* right = root->split();
+                BNode* left = root;
+                root = new BNode(path.c_str(), left, right);
+            }
+            
+            delete tmp_name;
+        }
+    }
+    return true;
+}
 
 void BTree::print(){
     root->print();

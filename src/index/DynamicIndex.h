@@ -43,7 +43,7 @@ class Block{
      * be aware that n is bounded by a small constant
      */
     protected:
-        static int alpha_id;
+        static uint64_t alpha_id;
         uint64_t name = 0;
     
         uint64_t size=0; // number of digests stored
@@ -60,6 +60,19 @@ class Block{
             init();
         }
         
+        /**
+         * Reconstruct data from file
+         */
+        Block(const char* _path, uint64_t _name) : name( _name){
+            Block::alpha_id = max( Block::alpha_id, _name+1); 
+            path = _path;
+            init();
+            
+            /// Recovery part
+            load( true );
+            clean();
+        }
+        
         Block(const char* path, const char* data, uint64_t _size);
         
         /**
@@ -68,8 +81,9 @@ class Block{
         inline void init(){
             char _name[sizeof(uint64_t)+1];
             _name[sizeof(uint64_t)]=0;
-            
+
             sprintf(_name, "%" PRIu64 "", name);     
+            location = (fs::path(path) / fs::path(_name)).string();
             location = (fs::path(path) / fs::path(_name)).string();
         }
         
@@ -385,6 +399,17 @@ class BNode{
          */
         bool add_digest(const char* digest, LRU* cache);
         
+        
+        /**
+         * Add block to the tree, used during the recovery phase
+         * Complexity : 
+         *      -Worst case O(m + MAX_DIGESTS + log n )
+         *      -Average case O(m/2 + MAX_DIGESTS/2 + log n)
+         * 
+         * @param digest    - id of the block   
+         */
+        bool add_block(Block* block, const char* digest);
+        
         /**
          * Delete block from the node 
          * Complexity :
@@ -535,10 +560,16 @@ class BTree{
         BNode* root = NULL;
         
         string path;
+        fs::path fs_path;
     public:
         BTree(){}
     
         BTree(string _path, BNode* _root=NULL) : path( _path ){
+            fs_path = fs::path( path);  
+            
+            if( !fs::exists(fs_path) || !fs::is_directory(fs_path))
+                throw "Can not create BTree : invalid path ";
+                
             root = ( _root == NULL ) ? new BNode(path.c_str()) : _root;
             
             cache = new LRU( CACHE_SIZE );
@@ -583,6 +614,11 @@ class BTree{
          */
         BTree* split_in_2(float ratio);
         
+        
+        /**
+         * Try recovering from data store on disk
+         */
+        bool recover();
         
         void print();
 };
