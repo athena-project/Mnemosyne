@@ -41,15 +41,7 @@ void fct(MapServer* mp){ mp->run(); }
 
 int main(){
     BTree b("/home/severus/test_tmp");
-    /// 1 < 2, 3<1
-    //b.add_digest("8b14eca05af22f19c4afffc0531a72bf2d11b63d17db7ca14a47534b"); 
-    ////std::cout<< b.exists_digest("8b14eca05af22f19c4afffc0531a72bf2d11b63d17db7ca14a47534b")<<std::endl;
-    
-    //b.add_digest("8b14eca05af22f19c4afffc0531a72bf2d11b63d17db7ca14a475354");
-    ////b.add_digest("8b14eca05af22f19c4afffc0531a72bf2d11b63d17db7ca14a475354");
-    ////b.add_digest("8b14eca05af22f19c4afffc0531a72bf2d11b63d17db7ca14a475354");
-    ////std::cout<< b.exists_digest("8b14eca05af22f19c4afffc0531a72bf2d11b63d17db7ca14a475354")<<std::endl;
-    
+
     //b.add_digest("8b14eca05af22f19c4afffc0531a72bf2d11b63d15417ca14a475354");
     
     //b.add_digest("8b14eca05af22f19c4afaac0531a72bf2d11b63d17db7ca14a475354");
@@ -74,7 +66,21 @@ int main(){
     
     //b.add_digest("ocd4eca05af22f19c4aff6c0531a73bf2d11b63d17db7ca14a475354");
     
-    //b.print();
+    //b.remove_digest("8b14eca05af22f19c4afffc0531a72bf2d11b63d15417ca14a475354");
+    //b.remove_digest("8b14eca05af22f19c4afaac0531a72bf2d11b63d17db7ca14a475354");
+    //b.remove_digest("8b14eca05af22f19c4afaac0531a73bf2d11b63d17db7ca14a475354");
+    //b.remove_digest("8b14eca05af21f19c4afffc0531a72bf2d11b63d15417ca14a475354");
+    //b.remove_digest("8b14ea5b5af22f19c4afaac0531a72bf2d11b63d17db7ca14a475354");
+    //b.remove_digest("8b14eca05af22f19c4aff6c0531a73bf2d11b63d17db7ca14a475354");
+    //b.remove_digest("9b14eca05af22f19c4afffc0531a72bf2d11b63d15417ca14a475354");
+    //b.remove_digest("0c14eca05af22f19c4afaac0531a72bf2d11b63d17db7ca14a475354");
+    //b.remove_digest("8b14eca05af21f19c4afffc0531a72bf2d11b63d15417ca14a475354");
+    //b.remove_digest("0cb4eca05af21f19c4afffc0531a72bf2d11b63d15417ca14a475354");
+    //b.remove_digest("0cc4ea5b5af22f19c4afaac0531a72bf2d11b63d17db7ca14a475354");
+    //b.remove_digest("ocd4eca05af22f19c4aff6c0531a73bf2d11b63d17db7ca14a475354");
+    
+    
+    
     
     ChunkFactory c("chunks_factory_conf.data");
     vector<Chunk*> chunks;
@@ -82,6 +88,11 @@ int main(){
     Timer t;
     for(int i=0; i<chunks.size(); i++){
         b.add_digest(chunks[i]->ptr_digest());
+        //delete chunks[i];
+    }
+    
+    for(int i=0; i<chunks.size(); i++){
+        b.remove_digest(chunks[i]->ptr_digest());
         delete chunks[i];
     }
     cout<<t.elapsed()<<endl;
