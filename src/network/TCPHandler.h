@@ -6,8 +6,9 @@
 #define MAX_SIZE_IN 65536
 
 //max send en même temps
-#define MAX_SOCKETS 500 
 #define EPOLL_TIMEOUT 1
+
+#define MAX_HADNLERS 200 //>1
 
 #define uint64_s sizeof(uint64_t)
 #define int_s sizeof(int)
@@ -25,6 +26,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <arpa/inet.h>
+#include <map>
 
 #include <thread>
 #include <atomic> 
@@ -50,20 +52,24 @@ enum msg_t{
 static const size_t HEADER_LENGTH = 2 * uint64_s;
 
 class Task{
+    protected:
+        size_t ttl = 64; //number of trying before stopping to do the task
+    
     public:     
         msg_t type;
         uint64_t length;
         char* data = NULL; //owned until transmit to handler
         bool data_owned = true;
         
-        const char* host;
-        unsigned int port;
+        const char* host = NULL ;
+        unsigned int port=0;
         
         Task(){}
         
         Task(msg_t _type, char* _data, uint64_t _length, const char* _host, 
-        unsigned int _port) : type(_type), data(_data), length(_length), 
-        host(_host), port(_port){}
+        unsigned int _port) : type(_type), data(_data), length(_length), port(_port), host(_host){
+            
+        }
             
         ~Task(){
             if( data_owned)
@@ -71,12 +77,24 @@ class Task{
         }
         
         char* steal_data(){ data_owned = false; return data; }
+        
+        void decr(){
+            ttl--;
+        }
+        
+        void print(){
+            printf("Tasks host:%s, port:%d\n", (host == NULL) ? "NULL" : host, port);
+        }
+        
+        bool is_dead(){ return ttl<=0; }
 };
 
 class Handler{
     protected:
-        int fd;
-        char * aplha;
+        int fd = -1;
+        char* host = NULL; //not owned ??
+        int port = -1;
+        
         char* in_data = NULL; //owned
         uint64_t in_offset = 0 ;
         uint64_t in_length = BUFF_SIZE ;
@@ -86,17 +104,40 @@ class Handler{
         uint64_t out_offset = 0;
         uint64_t out_length = 0;
         
+        bool busy = false;
+        
     public:
-        Handler(int _fd) : fd(_fd){
+        Handler(int _fd, const char* _host=NULL, int _port=-1) : fd(_fd), port(_port){
+            
+            if( _host != NULL){
+                printf("Handler host %s\n", _host);
+                host = strdup(_host);
+                printf("Handler copy host %s\n", host);
+            }
+
             in_data = new char[in_length];
         } 
         
-        ~Handler(){ 
+        ~Handler(){
+            if( fd > -1 ) 
+                close(fd );
+                            
+            if( host != NULL )
+                free(host); 
+            
             delete[] in_data;
             delete[] out_data;
         }
         
+        bool is_busy(){ return busy; }
+        bool set_busy(){ return busy = true; }
+        bool unset_busy(){ return busy = false; }
+        
+        void set_fd(int _fd){ fd = _fd; }
+        
         int get_fd(){ return fd; }
+        const char* get_host(){ return host; }
+        int get_port(){ return port; }
         
         msg_t get_int_type(){
             char* end = in_data + 2*uint64_s;
@@ -141,7 +182,32 @@ class Handler{
         int add_to_in(char* buf, int size);
         
         int out_write();
+        void clear_out();
         void clear();
+};
+
+class HandlerManager{
+    protected:
+        size_t max_number = MAX_HADNLERS;
+        map< pair<const char*, int>, Handler*> actives;
+        map< pair<const char*, int>, Handler*> passives;
+        
+    public:
+        HandlerManager(){}
+        
+        ~HandlerManager();
+        
+        pair<bool, Handler*> add(pair<const char*, int>key, bool create=true);
+        
+        bool exists(pair<const char*, int> key);
+        
+        void set_active(pair<const char*, int> key);
+        
+        void set_active(Handler* item);
+        
+        void set_passive(Handler* item);
+    
+        void remove(Handler* item);
 };
 
 class TCPServer{
@@ -158,8 +224,12 @@ class TCPServer{
         atomic<bool>* alive;
         list<Task*>* tasks;
         mutex* m_tasks;
+        
+        HandlerManager* handlerManager = NULL;
     public :
-        TCPServer(){}
+        TCPServer(){
+            handlerManager = new HandlerManager();
+        }
     
         TCPServer(const char* port, int _pfd, std::atomic<bool>* _alive, 
         list<Task*>* _tasks, mutex* _m_tasks);
@@ -167,6 +237,8 @@ class TCPServer{
         ~TCPServer(){
             if( events == NULL )
                 delete[] events;
+            
+            delete handlerManager;
             close (sfd);
             close( pfd);
         }
@@ -175,9 +247,7 @@ class TCPServer{
         bool unregister_event(Handler *handler);
     
         int create_and_bind (const char *port);
-
-        int make_non_blocking (int sfd);
-        
+                
         //called when new data to send
         void pcallback();
         
