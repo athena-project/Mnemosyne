@@ -22,7 +22,7 @@ using namespace std;
  * Should be between one undred and few thousands to fit the price ratio between
  * RAM and hard-disk
  */
-#define MAX_DIGESTS 3
+#define MAX_DIGESTS 200
 
 #define uint64_s sizeof(uint64_t)
 
@@ -30,12 +30,12 @@ using namespace std;
  * Number of children by node of the BTree will be between [d, 2*d]
  * Condition : d > 2, if(d=2 : we will obtained a binary tree)
  */
-#define d 2 //>1
+#define d 10 //>1
 
 /**
  * Number of blocks that can be loaded into cache( in RAM)
  */
-#define CACHE_SIZE 1 //en block >=1
+#define CACHE_SIZE 400 //en block >=1
 
 class Block{
     /**

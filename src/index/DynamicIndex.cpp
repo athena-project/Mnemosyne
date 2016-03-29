@@ -91,7 +91,7 @@ bool Block::load(bool degraded_mod){
 bool Block::store(){
     file = fopen(location.c_str(), "wb");
 
-    if( file == NULL)
+    if( file == NULL || buffer == NULL)
         return false;
 
     if( fwrite(buffer, 1, size * DIGEST_LENGTH, file) == -1){
