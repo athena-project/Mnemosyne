@@ -32,6 +32,7 @@ class TCPMapServer : public TCPServer{
             objects = _objects;
             m_objects = _m_objects;
             chunks = _chunks;
+            chunks->print();
             m_chunks = _m_chunks;
         }
         
@@ -46,7 +47,7 @@ class MapServer : TCPHandler{
     protected:
         NodeMap* nodes = NULL; //3-replication
 
-        BTree chunks;
+        BTree* chunks;
         mutex m_chunks;
         
         unordered_map<string, bool> objects;

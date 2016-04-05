@@ -15,7 +15,7 @@ void TCPClientServer::rcallback(Handler* handler, msg_t type){
  
     if( type == OBJECT){
         char exists = data[DIGEST_LENGTH];
-        
+
         m_objects->lock();
         objects->push_back( make_pair(digest_to_string(data), exists) );
         m_objects->unlock();
@@ -245,15 +245,19 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
     vector<Chunk*> chunks;
     unordered_map<string, Chunk*> chunks_map; 
     unordered_map<uint64_t, list< list<Chunk*> > > buffers; //node_id => chunks of this node
-
+    
+    Timer t1;
     cf->split(location, chunks);
-    buid_digests_unordered_map( chunks, chunks_map);
+    printf("Splitting into chunks %lf\n", t1.elapsed());
 
+    buid_digests_unordered_map( chunks, chunks_map);
     ///Send requests
     group_by_id( chunks, buffers);
 
+    Timer t2;
     for(unordered_map<uint64_t, list< list<Chunk*> > >::iterator it = buffers.begin() ; 
     it != buffers.end(); it++){
+        printf("bundle size %d\n", (it->second).size());
         for(list< list<Chunk*> >::iterator it_bundle = (it->second).begin() ; it_bundle != (it->second).end(); it_bundle++){ 
             size_t buffer_len = it_bundle->size() * DIGEST_LENGTH + uint64_s;
             char buffer[buffer_len];
@@ -265,14 +269,19 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
         }
     }
     buffers.clear();
+    printf("Sending chunks1 %lf\n", t2.elapsed());
     
+    Timer t3;
     if( !wait_objects( chunks.size() ) ){
         for(size_t i = 0; i<chunks.size() ; i++)
             delete chunks[i];
 
         return false;
     }
-
+    printf("Waiting chunks1 %lf\n", t2.elapsed());
+        
+        
+    Timer t4;
     ///Select chunks to dedup
     list<Chunk*> to_dedup;
     std::string tmp_digest;
@@ -289,7 +298,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
         objects.pop_front();
     }
     m_objects.unlock();
-
+    printf("dedup chunks %lf\n", t4.elapsed());
     ///Store chunks
     if( to_dedup.size() > 0){  
         if( to_dedup.front()->get_data() != NULL ){ ///Chunks' cache enable 
@@ -301,6 +310,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
             }
         }
         else{   ///Chunks' cache not enable : file too big
+            printf("not chunk cache\n");
             char *src;
             int fd = open(location, O_RDONLY);
             uint64_t size_file = size_of_file(fd);
@@ -320,7 +330,9 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
             munmap( src, size_file);
             close( fd );    
         }
-
+        printf("storgin and dedup chunks %lf\n", t4.elapsed());
+        
+        Timer t5;
         ///Send new chunk to sd
         unordered_map<uint64_t, list< list<Chunk*> > > _buffers;
         group_by_id( to_dedup, _buffers);
@@ -353,28 +365,31 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
                 delete chunks[i];
             return false;
         }
+            printf("Updating  %lf\n", t5.elapsed());
+
     }
     clear_objects();
-        
+    
+    Timer t6;
     if( !buildMetadata(name, file_digest, chunks, path_dir) ){
         for(size_t i = 0; i<chunks.size() ; i++)
             delete chunks[i];
         return false;
     }
-
+    printf("metadata building %lf\n", t6.elapsed());
     return true;
 }
 
 bool Client::load(const char* name, const char* location, fs::path path_dir){
-    vector<Chunk*> chunks;
-    char file_digest[ DIGEST_LENGTH ];
-    extractChunks( name, file_digest, chunks, path_dir);
     ofstream os( location, ios::binary);    
-    
     if( !os ){
         perror("Client::load");
         return false;
     }
+    
+    vector<Chunk*> chunks;
+    char file_digest[ DIGEST_LENGTH ];
+    extractChunks( name, file_digest, chunks, path_dir);
     
     char* buffer = static_cast<char*>(malloc(BUFFER_MAX_SIZE)); //because new failed
 
@@ -389,6 +404,9 @@ bool Client::load(const char* name, const char* location, fs::path path_dir){
     }
     os.close();
     free(buffer);
+    
+    for(size_t i=0 ; i<chunks.size() ; i++)
+        delete chunks[i];
     
     char restored_digest[ DIGEST_LENGTH ];
     if( !hashfile(location, restored_digest) ){

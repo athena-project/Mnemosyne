@@ -23,7 +23,7 @@
 namespace fs = boost::filesystem;
 using namespace std;
 
-#define BUNDLE_MAX_SIZE 100
+#define BUNDLE_MAX_SIZE 1000
 #define FILE_BUFFER 65536
 //nano seconde, 0.001s
 #define DELAY 1000000 

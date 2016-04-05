@@ -2,7 +2,7 @@
 #define MNEMOSYNE_NETWORK_TCPCLIENT_H
 
 #define MAXEVENTS 64
-#define BUFF_SIZE 8192
+#define BUFF_SIZE 16384
 #define MAX_SIZE_IN 65536
 
 //max send en même temps
@@ -61,12 +61,12 @@ class Task{
         char* data = NULL; //owned until transmit to handler
         bool data_owned = true;
         
-        const char* host = NULL ;
+        string host;
         unsigned int port=0;
         
         Task(){}
         
-        Task(msg_t _type, char* _data, uint64_t _length, const char* _host, 
+        Task(msg_t _type, char* _data, uint64_t _length, string _host, 
         unsigned int _port) : type(_type), data(_data), length(_length), port(_port), host(_host){
             
         }
@@ -83,7 +83,7 @@ class Task{
         }
         
         void print(){
-            printf("Tasks host:%s, port:%d\n", (host == NULL) ? "NULL" : host, port);
+            printf("%08X Tasks host:%s, port:%d\n", reinterpret_cast<intptr_t>(this), host.c_str(), port);
         }
         
         bool is_dead(){ return ttl<=0; }
@@ -92,7 +92,7 @@ class Task{
 class Handler{
     protected:
         int fd = -1;
-        char* host = NULL; //not owned ??
+        string host;
         int port = -1;
         
         char* in_data = NULL; //owned
@@ -108,22 +108,15 @@ class Handler{
         
     public:
         Handler(int _fd, const char* _host=NULL, int _port=-1) : fd(_fd), port(_port){
+            if( _host != NULL)
+                host = string(_host);
             
-            if( _host != NULL){
-                printf("Handler host %s\n", _host);
-                host = strdup(_host);
-                printf("Handler copy host %s\n", host);
-            }
-
             in_data = new char[in_length];
         } 
         
         ~Handler(){
             if( fd > -1 ) 
                 close(fd );
-                            
-            if( host != NULL )
-                free(host); 
             
             delete[] in_data;
             delete[] out_data;
@@ -134,9 +127,11 @@ class Handler{
         bool unset_busy(){ return busy = false; }
         
         void set_fd(int _fd){ fd = _fd; }
+        void set_host(string _host){ host = _host; }
+        void set_port(int _port){port = _port; }
         
         int get_fd(){ return fd; }
-        const char* get_host(){ return host; }
+        string get_host(){ return host; }
         int get_port(){ return port; }
         
         msg_t get_int_type(){
@@ -184,24 +179,28 @@ class Handler{
         int out_write();
         void clear_out();
         void clear();
+
+        void print(){
+            printf("%08X Handler host:%s, port:%d\n", reinterpret_cast<intptr_t>(this), host.c_str(), port);
+        }
 };
 
 class HandlerManager{
     protected:
         size_t max_number = MAX_HADNLERS;
-        map< pair<const char*, int>, Handler*> actives;
-        map< pair<const char*, int>, Handler*> passives;
+        map< pair<string, int>, Handler*> actives;
+        map< pair<string, int>, Handler*> passives;
         
     public:
         HandlerManager(){}
         
         ~HandlerManager();
         
-        pair<bool, Handler*> add(pair<const char*, int>key, bool create=true);
+        pair<bool, Handler*> add(pair<string, int>key, bool create=true);
         
-        bool exists(pair<const char*, int> key);
+        bool exists(pair<string, int> key);
         
-        void set_active(pair<const char*, int> key);
+        void set_active(pair<string, int> key);
         
         void set_active(Handler* item);
         
@@ -226,6 +225,8 @@ class TCPServer{
         mutex* m_tasks;
         
         HandlerManager* handlerManager = NULL;
+        Handler* main = NULL; //the server
+        Handler* p_handler = NULL;
     public :
         TCPServer(){
             handlerManager = new HandlerManager();
@@ -237,6 +238,12 @@ class TCPServer{
         ~TCPServer(){
             if( events == NULL )
                 delete[] events;
+            
+            if( main != NULL)
+                delete main;
+            
+            if( p_handler != NULL)
+                delete p_handler;
             
             delete handlerManager;
             close (sfd);
@@ -300,7 +307,7 @@ class TCPHandler{
             memcpy(buffer+HEADER_LENGTH, _data, _length);
             
             m_tasks.lock();
-            tasks.push_back( new Task(_type, buffer, _length+HEADER_LENGTH, _host, port) );
+            tasks.push_back( new Task(_type, buffer, _length+HEADER_LENGTH, string(_host), port) );
             m_tasks.unlock();
             
             write(pfds[1], "0", 1);     

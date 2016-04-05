@@ -23,6 +23,7 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
         handler->send(OBJECT, buff, DIGEST_LENGTH+1); //transfert ownership
         register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
     }else if( type == EXISTS_CHUNKS ){
+        //printf("Received\n");
         char* end = data + sizeof(uint64_t);
         uint64_t num = strtoull(data, &end, 0);
         
@@ -38,7 +39,6 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
         for(int i = 0 ; i<num; i++, data+=DIGEST_LENGTH, 
         pos += DIGEST_LENGTH + 1){
             memcpy(buffer + pos, data, DIGEST_LENGTH);
-                        
             buffer[pos + DIGEST_LENGTH] = chunks->exists_digest( data );
         }
         m_chunks->unlock();
@@ -60,7 +60,7 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
         register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
     }
     else if( type == ADD_CHUNKS ){
-        printf("addig chunks\n");
+        //printf("addig chunks\n");
         char* end = data + uint64_s;
         uint64_t num = strtoull(data, &end, 0);
         
@@ -82,20 +82,20 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
 }
 
 MapServer::MapServer(const char* port, NodeMap* _nodes, const char* path) : nodes(_nodes){
-    chunks = BTree( path );
-        printf("path_%s\n", path);
-
+    chunks = new BTree( path );
     pipe(pfds);
     alive.store(true,std::memory_order_relaxed); 
     
     server = new TCPMapServer(port, pfds[0], &alive, &tasks, &m_tasks,
-    &objects, &m_objects, &chunks, &m_chunks);
+    &objects, &m_objects, chunks, &m_chunks);
     
     t_server = std::thread( run_server,server );
     t_server.detach();
 } 
 
-MapServer::~MapServer(){}
+MapServer::~MapServer(){
+    delete chunks;
+    }
 
 void MapServer::run(){
     while( true ){
