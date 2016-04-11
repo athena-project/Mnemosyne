@@ -51,7 +51,7 @@ int set_keepalive(int sfd){
     return true;
 }
 
-Handler* create_handler(const char* host, int port){
+int create_socket(const char* host, int port){
     printf("host %s, port %d\n", host, port);
     
     ///Create sending socket
@@ -80,7 +80,11 @@ Handler* create_handler(const char* host, int port){
         return NULL;
     }
     
-    return new Handler(sockfd);
+    return sockfd;
+}
+
+Handler* create_handler(const char* host, int port){
+    return new Handler(create_socket(host, port));
 }
 
 /**
@@ -318,7 +322,7 @@ void TCPServer::pcallback(){
     for(size_t i=0; i<tasks->size(); i++){
         task = tasks->front();
         tasks->pop_front();
-         task->print();
+        task->print();
         bool exists = handlerManager->exists( pair<const char*, int>(task->host, task->port) );
         pair<bool, Handler*> data = handlerManager->add( pair<const char*, int>(task->host, task->port) );
         
@@ -445,8 +449,14 @@ int TCPServer::run(){
 
                     s = handler->add_to_in(buf, count);
                     if(s == -1){
-                        perror("write");
-                        abort();
+                        if( handler->decr_retries() != 0){
+                            int new_fd = create_socket(handler->get_host(), handler->get_port());
+                            handler->set_fd( new_fd);
+                            register_event( handler, EPOLLIN | EPOLLET, EPOLL_CTL_MOD);
+                        }else{
+                            unregister_event( handler );
+                            perror("write");
+                        }
                     }
                 }
                 
@@ -468,8 +478,14 @@ int TCPServer::run(){
                     }
                    
                 }else if(-1 == ret){ //error
-                    perror("write");
-                    unregister_event( handler );
+                    if( handler->decr_retries() != 0){
+                        int new_fd = create_socket(handler->get_host(), handler->get_port());
+                        handler->set_fd( new_fd);
+                        register_event( handler, EPOLLOUT | EPOLLET, EPOLL_CTL_MOD);
+                    }else{
+                        unregister_event( handler );
+                        perror("write");
+                    }
                 }else{ //entire data was written          
                     wcallback( handler, handler->get_out_type() );
                 }
