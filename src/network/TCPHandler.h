@@ -36,6 +36,8 @@
 #include <time.h>
 #include <string>
 
+#include <iostream>
+
 using namespace std;
 
 enum msg_t{
@@ -105,6 +107,8 @@ class Handler{
         uint64_t out_length = 0;
         
         bool busy = false;
+        int retries =3; //number retries if failed
+        const int max_retries = 3;
         
     public:
         Handler(int _fd, const char* _host=NULL, int _port=-1) : fd(_fd), port(_port){
@@ -126,7 +130,12 @@ class Handler{
         bool set_busy(){ return busy = true; }
         bool unset_busy(){ return busy = false; }
         
-        void set_fd(int _fd){ fd = _fd; }
+        void set_fd(int _fd){
+            if( fd != -1)
+                close(fd);
+            retries = max_retries;
+            fd = _fd; 
+        }
         void set_host(string _host){ host = _host; }
         void set_port(int _port){port = _port; }
         
@@ -141,6 +150,9 @@ class Handler{
         char* get_in_data(){ return in_data+HEADER_LENGTH; }
         uint64_t get_in_length(){ return in_length; }
         uint64_t get_in_offset(){ return in_offset; }
+                
+        int incr_retries(){ return retries++; }
+        int decr_retries(){ return retries--; }
                 
         //Transfert ownership;
         void set_out_data(msg_t _type, char* _data, uint64_t _length){ 

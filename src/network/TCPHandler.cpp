@@ -51,7 +51,10 @@ int set_keepalive(int sfd){
     return true;
 }
 
-Handler* create_handler(const char* host, int port){
+
+int create_socket(const char* host, int port){
+    printf("host %s, port %d\n", host, port);
+    
     ///Create sending socket
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in addr;
@@ -78,7 +81,11 @@ Handler* create_handler(const char* host, int port){
         return NULL;
     }
     
-    return new Handler(sockfd, host, port);
+    return sockfd;
+}
+
+Handler* create_handler(const char* host, int port){
+    return new Handler(create_socket(host, port), host, port);
 }
 
 /**
@@ -140,15 +147,20 @@ HandlerManager::~HandlerManager(){
 
 pair<bool, Handler*> HandlerManager::add(pair<string, int> key, bool create){
     if( passives.find(key) != passives.end() ){
+
+        for(map< pair<string, int>, Handler*>::iterator it=passives.begin(); it!=passives.end(); it++)
+            std::cout<<"passives "<<it->first.first<<" "<<it->first.second<<"  "<<reinterpret_cast<intptr_t>(it->second)<<std::endl;
+        std::cout<<"key "<<key.first<<" "<<key.second<<std::endl;
         set_active(key);
-        //printf("sending from passive\n");
+        printf("sending from passive\n");
         //actives[key]->print();
+
         return pair<bool, Handler*>(true, actives[key] );
     }
 
     if( actives.find(key) != actives.end() )
         return pair<bool, Handler*>(true, NULL); //we have to wait
-    //printf("add %08X host %s, port %d\n", reinterpret_cast<intptr_t>(this), key.first.c_str(), key.second);
+    printf("add %08X host %s, port %d\n", reinterpret_cast<intptr_t>(this), key.first.c_str(), key.second);
 
     if( actives.size() >= max_number && passives.size() == 0)
         return pair<bool, Handler*>(true, NULL); //we have to wait
@@ -167,6 +179,8 @@ pair<bool, Handler*> HandlerManager::add(pair<string, int> key, bool create){
         handler = new Handler(-1);
     
     actives[ key ] = handler;
+    if(actives[key]==NULL)
+        abort();
     return pair<bool, Handler*>(true, handler);
 }
 
@@ -185,13 +199,12 @@ void HandlerManager::set_active(Handler* item){
 }
 
 void HandlerManager::set_passive(Handler* item){
-    //printf("Set passive |%s| %d\n", item->get_host().c_str(), item->get_port());
+    printf("Set passive |%s| %d %ull\n", item->get_host().c_str(), item->get_port(), reinterpret_cast<intptr_t>(item));
     item->clear();
     
     pair<string, int> key(item->get_host(), item->get_port());
-    passives[ key ] = actives[ key ];
+    passives[ key ] = item;
     actives.erase( key );
-    passives[ key ];
 }
 
 void HandlerManager::remove(Handler* item){
@@ -273,7 +286,7 @@ bool TCPServer::unregister_event(Handler *handler){
         perror("unregister_event");
         handlerManager->remove(handler);
         return false;
-    }
+    }printf("unregister_event\n\n");
     
     handlerManager->remove(handler);
     return true;
@@ -326,14 +339,18 @@ void TCPServer::pcallback(){
     for(size_t i=0; i<tasks->size(); i++){
         task = tasks->front();
         tasks->pop_front();
+
+        //task->print();
+        //bool exists = handlerManager->exists( pair<const char*, int>(task->host, task->port) );
+        //pair<bool, Handler*> data = handlerManager->add( pair<const char*, int>(task->host, task->port) );
         
         bool exists = handlerManager->exists( pair<string, int>(task->host, task->port) );
         pair<bool, Handler*> data = handlerManager->add( pair<string, int>(task->host, task->port) );
         if( !data.first ){
             delete task;
             continue;
-        }
-        
+        }               
+
         if( data.second == NULL ){
                     //task->print();
 
@@ -345,7 +362,7 @@ void TCPServer::pcallback(){
 
         (data.second)->set_out_data( task->type, task->steal_data(), task->length );
         delete task;
-        
+        printf("Sending\n\n");
         register_event( data.second, EPOLLOUT, exists ? EPOLL_CTL_MOD : EPOLL_CTL_ADD);
     }
    
@@ -359,7 +376,7 @@ void TCPServer::wcallback(Handler* handler, msg_t type){
 }
 
 void TCPServer::rcallback(Handler* handler, msg_t type){    
-    //printf("unregistrering in rcall\n");
+    printf("unregistrering in rcall\n");
     register_event(handler, EPOLLIN, EPOLL_CTL_MOD);
     handlerManager->set_passive( handler );
 
@@ -395,7 +412,8 @@ int TCPServer::run(){
                 if( pfd != handler->get_fd() ){
                     unregister_event( handler );
                 }
-            }else if(   pfd == handler->get_fd() ){             
+            }else if(   pfd == handler->get_fd() ){
+                printf("We will send something\n\n");            
                 char buf[32];
                 while( read(pfd, buf, sizeof buf) == sizeof(buf) ){}
                 pcallback();
@@ -459,8 +477,15 @@ int TCPServer::run(){
 
                     s = handler->add_to_in(buf, count);
                     if(s == -1){
-                        perror("write");
-                        abort();
+                        printf("failed in\n\n");
+                        if( handler->decr_retries() != 0){
+                            int new_fd = create_socket(handler->get_host().c_str(), handler->get_port());
+                            handler->set_fd( new_fd);
+                            register_event( handler, EPOLLIN | EPOLLET, EPOLL_CTL_MOD);
+                        }else{
+                            unregister_event( handler );
+                            perror("write");
+                        }
                     }
                 }
                 
@@ -482,10 +507,18 @@ int TCPServer::run(){
                     }
                    
                 }else if(-1 == ret){ //error
-                    perror("write");
-                    unregister_event( handler );
-                }else{ //entire data was written      
-                    handler->clear_out();    
+                                            printf("failed out\n\n");
+
+                    if( handler->decr_retries() != 0){
+                        int new_fd = create_socket(handler->get_host().c_str(), handler->get_port());
+                        handler->set_fd( new_fd);
+                        register_event( handler, EPOLLOUT | EPOLLET, EPOLL_CTL_MOD);
+                    }else{
+                        unregister_event( handler );
+                        perror("write");
+                    }
+                }else{ //entire data was written          
+                    handler->clear_out();
                     wcallback( handler, handler->get_out_type() );
                 }
             }else{
