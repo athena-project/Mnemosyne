@@ -83,6 +83,17 @@ void Client::clear_objects(){
     m_objects.unlock();
 }
 
+void Client::dedup_chunks(vector<Chunk*>& chunks, vector<Chunk*>& local_chunks){
+    unordered_map<string, bool> mem_chunks;
+    
+    vector<Chunk*>::iterator it = chunks.begin();
+    for(; it<chunks.end() ; it++){
+        if( mem_chunks.find( (*it)->str_digest() ) == mem_chunks.end()){
+            mem_chunks[ (*it)->str_digest() ] = true;
+            local_chunks.push_back(*it);
+        }
+    }
+}
 
 ///agregate digest in : sizedigest1digest2....
 void Client::build_digests(list<Chunk*>& chunks, char* digests){
@@ -242,13 +253,18 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
     if( dedup_by_file(location, file_digest) )
         return true;
 
+    vector<Chunk*> former_chunks;
     vector<Chunk*> chunks;
     unordered_map<string, Chunk*> chunks_map; 
     unordered_map<uint64_t, list< list<Chunk*> > > buffers; //node_id => chunks of this node
     
     Timer t1;
-    cf->split(location, chunks);
+    cf->split(location, former_chunks);
+    printf("Number chuns1 : %d\n", former_chunks.size());
     printf("Splitting into chunks %lf\n", t1.elapsed());
+
+    dedup_chunks( former_chunks, chunks );
+    printf("Number chuns2 : %d\n", chunks.size());
 
     buid_digests_unordered_map( chunks, chunks_map);
     ///Send requests
@@ -310,7 +326,6 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
             }
         }
         else{   ///Chunks' cache not enable : file too big
-            printf("not chunk cache\n");
             char *src;
             int fd = open(location, O_RDONLY);
             uint64_t size_file = size_of_file(fd);
@@ -371,7 +386,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
     clear_objects();
     
     Timer t6;
-    if( !buildMetadata(name, file_digest, chunks, path_dir) ){
+    if( !buildMetadata(name, file_digest, former_chunks, path_dir) ){
         for(size_t i = 0; i<chunks.size() ; i++)
             delete chunks[i];
         return false;

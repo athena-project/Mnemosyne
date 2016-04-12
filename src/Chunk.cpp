@@ -131,7 +131,6 @@ void ChunkFactory::chunksIndex(vector<Chunk*>& index){
     buffer_size=update_buffer();
     shift();
         
-    uint64_t begin = 0;
     ///Body
     for( ; i<buffer_size || (i=0, buffer_size=update_buffer()) ; (i++, current++, size++)){
         if( (size > MIN_LENGTH) && (hf->hashvalue == 0 || size>=MAX_LENGTH) ){ /// p = 1/2^AVERAGE_LENGTH
@@ -174,6 +173,14 @@ void ChunkFactory::split(const char* location, vector<Chunk*>& chunks){
     close( fd );    
 }
 
+//void ChunkFactory::next(vector<Chunk*>& chunks, size_t size){
+    //is.open(location, ios::binary);
+    //if( !is )
+        //perror("ChunkFactory::split");
+        
+    //if 
+//}
+
 void ChunkFactory::save(const char* location){
     saveIntoFile(location);
 }
@@ -196,3 +203,18 @@ pair<Chunk, Chunk> min_2(vector<Chunk>& chunks){
     
     return pair<Chunk, Chunk>( min1, min2 );
 }
+
+
+///// Begin ChunkIterator
+//ChunkIterator::ChunkIterator(const char* location, const char* _file) : file(_file){
+    //factory = new ChunkFactory( location );
+//}
+
+//ChunkIterator::~ChunkIterator(){
+    //if( factory != NULL )
+        //delete factory;
+//}
+
+//void next(vector<Chunk*>&  chunks, size_t size){
+    
+//}

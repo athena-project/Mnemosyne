@@ -28,8 +28,7 @@
 #define BUFFER_MAX_SIZE (1<<24)
 
 ///taille max d'un fichier completement conserver en mémoire, 1Mo
-#define CACHING_THRESHOLD 1048576
-//#define CACHING_THRESHOLD 10485760
+#define CACHING_THRESHOLD (1<<24)
 
 #define uint64_s sizeof(uint64_t)
 using namespace std;
@@ -75,11 +74,12 @@ class Chunk{
         void serialize(char* buff);
 };
 
-class ChunkFactory{
+class ChunkFactory{ //one chunk factory for one file
     protected:
         uint32 buffer_size = 0;
         uint32 i =0; ///position buffer
 
+        uint64 begin=0; /// pos of the begnning of the current chunk
         uint64 current=0;///position dans le fichier
         uint64 size=0; ///taille du chunk courant
         char* buffer = NULL;
@@ -109,5 +109,16 @@ class ChunkFactory{
         void split(const char* location, vector<Chunk*>& chunks);
         
         void save(const char* location);
+};
+
+class ChunkIterator{
+    protected:
+        ChunkFactory* factory = NULL;
+        const char* file =""; // file to dedup
+    public:
+        ChunkIterator(const char* location, const char* file);
+        ~ChunkIterator();
+        
+        void next(vector<Chunk*>&  chunks, size_t size);
 };
 #endif

@@ -75,6 +75,11 @@ class Client : public TCPHandler{
         
         void clear_objects();
         
+        /**
+         * Local dedup du ficier
+         */
+        void dedup_chunks(vector<Chunk*>& chunks, vector<Chunk*>& local_chunks);
+        
         ///agregate digest in : sizedigest1digest2....
         void build_digests(list<Chunk*>& chunks, char* digests);
         
