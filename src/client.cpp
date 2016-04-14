@@ -10,23 +10,23 @@ namespace fs = boost::filesystem;
 void fct(MapServer* mp){ mp->run(); }
 
 int main(){
-    NodeMap map(1);
+    NodeMap map(2);
 
-    map.add_node(new Node(55, 1987, "127.0.1.1") );
-    map.add_node(new Node(575, 1988, "127.0.1.1") );
-    map.add_node(new Node(4, 1989, "127.0.1.1") );
+    map.add_node(new Node(55, 19817, "127.0.1.1") );
+    map.add_node(new Node(575, 19818, "127.0.1.1") );
+    map.add_node(new Node(4, 19819, "127.0.1.1") );
 
     Client client("1926", &map);
     free( malloc( 1<< 24) );
-    MapServer ms1("1987", &map, "/home/severus/test_tmp/1");
-    MapServer ms2("1988", &map, "/home/severus/test_tmp/2");   
-    MapServer ms3("1989", &map, "/home/severus/test_tmp/3");
+    MapServer ms1("19817", &map, "/home/severus/test_tmp/1");
+    MapServer ms2("19818", &map, "/home/severus/test_tmp/2");   
+    MapServer ms3("19819", &map, "/home/severus/test_tmp/3");
     
     std::thread t1(fct, &ms1);
     std::thread t2(fct, &ms2);
     std::thread t3(fct, &ms3);
     
-    if( client.save_bench("a1", "/home/severus/Downloads/test_1.dup", fs::path("/home/severus/test_storage")) )
+    if( client.save_bench("a1", "/home/severus/Downloads/test_1.pdf", fs::path("/home/severus/test_storage")) )
         cout<<"a1 - saved successfully"<<endl;
     else
         cout<<"a1 - saved error"<<endl;
@@ -86,7 +86,9 @@ int main(){
     
     //ChunkFactory c("chunks_factory_conf.data");
     //vector<Chunk*> chunks;
-    //c.split("/home/severus/Downloads/test_1.avi", chunks);
+    //while( c.next("/home/severus/Downloads/test_1.pdf", chunks, 10) ){
+        
+        //printf("fqsdf\n");}
     //printf("Nbr chunks %d\n", chunks.size());
     //Timer t;
     //for(int i=0; i<chunks.size(); i++){

@@ -86,7 +86,15 @@ class ChunkFactory{ //one chunk factory for one file
 
         //FastList window;
         UltraFastWindow *window = NULL;
+        
         ifstream is;
+        int fd = 0;
+        char* src;
+        char* ptr_src;
+        uint64_t size_file;
+        size_t i_split = 0;
+        
+        bool loaded = false; /// if file opened
 
         KarpRabinHash<uint64>* hf = NULL;
     public:
@@ -104,9 +112,11 @@ class ChunkFactory{ //one chunk factory for one file
         
         bool shift();
         
-        void chunksIndex(vector<Chunk*>& index);
+        bool chunksIndex(vector<Chunk*>& index, size_t number);
         
-        void split(const char* location, vector<Chunk*>& chunks);
+        bool split(const char* location, vector<Chunk*>& chunks, size_t number);
+        
+        bool next(const char* location, vector<Chunk*>& chunks, size_t size);
         
         void save(const char* location);
 };

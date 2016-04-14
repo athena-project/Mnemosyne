@@ -78,13 +78,14 @@ class Client : public TCPHandler{
         /**
          * Local dedup du ficier
          */
-        void dedup_chunks(vector<Chunk*>& chunks, vector<Chunk*>& local_chunks);
+        void dedup_chunks(vector<Chunk*>& chunks, vector<Chunk*>& local_chunks, 
+        unordered_map<string, bool>& mem_chunks, size_t begin);
         
         ///agregate digest in : sizedigest1digest2....
         void build_digests(list<Chunk*>& chunks, char* digests);
         
         void buid_digests_unordered_map(vector<Chunk*>& chunks, unordered_map<string, Chunk*>& unordered_map);
-        void group_by_id(vector<Chunk*>& chunks, unordered_map<uint64_t, list< list<Chunk*> > >& buffers);
+        void group_by_id(vector<Chunk*>& chunks, unordered_map<uint64_t, list< list<Chunk*> > >& buffers, size_t begin);
         void group_by_id(list<Chunk*>& chunks, unordered_map<uint64_t, list< list<Chunk*> > >& buffers);
         ///n act as a condition
         bool wait_objects(int n);

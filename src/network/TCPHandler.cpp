@@ -148,11 +148,11 @@ HandlerManager::~HandlerManager(){
 pair<bool, Handler*> HandlerManager::add(pair<string, int> key, bool create){
     if( passives.find(key) != passives.end() ){
 
-        for(map< pair<string, int>, Handler*>::iterator it=passives.begin(); it!=passives.end(); it++)
-            std::cout<<"passives "<<it->first.first<<" "<<it->first.second<<"  "<<reinterpret_cast<intptr_t>(it->second)<<std::endl;
-        std::cout<<"key "<<key.first<<" "<<key.second<<std::endl;
+        //for(map< pair<string, int>, Handler*>::iterator it=passives.begin(); it!=passives.end(); it++)
+            //std::cout<<"passives "<<it->first.first<<" "<<it->first.second<<"  "<<reinterpret_cast<intptr_t>(it->second)<<std::endl;
+        //std::cout<<"key "<<key.first<<" "<<key.second<<std::endl;
         set_active(key);
-        printf("sending from passive\n");
+        //printf("sending from passive\n");
         //actives[key]->print();
 
         return pair<bool, Handler*>(true, actives[key] );
@@ -160,7 +160,7 @@ pair<bool, Handler*> HandlerManager::add(pair<string, int> key, bool create){
 
     if( actives.find(key) != actives.end() )
         return pair<bool, Handler*>(true, NULL); //we have to wait
-    printf("add %08X host %s, port %d\n", reinterpret_cast<intptr_t>(this), key.first.c_str(), key.second);
+    //printf("add %08X host %s, port %d\n", reinterpret_cast<intptr_t>(this), key.first.c_str(), key.second);
 
     if( actives.size() >= max_number && passives.size() == 0)
         return pair<bool, Handler*>(true, NULL); //we have to wait
@@ -199,12 +199,13 @@ void HandlerManager::set_active(Handler* item){
 }
 
 void HandlerManager::set_passive(Handler* item){
-    printf("Set passive |%s| %d %ull\n", item->get_host().c_str(), item->get_port(), reinterpret_cast<intptr_t>(item));
+    //printf("Set passive |%s| %d %ull\n", item->get_host().c_str(), item->get_port(), reinterpret_cast<intptr_t>(item));
     item->clear();
     
     pair<string, int> key(item->get_host(), item->get_port());
     passives[ key ] = item;
     actives.erase( key );
+    passives[ key ];
 }
 
 void HandlerManager::remove(Handler* item){
@@ -362,7 +363,7 @@ void TCPServer::pcallback(){
 
         (data.second)->set_out_data( task->type, task->steal_data(), task->length );
         delete task;
-        printf("Sending\n\n");
+        //printf("Sending\n\n");
         register_event( data.second, EPOLLOUT, exists ? EPOLL_CTL_MOD : EPOLL_CTL_ADD);
     }
    
@@ -376,7 +377,7 @@ void TCPServer::wcallback(Handler* handler, msg_t type){
 }
 
 void TCPServer::rcallback(Handler* handler, msg_t type){    
-    printf("unregistrering in rcall\n");
+    //printf("unregistrering in rcall\n");
     register_event(handler, EPOLLIN, EPOLL_CTL_MOD);
     handlerManager->set_passive( handler );
 

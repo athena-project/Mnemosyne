@@ -60,10 +60,10 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
         register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
     }
     else if( type == ADD_CHUNKS ){
-        //printf("addig chunks\n");
         char* end = data + uint64_s;
         uint64_t num = strtoull(data, &end, 0);
-        
+                //printf("adding chunks %d\n", num);
+
         char *buff = new char[ DIGEST_LENGTH * num + HEADER_LENGTH + uint64_s];
         memcpy(buff + HEADER_LENGTH, data, DIGEST_LENGTH * num + uint64_s);
 
@@ -95,7 +95,7 @@ MapServer::MapServer(const char* port, NodeMap* _nodes, const char* path) : node
 
 MapServer::~MapServer(){
     delete chunks;
-    }
+}
 
 void MapServer::run(){
     while( true ){
