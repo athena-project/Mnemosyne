@@ -51,7 +51,6 @@ int set_keepalive(int sfd){
     return true;
 }
 
-
 int create_socket(const char* host, int port){
     printf("host %s, port %d\n", host, port);
     
@@ -94,14 +93,18 @@ Handler* create_handler(const char* host, int port){
 int Handler::add_to_in(char* buf, int size){
     //printf("addign %d\n", size);
     if( in_offset+size > in_length){
-        if( 2*in_length > MAX_SIZE_IN )
-            return -1;
-        
+        if( 2*in_length > MAX_SIZE_IN ){
+            printf("realloc failed 1 for %d\n", in_length<<1);
+            return -2;
+        }
         //char* tmp = new char[ 2 * in_length ];
         //printf("try_alloc %d\n", 2 * in_length);
         char* tmp = static_cast<char*>(realloc(in_data, in_length<<1 ));
-        if( tmp == NULL )
+        
+        if( tmp == NULL ){
+            printf("realloc failed for %d\n", in_length<<1);
             return -1;
+        }
        
         in_data = tmp;
         in_length = in_length << 1;
@@ -414,7 +417,7 @@ int TCPServer::run(){
                     unregister_event( handler );
                 }
             }else if(   pfd == handler->get_fd() ){
-                printf("We will send something\n\n");            
+                //printf("We will send something\n\n");            
                 char buf[32];
                 while( read(pfd, buf, sizeof buf) == sizeof(buf) ){}
                 pcallback();
@@ -485,9 +488,10 @@ int TCPServer::run(){
                             register_event( handler, EPOLLIN | EPOLLET, EPOLL_CTL_MOD);
                         }else{
                             unregister_event( handler );
-                            perror("write");
+                            perror("read");
                         }
-                    }
+                    }else if( s==-2)
+                        perror("Cannot read, to much data");
                 }
                 
                 if(done){

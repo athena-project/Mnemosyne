@@ -217,18 +217,3 @@ pair<Chunk, Chunk> min_2(vector<Chunk>& chunks){
     
     return pair<Chunk, Chunk>( min1, min2 );
 }
-
-
-///// Begin ChunkIterator
-//ChunkIterator::ChunkIterator(const char* location, const char* _file) : file(_file){
-    //factory = new ChunkFactory( location );
-//}
-
-//ChunkIterator::~ChunkIterator(){
-    //if( factory != NULL )
-        //delete factory;
-//}
-
-//void next(vector<Chunk*>&  chunks, size_t size){
-    
-//}

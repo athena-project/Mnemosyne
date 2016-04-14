@@ -1,12 +1,19 @@
 #include "Client.h"
 
 void TCPClientServer::wcallback(Handler* handler, msg_t type){
+    //if( type == EXISTS_OBJECT || type == EXISTS_CHUNKS || type == ADD_CHUNKS || 
+    //type == ADD_OBJECT ){
+        //handler->clear();
+        //printf("registered\n");
+        ////register_event(handler, EPOLLIN, EPOLL_CTL_MOD);
+        //TCPServer::rcallback(handler, type);
+    //}else{
+        //TCPServer::wcallback(handler, type);
+    //}
     if( type == EXISTS_OBJECT || type == EXISTS_CHUNKS || type == ADD_CHUNKS || 
     type == ADD_OBJECT ){
         handler->clear();
-        printf("registered\\\\\\\\\n");
-        //register_event(handler, EPOLLIN, EPOLL_CTL_MOD);
-        TCPServer::rcallback(handler, type);
+        register_event(handler, EPOLLIN, EPOLL_CTL_MOD); //reste actif
     }else{
         TCPServer::wcallback(handler, type);
     }
@@ -196,6 +203,7 @@ bool Client::wait_objects(int n){
         m_objects.unlock();        
     }
     
+    printf("last_n %d, vs n %d\n", last_n, n);
     return last_n == n;
 }
 
@@ -270,7 +278,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
     unordered_map<uint64_t, list< list<Chunk*> > > buffers; //node_id => chunks of this node
     
     int pos =0;
-    while( cf->next(location, former_chunks, 1000) ){
+    while( cf->next(location, former_chunks, 3000) ){
                     //printf("former_chunks_size %d\n", former_chunks.size() );
 
         dedup_chunks(former_chunks, chunks, mem_chunks, pos);
@@ -280,10 +288,10 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
 
         for(unordered_map<uint64_t, list< list<Chunk*> > >::iterator it = buffers.begin() ; 
         it != buffers.end(); it++){
-            //printf("bundle size %d\n", (it->second).size());
             for(list< list<Chunk*> >::iterator it_bundle = (it->second).begin() ; it_bundle != (it->second).end(); it_bundle++){ 
                 size_t buffer_len = it_bundle->size() * DIGEST_LENGTH + uint64_s;
                 char buffer[buffer_len];
+            printf("bundle size %d\n", it_bundle->size());
 
                 build_digests( *it_bundle, buffer);
 
@@ -294,7 +302,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
         }
         
         buffers.clear();
-        pos += 1000;
+        pos += 3000;
     }
     printf("former_chunks_size %d\n", former_chunks.size() );
     buid_digests_unordered_map(chunks, chunks_map);
@@ -332,7 +340,7 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
     if( !wait_objects( chunks.size() ) ){
         for(size_t i = 0; i<former_chunks.size() ; i++)
             delete former_chunks[i];
-
+        printf("fucked!!!\n");
         return false;
     }
     printf("Waiting chunks1 %lf\n", t3.elapsed());
@@ -400,13 +408,14 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
             for(list< list<Chunk*> >::iterator it_bundle = (it->second).begin() ; it_bundle != (it->second).end(); it_bundle++){ 
                 size_t buffer_len = it_bundle->size() * DIGEST_LENGTH + uint64_s;
                 char buffer[ buffer_len ];
-                
+                printf("bundle size for long terme storing %d\n", it_bundle->size());
                 build_digests( *it_bundle, buffer);
                 populate_additions( *it_bundle );
               
                 Node* node = nodes->get_node( it->first );
                 //printf("sending new chunks to %s, %d", node->get_host(), node->get_port());
                 send(ADD_CHUNKS, buffer, buffer_len, node->get_host(), node->get_port());
+                //for(int k=0; k<100;k++){}
             }
         }
         _buffers.clear();

@@ -120,15 +120,4 @@ class ChunkFactory{ //one chunk factory for one file
         
         void save(const char* location);
 };
-
-class ChunkIterator{
-    protected:
-        ChunkFactory* factory = NULL;
-        const char* file =""; // file to dedup
-    public:
-        ChunkIterator(const char* location, const char* file);
-        ~ChunkIterator();
-        
-        void next(vector<Chunk*>&  chunks, size_t size);
-};
 #endif

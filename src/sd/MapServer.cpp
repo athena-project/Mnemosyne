@@ -23,7 +23,7 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
         handler->send(OBJECT, buff, DIGEST_LENGTH+1); //transfert ownership
         register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
     }else if( type == EXISTS_CHUNKS ){
-        //printf("Received\n");
+        printf("Received\n");
         char* end = data + sizeof(uint64_t);
         uint64_t num = strtoull(data, &end, 0);
         
@@ -62,7 +62,7 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
     else if( type == ADD_CHUNKS ){
         char* end = data + uint64_s;
         uint64_t num = strtoull(data, &end, 0);
-                //printf("adding chunks %d\n", num);
+                printf("adding chunks %d\n", num);
 
         char *buff = new char[ DIGEST_LENGTH * num + HEADER_LENGTH + uint64_s];
         memcpy(buff + HEADER_LENGTH, data, DIGEST_LENGTH * num + uint64_s);
