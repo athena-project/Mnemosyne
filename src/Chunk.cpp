@@ -127,17 +127,16 @@ bool ChunkFactory::shift(){
     return true;
 }
 
-void ChunkFactory::chunksIndex(vector<Chunk*>& index){
-    buffer_size=update_buffer();
-    shift();
-        
-    uint64_t begin = 0;
+// number before stopping
+bool ChunkFactory::chunksIndex(vector<Chunk*>& index, size_t number){
     ///Body
-    for( ; i<buffer_size || (i=0, buffer_size=update_buffer()) ; (i++, current++, size++)){
+    int j=0 ;
+    for(; (i<buffer_size || (i=0, buffer_size=update_buffer()) ) && j<number; (i++, current++, size++)){
         if( (size > MIN_LENGTH) && (hf->hashvalue == 0 || size>=MAX_LENGTH) ){ /// p = 1/2^AVERAGE_LENGTH
             index.push_back( new Chunk(begin, size) );
             begin = current;
             size = 0;
+            j++;
             if( not shift())
                 break;
         }
@@ -146,32 +145,54 @@ void ChunkFactory::chunksIndex(vector<Chunk*>& index){
        hf->update( window->add(buffer[i]), buffer[i]); 
     }
     
-    if( begin != current-1)
+    if( begin != current-1 && j!=number && j!=0)
         index.push_back( new Chunk(begin, size) );
+
+    return j > 0;
 }
 
 ///File to chunks
-void ChunkFactory::split(const char* location, vector<Chunk*>& chunks){
-    is.open(location, ios::binary);
-    if( !is )
-        perror("ChunkFactory::split");
-    chunksIndex( chunks );
-    is.close();
-    
-    int fd = open(location, O_RDONLY);
-    uint64_t size_file = size_of_file(fd);
+bool ChunkFactory::split(const char* location, vector<Chunk*>& chunks, size_t number){
+    bool flag = chunksIndex( chunks, number );
     bool cached = size_file < CACHING_THRESHOLD;
-    char* src = static_cast<char*>( 
-        mmap(NULL, size_file, PROT_READ, MAP_PRIVATE, fd, 0));
-    char* ptr_src = src;
-    
-    for(uint64_t i = 0 ; i<chunks.size() ; i++){
-        chunks[i]->update(ptr_src, cached);
-        ptr_src += chunks[i]->get_length();
+    //printf("spliting spliting spliting %d\n", chunks.size());
+    for(; i_split<chunks.size(); i_split++){
+        chunks[i_split]->update(ptr_src, cached);
+        ptr_src += chunks[i_split]->get_length();
     }
-            
-    munmap( src, size_file);
-    close( fd );    
+    
+    return flag;   
+}
+
+bool ChunkFactory::next(const char* location, vector<Chunk*>& chunks, size_t size){
+    if( !loaded ){
+        is.open(location, ios::binary);
+        fd = open(location, O_RDONLY);
+        
+        if( !is || fd == 0)
+            perror("ChunkFactory::split");
+        
+        size_file = size_of_file(fd);
+        src = static_cast<char*>(mmap(NULL, size_file, PROT_READ, MAP_PRIVATE, fd, 0));
+        ptr_src = src;
+
+        
+        
+        buffer_size=update_buffer();
+        shift();
+        
+        loaded = true;
+    }
+    
+    if( split(location, chunks, size) )
+        return true;
+    else{
+        is.close();
+        munmap( src, size_file);
+        close( fd ); 
+        loaded=false;
+        return false;
+    }
 }
 
 void ChunkFactory::save(const char* location){

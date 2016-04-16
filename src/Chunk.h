@@ -28,8 +28,7 @@
 #define BUFFER_MAX_SIZE (1<<24)
 
 ///taille max d'un fichier completement conserver en mémoire, 1Mo
-#define CACHING_THRESHOLD 1048576
-//#define CACHING_THRESHOLD 10485760
+#define CACHING_THRESHOLD (1<<24)
 
 #define uint64_s sizeof(uint64_t)
 using namespace std;
@@ -75,18 +74,27 @@ class Chunk{
         void serialize(char* buff);
 };
 
-class ChunkFactory{
+class ChunkFactory{ //one chunk factory for one file
     protected:
         uint32 buffer_size = 0;
         uint32 i =0; ///position buffer
 
+        uint64 begin=0; /// pos of the begnning of the current chunk
         uint64 current=0;///position dans le fichier
         uint64 size=0; ///taille du chunk courant
         char* buffer = NULL;
 
         //FastList window;
         UltraFastWindow *window = NULL;
+        
         ifstream is;
+        int fd = 0;
+        char* src;
+        char* ptr_src;
+        uint64_t size_file;
+        size_t i_split = 0;
+        
+        bool loaded = false; /// if file opened
 
         KarpRabinHash<uint64>* hf = NULL;
     public:
@@ -104,9 +112,11 @@ class ChunkFactory{
         
         bool shift();
         
-        void chunksIndex(vector<Chunk*>& index);
+        bool chunksIndex(vector<Chunk*>& index, size_t number);
         
-        void split(const char* location, vector<Chunk*>& chunks);
+        bool split(const char* location, vector<Chunk*>& chunks, size_t number);
+        
+        bool next(const char* location, vector<Chunk*>& chunks, size_t size);
         
         void save(const char* location);
 };

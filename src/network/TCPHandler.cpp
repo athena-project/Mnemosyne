@@ -84,22 +84,27 @@ int create_socket(const char* host, int port){
 }
 
 Handler* create_handler(const char* host, int port){
-    return new Handler(create_socket(host, port));
+    return new Handler(create_socket(host, port), host, port);
 }
 
 /**
  * Begin Handler part
  */
 int Handler::add_to_in(char* buf, int size){
+    //printf("addign %d\n", size);
     if( in_offset+size > in_length){
-        if( 2*in_length > MAX_SIZE_IN )
-            return -1;
-        
+        if( 2*in_length > MAX_SIZE_IN ){
+            printf("realloc failed 1 for %d\n", in_length<<1);
+            return -2;
+        }
         //char* tmp = new char[ 2 * in_length ];
         //printf("try_alloc %d\n", 2 * in_length);
         char* tmp = static_cast<char*>(realloc(in_data, in_length<<1 ));
-        if( tmp == NULL )
+        
+        if( tmp == NULL ){
+            printf("realloc failed for %d\n", in_length<<1);
             return -1;
+        }
        
         in_data = tmp;
         in_length = in_length << 1;
@@ -112,9 +117,8 @@ int Handler::add_to_in(char* buf, int size){
         
 int Handler::out_write(){
     int ret = write(fd, out_data + out_offset, out_length);
-    if( ret!= -1){
-        clear_out();
-    }
+    //printf("writting %d/%d\n", ret, out_length);
+    return ret;
 }
 
 void Handler::clear_out(){
@@ -136,7 +140,7 @@ void Handler::clear(){
  *  Begin HandlerManager
  */
 HandlerManager::~HandlerManager(){
-    map< pair<const char*, int>, Handler*>::iterator it = actives.begin();
+    map< pair<string, int>, Handler*>::iterator it = actives.begin();
     for( ; it != actives.end() ; it++)
         delete it->second;
 
@@ -144,15 +148,23 @@ HandlerManager::~HandlerManager(){
         delete it->second;
 }
 
-pair<bool, Handler*> HandlerManager::add(pair<const char*, int> key, bool create){
+pair<bool, Handler*> HandlerManager::add(pair<string, int> key, bool create){
     if( passives.find(key) != passives.end() ){
+
+        //for(map< pair<string, int>, Handler*>::iterator it=passives.begin(); it!=passives.end(); it++)
+            //std::cout<<"passives "<<it->first.first<<" "<<it->first.second<<"  "<<reinterpret_cast<intptr_t>(it->second)<<std::endl;
+        //std::cout<<"key "<<key.first<<" "<<key.second<<std::endl;
         set_active(key);
+        //printf("sending from passive\n");
+        //actives[key]->print();
+
         return pair<bool, Handler*>(true, actives[key] );
     }
-    
+
     if( actives.find(key) != actives.end() )
         return pair<bool, Handler*>(true, NULL); //we have to wait
-    
+    //printf("add %08X host %s, port %d\n", reinterpret_cast<intptr_t>(this), key.first.c_str(), key.second);
+
     if( actives.size() >= max_number && passives.size() == 0)
         return pair<bool, Handler*>(true, NULL); //we have to wait
     
@@ -161,40 +173,46 @@ pair<bool, Handler*> HandlerManager::add(pair<const char*, int> key, bool create
     
     Handler* handler = NULL;
     if( create ){
-        handler = create_handler(key.first, key.second);
+        //printf("created %08X host %s, port %d\n", reinterpret_cast<intptr_t>(this), key.first.c_str(), key.second);
+        
+        handler = create_handler(key.first.c_str(), key.second);
         if( handler == NULL )
             return pair<bool, Handler*>( false, NULL);
     }else
         handler = new Handler(-1);
     
-    set_active(handler);
+    actives[ key ] = handler;
+    if(actives[key]==NULL)
+        abort();
     return pair<bool, Handler*>(true, handler);
 }
 
-bool HandlerManager::exists(pair<const char*, int> key){
+bool HandlerManager::exists(pair<string, int> key){
     return actives.find(key) != actives.end() || passives.find(key) != passives.end(); 
 }
 
-void HandlerManager::set_active(pair<const char*, int> key){
+void HandlerManager::set_active(pair<string, int> key){
     actives[ key ] = passives[ key ];
     passives.erase( key );
 }
 
 void HandlerManager::set_active(Handler* item){
-    pair<const char*, int> key(item->get_host(), item->get_port());
+    pair<string, int> key(item->get_host(), item->get_port());
     set_active( key );
 }
 
 void HandlerManager::set_passive(Handler* item){
+    //printf("Set passive |%s| %d %ull\n", item->get_host().c_str(), item->get_port(), reinterpret_cast<intptr_t>(item));
     item->clear();
     
-    pair<const char*, int> key(item->get_host(), item->get_port());
-    passives[ key ] = actives[ key ];
+    pair<string, int> key(item->get_host(), item->get_port());
+    passives[ key ] = item;
     actives.erase( key );
+    passives[ key ];
 }
 
 void HandlerManager::remove(Handler* item){
-    pair<const char*, int> key(item->get_host(), item->get_port());
+    pair<string, int> key(item->get_host(), item->get_port());
     if( actives.find( key ) != actives.end() ){
         delete actives[ key ];
         actives.erase( key );
@@ -238,7 +256,8 @@ list<Task*>*_tasks, mutex* _m_tasks){
     }
 
     //event.data.fd = sfd;
-    event.data.ptr = static_cast<void*>( new Handler(sfd));
+    main = new Handler(sfd);
+    event.data.ptr = static_cast<void*>( main );
     event.events = EPOLLIN | EPOLLET;
     s = epoll_ctl (efd, EPOLL_CTL_ADD, sfd, &event);
     if(s == -1){
@@ -271,9 +290,9 @@ bool TCPServer::unregister_event(Handler *handler){
         perror("unregister_event");
         handlerManager->remove(handler);
         return false;
-    }
+    }printf("unregister_event\n\n");
     
-    handlerManager->set_passive( handler );
+    handlerManager->remove(handler);
     return true;
 }
     
@@ -290,6 +309,7 @@ int TCPServer::create_and_bind (const char *port){
     s = getaddrinfo(NULL, port, &hints, &result);
     if(s != 0){
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror (s));
+        freeaddrinfo(result);
         return -1;
     }
 
@@ -307,6 +327,7 @@ int TCPServer::create_and_bind (const char *port){
 
     if (rp == NULL){
         fprintf(stderr, "Could not bind\n");
+        freeaddrinfo(result);
         return -1;
     }
 
@@ -322,43 +343,54 @@ void TCPServer::pcallback(){
     for(size_t i=0; i<tasks->size(); i++){
         task = tasks->front();
         tasks->pop_front();
-        task->print();
-        bool exists = handlerManager->exists( pair<const char*, int>(task->host, task->port) );
-        pair<bool, Handler*> data = handlerManager->add( pair<const char*, int>(task->host, task->port) );
+
+        //task->print();
+        //bool exists = handlerManager->exists( pair<const char*, int>(task->host, task->port) );
+        //pair<bool, Handler*> data = handlerManager->add( pair<const char*, int>(task->host, task->port) );
         
+        bool exists = handlerManager->exists( pair<string, int>(task->host, task->port) );
+        pair<bool, Handler*> data = handlerManager->add( pair<string, int>(task->host, task->port) );
         if( !data.first ){
             delete task;
             continue;
-        }
-        
+        }               
+
         if( data.second == NULL ){
+                    //task->print();
+
+                    //printf("exists %s", exists ? "true" : false);
+                    //continue;
             tasks->push_back( task );
             continue;
         }
 
         (data.second)->set_out_data( task->type, task->steal_data(), task->length );
         delete task;
-        
-        if( exists )
-            register_event( data.second, EPOLLOUT, EPOLL_CTL_MOD);
-        else
-            register_event( data.second, EPOLLOUT, EPOLL_CTL_ADD);
+        //printf("Sending\n\n");
+        register_event( data.second, EPOLLOUT, exists ? EPOLL_CTL_MOD : EPOLL_CTL_ADD);
     }
    
     m_tasks->unlock();
 }
 
 void TCPServer::wcallback(Handler* handler, msg_t type){
-    unregister_event( handler );
+    //unregister_event( handler );
+    register_event(handler, EPOLLIN, EPOLL_CTL_MOD);
+    handlerManager->set_passive( handler );
 }
 
 void TCPServer::rcallback(Handler* handler, msg_t type){    
-    unregister_event( handler );
+    //printf("unregistrering in rcall\n");
+    register_event(handler, EPOLLIN, EPOLL_CTL_MOD);
+    handlerManager->set_passive( handler );
+
+    //unregister_event( handler );
 }
 
 int TCPServer::run(){
+    p_handler = new Handler(pfd );
     struct epoll_event send_event;
-    send_event.data.ptr= new Handler(pfd );
+    send_event.data.ptr= p_handler;
     send_event.events = EPOLLIN;
 
     s = epoll_ctl (efd, EPOLL_CTL_ADD, pfd, &send_event);
@@ -383,9 +415,9 @@ int TCPServer::run(){
                 
                 if( pfd != handler->get_fd() ){
                     unregister_event( handler );
-                    handlerManager->remove( handler );
                 }
-            }else if(   pfd == handler->get_fd() ){             
+            }else if(   pfd == handler->get_fd() ){
+                //printf("We will send something\n\n");            
                 char buf[32];
                 while( read(pfd, buf, sizeof buf) == sizeof(buf) ){}
                 pcallback();
@@ -399,7 +431,7 @@ int TCPServer::run(){
 
                     in_len = sizeof in_addr;
                     infd = accept(sfd, &in_addr, &in_len);
-                    if(infd == -1){
+                    if(infd == -1){                        
                         if( (errno == EAGAIN) ||
                           (errno == EWOULDBLOCK) ){//Connections processed
                             break;
@@ -414,23 +446,23 @@ int TCPServer::run(){
                                     sbuf, sizeof sbuf,
                                     NI_NUMERICHOST | NI_NUMERICSERV);
 
-                    //if(s == 0){
-                        //printf("Accepted connection on descriptor %d "
-                                //"(host=%s, port=%s)\n", infd, hbuf, sbuf);
-                    //}
-
                     if(s == 0 && make_non_blocking(infd) != -1){
                         char* end = sbuf + NI_MAXSERV;
-                        
+                        printf("Accepted connection on descriptor %d "
+                                "(host=%s, port=%s)\n", infd, hbuf, sbuf);
                         pair<bool, Handler*> data = handlerManager->add( 
-                            pair<const char*,int>(hbuf, strtol(sbuf, &end, 0)) 
+                            pair<string,int>(string(hbuf), strtol(sbuf, &end, 0)), false 
                         );
                         if( data.second == NULL ){
                             perror("Can not accept connexion, serveur overloaded");
                             close(infd);
+                        }else{
+                            (data.second)->set_fd( infd );
+                            (data.second)->set_host( string(hbuf) );
+                            (data.second)->set_port( strtol(sbuf, &end, 0) );
+                            
+                            register_event( (data.second), EPOLLIN | EPOLLET, EPOLL_CTL_ADD);
                         }
-                        (data.second)->set_fd( infd );
-                        register_event( (data.second), EPOLLIN | EPOLLET, EPOLL_CTL_ADD);
                     }
                 }
             }else if(events[i].events & EPOLLIN ){//Data waiting to be read
@@ -449,15 +481,17 @@ int TCPServer::run(){
 
                     s = handler->add_to_in(buf, count);
                     if(s == -1){
+                        printf("failed in\n\n");
                         if( handler->decr_retries() != 0){
-                            int new_fd = create_socket(handler->get_host(), handler->get_port());
+                            int new_fd = create_socket(handler->get_host().c_str(), handler->get_port());
                             handler->set_fd( new_fd);
                             register_event( handler, EPOLLIN | EPOLLET, EPOLL_CTL_MOD);
                         }else{
                             unregister_event( handler );
-                            perror("write");
+                            perror("read");
                         }
-                    }
+                    }else if( s==-2)
+                        perror("Cannot read, to much data");
                 }
                 
                 if(done){
@@ -478,8 +512,10 @@ int TCPServer::run(){
                     }
                    
                 }else if(-1 == ret){ //error
+                                            printf("failed out\n\n");
+
                     if( handler->decr_retries() != 0){
-                        int new_fd = create_socket(handler->get_host(), handler->get_port());
+                        int new_fd = create_socket(handler->get_host().c_str(), handler->get_port());
                         handler->set_fd( new_fd);
                         register_event( handler, EPOLLOUT | EPOLLET, EPOLL_CTL_MOD);
                     }else{
@@ -487,6 +523,7 @@ int TCPServer::run(){
                         perror("write");
                     }
                 }else{ //entire data was written          
+                    handler->clear_out();
                     wcallback( handler, handler->get_out_type() );
                 }
             }else{

@@ -217,7 +217,11 @@ void Block::print(int step){
  *  Begin LRU part
  */
  
-LRU::~LRU(){}
+LRU::~LRU(){
+    printf("LRU storage\n");
+    for(list<Block*>::iterator it = items.begin() ; it!=items.end() ; it++)
+        (*it)->store();
+}
 
 void LRU::add(Block* item){
     unordered_map<Block*, list<Block*>::iterator >::iterator it = items_map.find( item ); 
@@ -679,7 +683,7 @@ bool BNode::exists_digest(const char* digest, LRU* cache){
     if( !leaf ){
         if( size_c == 0 )
             return 0;
-        
+
         return children[ get_child_pos_s(digest) ]->exists_digest( digest, cache);
     }else{
         if( size_b == 0 )
@@ -759,10 +763,10 @@ if( step ==0)
  */
  
 BTree::~BTree(){
-    if( root != NULL )
-        delete root;
     if( cache != NULL )
         delete cache;
+    if( root != NULL )
+        delete root;
 }
 
 bool BTree::add_digest(const char* digest){
