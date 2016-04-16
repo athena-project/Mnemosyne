@@ -343,10 +343,6 @@ void TCPServer::pcallback(){
     for(size_t i=0; i<tasks->size(); i++){
         task = tasks->front();
         tasks->pop_front();
-
-        //task->print();
-        //bool exists = handlerManager->exists( pair<const char*, int>(task->host, task->port) );
-        //pair<bool, Handler*> data = handlerManager->add( pair<const char*, int>(task->host, task->port) );
         
         bool exists = handlerManager->exists( pair<string, int>(task->host, task->port) );
         pair<bool, Handler*> data = handlerManager->add( pair<string, int>(task->host, task->port) );
@@ -356,17 +352,13 @@ void TCPServer::pcallback(){
         }               
 
         if( data.second == NULL ){
-                    //task->print();
-
-                    //printf("exists %s", exists ? "true" : false);
-                    //continue;
             tasks->push_back( task );
             continue;
         }
 
         (data.second)->set_out_data( task->type, task->steal_data(), task->length );
         delete task;
-        //printf("Sending\n\n");
+
         register_event( data.second, EPOLLOUT, exists ? EPOLL_CTL_MOD : EPOLL_CTL_ADD);
     }
    
@@ -374,17 +366,13 @@ void TCPServer::pcallback(){
 }
 
 void TCPServer::wcallback(Handler* handler, msg_t type){
-    //unregister_event( handler );
     register_event(handler, EPOLLIN, EPOLL_CTL_MOD);
     handlerManager->set_passive( handler );
 }
 
 void TCPServer::rcallback(Handler* handler, msg_t type){    
-    //printf("unregistrering in rcall\n");
     register_event(handler, EPOLLIN, EPOLL_CTL_MOD);
     handlerManager->set_passive( handler );
-
-    //unregister_event( handler );
 }
 
 int TCPServer::run(){

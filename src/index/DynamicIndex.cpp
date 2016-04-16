@@ -165,7 +165,7 @@ bool Block::add(const char* digest){
     if( size == 0 || memcmp(digest, id, DIGEST_LENGTH) > 0 ) 
         memcpy(id, digest, DIGEST_LENGTH); 
     size++;
-
+    
     return true;
 }
 
@@ -181,7 +181,7 @@ bool Block::remove(const char* digest){
 
     if( size != 0 && pos == 0 ) 
         memcpy(id, buffer, DIGEST_LENGTH); 
-    
+
     return true;
 }
 
@@ -218,17 +218,16 @@ void Block::print(int step){
  */
  
 LRU::~LRU(){
-    printf("LRU storage\n");
     for(list<Block*>::iterator it = items.begin() ; it!=items.end() ; it++)
         (*it)->store();
 }
 
 void LRU::add(Block* item){
     unordered_map<Block*, list<Block*>::iterator >::iterator it = items_map.find( item ); 
-    if( it != items_map.end() )
+    if( it != items_map.end() ){
         items.erase( it->second );
-        
-    list< Block*>::iterator it22 = items.begin();
+        size--;
+    }
 
     items.push_front( item );
     items_map[item] = items.begin();
@@ -246,6 +245,7 @@ void LRU::add(Block* item){
     
     if( !item->is_loaded() )
         item->load();
+    
 }
 
 void LRU::remove(Block* item){
@@ -290,6 +290,7 @@ BNode::BNode(const char* _path, Block** data, uint64_t size){
         
     size_b = size;
     path = _path;
+    leaf = true;
 
     if( size > 0)
         memcpy(id, (blocks[size_b-1])->get_id(), DIGEST_LENGTH);
@@ -373,7 +374,7 @@ int BNode::get_block_pos_s(const char* digest){
     
     while( a < b ){
         m = (a + b) / 2;
-
+        
         flag = memcmp(digest, blocks[m]->get_id(), DIGEST_LENGTH );
         
         if( flag < 0 )
@@ -485,6 +486,9 @@ bool BNode::add_block(Block* block, const char* digest){
         memcpy( id, digest, DIGEST_LENGTH);
     
     if( leaf ){
+        if( size_b >= 2*d)
+            printf("something wrong\n");
+        
         int pos_b = get_block_pos_s( digest );            
         
         if( size_b != 0)
@@ -495,13 +499,13 @@ bool BNode::add_block(Block* block, const char* digest){
         return true;
     }else{
         int pos_c = get_child_pos_s( digest );
-        
+
         BNode* current_c = children[ pos_c ];
         if( !current_c->add_block( block, digest) )
             return false;
-
+            
         if( current_c->is_full()){
-            BNode* right = current_c->split();
+                BNode* right = current_c->split();
 
             if( size_c != 0 && pos_c!=2*d)
                 memmove(&children[pos_c+2], &children[pos_c+1], (size_c-pos_c-1) * sizeof(BNode*)); //+1 tjs garantie par la gestion de is_full
@@ -511,6 +515,10 @@ bool BNode::add_block(Block* block, const char* digest){
         }
         return true;
     }
+}
+
+bool BNode::add_block(Block* block){
+    add_block( block, block->get_id() );
 }
 
 void BNode::remove_block(int pos, LRU* cache){
@@ -546,8 +554,11 @@ Block* BNode::lost_smallest_block(){
 Block* BNode::lost_greatest_block(){
     Block* tmp = blocks[size_b-1];
     size_b--;//size_b >d ie size_b-1>1
-
-    memcpy( id, blocks[size_b]->get_id(), DIGEST_LENGTH);
+    //printf("id_%s\n", id);
+    if( blocks[size_b-1] == NULL )
+        printf("what's the fuck %d\n", size_b);
+    //printf("blockid_%s\n", blocks[size_b]->get_id());
+    memcpy( id, blocks[size_b-1]->get_id(), DIGEST_LENGTH);
     return tmp;
 }
 
@@ -640,25 +651,30 @@ bool BNode::remove_digest(const char* digest, LRU* cache){
                 cache->add( sibling );
 
                 const char* tmp = sibling->pick_smallest();
+                cache->add( current_b );
                 current_b->add( tmp );
+                
+                cache->add( sibling );
                 sibling->remove( tmp ); //no rebalance needed because sibling.size >= d+1
             }else if( pos_b > 0 && !blocks[pos_b-1]->is_half() ){ //ie blocks[pos_b-1].size >= d+1
                 Block* sibling = blocks[pos_b-1];
                 cache->add( sibling );
 
                 const char* tmp = sibling->pick_greatest();
+                cache->add( current_b );
                 current_b->add( tmp );
+                cache->add( sibling );
                 sibling->remove( tmp ); //no rebalance needed because sibling.size >= d+1
             }else{//merge
                 if( pos_b < size_b-1 ){ //right fusion
                     cache->add( blocks[pos_b+1] );
                     current_b->merge( blocks[pos_b+1] );
                     remove_block( pos_b+1, cache );
-                }else{ //left fusion pos_b>0 because d>=2
+                }else if( pos_b > 0){ //left fusion pos_b>0 because d>=2
                     cache->add( blocks[pos_b-1] );
                     blocks[pos_b-1]->merge( current_b );
                     remove_block( pos_b, cache );
-                }
+                } //when we have only one block on the whole tree, do nothing
             }
         }
 
@@ -708,33 +724,40 @@ void BNode::merge( BNode* right ){
     size_c += right->get_size_c(); // garanted by caller that size_b<2*d+1
 }
 
-//BNode* BNode::split_in_2(float ratio){
-    //int pos = 0;
-    //BNode* right = NULL;
+size_t BNode::number_blocks(){
+    if( leaf )
+        return size_b;
+    else{
+        size_t res = 0;
+        for(size_t i=0; i<size_c; i++)
+            res += children[i]->number_blocks();
+        return res;
+    }
+}
+
+BNode* BNode::last_leave(){
+    if( leaf )
+        return this;
+    else
+        return (size_c >0) ? children[size_c-1]->last_leave() : NULL;
+}
+
+void BNode::last_rebalance(){
+    if( size_c <= 0)
+        return;
     
-    //if( size_b > 0){
-        //pos = (int)ratio * size_b;
-        //Block* current_b=NULL;
-        
-        //for(int i=0; i<pos; i++){
-            //current_b = lost_greatest_block();
-            //right->win_block(current_b);
-        //}
-    //}else{
-        //pos = (int)ratio * size_c;
-        //BNode* current_c=NULL;
-        
-        //for(int i=0; i<pos; i++){
-            //current_c = lost_greatest_child();
-            //right->win_child(current_c);
-            //rebalance( current_c, pos );
-        //}
-        
-        //right->rebalance();
-    //}
-    
-    //return right;
-//}
+    if( !children[size_c-1]->is_leaf() )
+        children[size_c-1]->last_rebalance();
+    rebalance(children[size_c-1], size_c-1);
+}
+
+void BNode::all_leaves(list<BNode*>& leaves){
+    if( leaf )
+        leaves.push_back( this );
+    else
+        for(size_t i=0; i < size_c ; i++)
+            children[i]->all_leaves( leaves );
+}
 
 void BNode::print(int step){
 if( step ==0)
@@ -781,6 +804,18 @@ bool BTree::add_digest(const char* digest){
     return flag;
 }
 
+bool BTree::add_block(Block* block){
+    bool flag = root->add_block( block );
+    
+    if( root->is_full() ){
+        BNode* right = root->split();
+        BNode* left = root;
+        root = new BNode(path.c_str(), left, right);
+    }
+
+    return flag;
+}
+
 bool BTree::exists_digest(const char* digest){
     return root->exists_digest( digest, cache );
 }
@@ -792,11 +827,46 @@ bool  BTree::remove_digest(const char* digest){
    return flag;
 }
 
-//BTree* BTree::split_in_2(float ratio){
-    //BNode* right_root = root->split_in_2( ratio );
-    //BTree* right = new BTree( path, right_root );
-    //return right;
-//}
+BTree* BTree::split(float ratio){
+    BTree* right = new BTree( path );
+    
+    size_t blocks = root->number_blocks();
+    size_t number = ratio * blocks;
+    list<BNode*> leaves;
+    root->all_leaves(leaves);
+    
+    Block* tmp = NULL;
+    for(list<BNode*>::iterator it = leaves.begin() ; it != leaves.end() ; it++)
+        for( size_t i = 0; i<min( (*it)->get_size_b() - d, number) ; i++){
+            tmp = (*it)->lost_greatest_block();
+            cache->remove( tmp );
+
+            right->add_block( tmp );
+            number--;
+        }
+
+    while( number > 0){
+        BNode* last = root->last_leave();
+        
+        tmp = last->lost_greatest_block();
+        cache->remove( tmp );
+        right->add_block( tmp );
+        number--;
+        
+        root->last_rebalance(); 
+        last = root->last_leave();
+        
+        int todo = min( last->get_size_b() - d, number);
+        for( int i = 0; i<todo; i++){
+            tmp = last->lost_greatest_block();
+            cache->remove( tmp );
+            right->add_block( tmp );
+            number--;
+        }
+    }
+    
+    return right;
+}
 
 bool BTree::recover(){
     fs::directory_iterator end_iter;
@@ -821,6 +891,10 @@ bool BTree::recover(){
         }
     }
     return true;
+}
+
+size_t BTree::number_blocks(){
+    return root->number_blocks();
 }
 
 void BTree::print(){

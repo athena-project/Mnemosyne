@@ -22,7 +22,8 @@ using namespace std;
  * Should be between one undred and few thousands to fit the price ratio between
  * RAM and hard-disk
  */
-#define MAX_DIGESTS 200
+//#define MAX_DIGESTS 200
+#define MAX_DIGESTS 40
 
 #define uint64_s sizeof(uint64_t)
 
@@ -30,12 +31,14 @@ using namespace std;
  * Number of children by node of the BTree will be between [d, 2*d]
  * Condition : d > 2, if(d=2 : we will obtained a binary tree)
  */
-#define d 10 //>1
+//#define d 10 //>1
+#define d 5 //>1
 
 /**
  * Number of blocks that can be loaded into cache( in RAM)
  */
-#define CACHE_SIZE 400 //en block >=1
+//#define CACHE_SIZE 400 //en block >=2
+#define CACHE_SIZE 40 //en block >=2
 
 class Block{
     /**
@@ -262,6 +265,7 @@ class LRU{
          *      -Worst case : 2 (store + load) 
          */
         void add(Block* item);
+        
         /**
          * Delete item from cache
          * Complexity :
@@ -272,7 +276,6 @@ class LRU{
          *      -Worst case : 1 (store) 
          */
         void remove(Block* item);
-
 };
 
 class BNode{
@@ -282,6 +285,7 @@ class BNode{
      */
     protected:
         bool leaf = true;
+        
         const char* path;
         char id[DIGEST_LENGTH]; // max of the digest stored
         
@@ -340,6 +344,7 @@ class BNode{
         size_t get_size_c();
         Block** get_blocks();
         BNode** get_children();
+        
         /**
          * Retrun the potential position of the digest in children for a get 
          * Complexity : 
@@ -409,6 +414,15 @@ class BNode{
          * @param digest    - id of the block   
          */
         bool add_block(Block* block, const char* digest);
+        
+        /**
+         * Add block to the tree, used during the recovery phase
+         * Complexity : 
+         *      -Worst case O(m + MAX_DIGESTS + log n )
+         *      -Average case O(m/2 + MAX_DIGESTS/2 + log n)
+         * 
+         */
+        bool add_block(Block* block);
         
         /**
          * Delete block from the node 
@@ -541,15 +555,25 @@ class BNode{
         void merge(BNode* right);
         
         /**
-         * Partition the node in two sets
-         * @param ratio - proportion of children/blocks to move in the new node
-         * 
-         * Complexity : 
-         *      -Worst case O(n' log n')
-         * 
-         * @warning return object owned by caller
+         * Get number of blocks stored in this tree
          */
-        BNode* split_in_2(float ratio = 0.5);
+        size_t number_blocks();
+        
+        
+        /**
+         * @return the most right leave, used for iteration
+         */
+        BNode* last_leave();
+        
+        /**
+         * Rebalance the parent of the most right leave
+         */
+        void last_rebalance();
+        
+        /**
+         * 
+         */
+        void all_leaves(list<BNode*>& leaves );
         
         void print(int step=0);
 };  
@@ -557,7 +581,7 @@ class BNode{
 class BTree{
     protected:
         LRU* cache = NULL;
-        BNode* root = NULL;
+        BNode* root = NULL;        
         
         string path;
         fs::path fs_path;
@@ -589,6 +613,14 @@ class BTree{
         bool add_digest(const char* digest);
         
         /**
+         * Add block to tree, without copy
+         * Complexity : 
+         *      -Worst case O(m  + log n )
+         *      -Average case O(m/2 + log n)
+         */
+        bool add_block(Block* block);
+        
+        /**
          * Check if exists
          * Complexity : 
          *      -Worst case O(log n)
@@ -612,13 +644,18 @@ class BTree{
          * 
          * @warning BTree* returned now owned by caller
          */
-        BTree* split_in_2(float ratio);
+        BTree* split(float ratio);
         
         
         /**
          * Try recovering from data store on disk
          */
         bool recover();
+        
+        /**
+         * Get number of blocks stored in this tree
+         */
+        size_t number_blocks();
         
         void print();
 };
