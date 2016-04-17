@@ -7,60 +7,71 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <unordered_map>
+#include <math.h>
 
 #include <boost/filesystem.hpp>
 
 #include "../utility/hash.cpp"
+#include "../utility/filesystem.cpp"
 #include "DynamicIndex.h"
 
-#define RATIO_INSERTION 0.05 //5% pour du tri par insertion plus, on fait du tri nlogn
-
 class BinBlock : public Block{
-    /**
-     * For complexity, n is the number of digests stored
-     * be aware that n is not bounded (probabilistic bounded only)
-     */
     protected:
-        static uint64_t alpha_id;
-        uint64_t name = 0;
-    
-        uint64_t size=0; // number of digests stored
-        string location; // file location to store data
-        char id[DIGEST_LENGTH]; // max of the digest stored
-        
-        const char* path;
-        
-        FILE* file = NULL;
-        char* buffer = NULL; // where digests are stored in RAM if loaded
     public:    
-        BinBlock(const char* _path) : name( BinBlock::alpha_id++ ){
-            path = _path;
-            init();
+        BinBlock(const char* _path) : Block(_path){
         }
         
         /**
          * Reconstruct data from file
          */
-        BinBlock(const char* _path, uint64_t _name) : name( _name){
-            BinBlock::alpha_id = max( Block::alpha_id, _name+1); 
-            path = _path;
-            init();
-            
-            /// Recovery part
-            load( true );
-            clean();
+        BinBlock(const char* _path, uint64_t _name) : Block(_path, _name){
         }
         
         BinBlock(const char* path, const char* data, uint64_t _size);
         
-        /**
-         * Add k digests to  current bin
-         * @param digests - digests to add
-         * @param lenght - number of digests to add 
-         */
-        bool add(const char** digests, size_t length){
-
+        bool load(bool degraded_mod);
+        
+        void merge(BinBlock* right);
 };
 
+class BinNode : public BNode{
+    /**
+     * For complexity, m is the number of blocks stored or of children
+     * so m is in [d, 2*d] and n is the number of digest stored and n' number of blocks
+     */
+    protected:
+        bool leaf = true;
+        
+        const char* path;
+        char id[DIGEST_LENGTH]; // max of the digest stored
+        
+        BinNode* children[2*d+1]; // ordered by their id( ASC), leaves excepted
+        size_t size_c = 0;
+        
+        BinBlock* blocks[2*d+1]; // ordered by their id( ASC), leaves only
+        size_t size_b = 0;
 
+    public:
+        BinNode(const char* _path) : BNode(_path){ 
+            leaf = true;
+        }
+        
+        BinNode(const char* _path, BNode* left, BNode* right) : BinNode(_path, left, right){}
+        
+        BinNode(const char* _path, BNode** data, uint64_t size) : BinNode(_path, data, size){}
+        
+        BinNode(const char* _path, BinBlock** data, uint64_t size) : BinNode(_path, data, size){}
+       
+        /**
+         * @param digest - id of bin
+         */
+        bool add_bin(BinBlock* bin, const char* digest, LRU* cache);
+};  
+
+class BinTree : public BTree{
+    public:    
+        BinTree(string _path, BinNode* _root=NULL) : BTree( _path, _root){}
+        
+        bool add_bin( BinBlock* bin);
+};
 #endif //MNEMOSYNE_INDEX_BININDEX_H

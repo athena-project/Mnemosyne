@@ -1,29 +1,32 @@
-CC=g++
-CFLAGS= -W -Wall -ansi -pedantic -std=c++11 -o3 -lssl -lcrypto  -lboost_serialization -lupscaledb
-LDFLAGS=
-EXEC= 
-SRC= $(wildcard *.cpp)
-OBJ= $(SRC:.c=.o)
+CXX=g++
+#CXXFLAGS= -W -Wall -ansi -pedantic 
+CXXFLAGS= -std=c++11 -g
 
-btree: src/btree.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-	
-src/btree.o: 
-	@$(CC) -o $@ -cpp $< $(CFLAGS)
-#all: $(EXEC)
+LDFLAGS= -lssl -lcrypto  -lboost_serialization  -lboost_filesystem -lboost_system
+LDFLAGS+= -pthread
 
-##hello: $(OBJ)
-	##@$(CC) -o $@ $^ $(LDFLAGS)
+EXEC= test55
+SRC= $(wildcard */*/*.cpp)
+SRC+= $(wildcard */*.cpp)
+SRC+= $(wildcard *.cpp)
+OBJ= $(SRC:.cpp=.o)
 
-#main.o: hello.h
+all: $(EXEC)
 
-%.o: %.cpp
-	@$(CC) -o $@ -cpp $< $(CFLAGS)
+test55: $(OBJ)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
-#.PHONY: clean mrproper
+main.o: hello.h
+
+%.o: %.cpp 
+	$(CXX) -c -o $@  $< $(CXXFLAGS)
+
+.PHONY: clean mrproper
 
 clean:
-	@rm -rf *.o
+	rm -rf */*/*.o
+	rm -rf */*.o
+	rm -rf *.o
 
 mrproper: clean
-	@rm -rf $(EXEC)
+	rm -rf $(EXEC)

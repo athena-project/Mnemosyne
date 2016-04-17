@@ -24,6 +24,13 @@ inline uint64_t size_of_file(unsigned int fd){
     return size;
 }
 
+inline uint64_t size_of_file(FILE* f){
+    uint64_t tmp = ftell(f);
+    uint64_t size = ftell(f);
+    fseek(f, tmp, SEEK_SET);
+    return size;
+}
+
 inline uint64_t size_of_file(const char* location){
     int fd = open(location, O_RDONLY);
     uint64_t tmp = lseek(fd, 0, SEEK_CUR);

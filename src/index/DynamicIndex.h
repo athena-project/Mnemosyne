@@ -58,6 +58,8 @@ class Block{
         FILE* file = NULL;
         char* buffer = NULL; // where digests are stored in RAM if loaded
     public:    
+        Block(){}
+        
         Block(const char* _path) : name( Block::alpha_id++ ){
             path = _path;
             init();
@@ -296,6 +298,8 @@ class BNode{
         size_t size_b = 0;
 
     public:
+        BNode(){}
+    
         BNode(const char* _path) : path(_path){ 
             leaf = true;
         }
