@@ -9,7 +9,7 @@ void TCPClientServer::wcallback(Handler* handler, msg_t type){
         TCPServer::wcallback(handler, type);
     }
 }
-
+//update protocol : on ne doit envoyer/recevoir que les chunks à dedupliquer
 void TCPClientServer::rcallback(Handler* handler, msg_t type){  
     char* data = handler->get_in_data();
  
@@ -57,7 +57,6 @@ void TCPClientServer::rcallback(Handler* handler, msg_t type){
     
     TCPServer::rcallback(handler, type);
 }
-
 
 ///Save functions
 Client::Client(const char* port, NodeMap* _nodes) : nodes(_nodes){
@@ -136,7 +135,6 @@ void Client::group_by_id(vector<Chunk*>& chunks, unordered_map<uint64_t, list< l
 
     }
 } 
-
 
 ///for writting
 void Client::group_by_id(list<Chunk*>& chunks, unordered_map<uint64_t, list< list<Chunk*> > >& buffers){
@@ -351,7 +349,6 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
         }
         printf("storgin and dedup chunks %lf\n", t4.elapsed());
         
-        Timer t5;
         ///Send new chunk to sd
         unordered_map<uint64_t, list< list<Chunk*> > > _buffers;
         group_by_id( to_dedup, _buffers);
@@ -370,21 +367,20 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
             }
         }
         _buffers.clear();
-        
-        ///Send file digest
-        vector<Node*> _nodes = nodes->wallocate( file_digest, DIGEST_LENGTH );
-        for(int k=0 ; k< _nodes.size() ; k++)       
-            send(ADD_OBJECT, file_digest, DIGEST_LENGTH, _nodes[k]->get_host(), _nodes[k]->get_port());
-        populate_additions( file_digest );
-        
-        if( !wait_additions() ){
-            for(size_t i = 0; i<former_chunks.size() ; i++)
-                delete former_chunks[i];
-            return false;
-        }
-            printf("Updating  %lf\n", t5.elapsed());
-
     }
+    ///Send file digest
+    vector<Node*> _nodes = nodes->wallocate( file_digest, DIGEST_LENGTH );
+    for(int k=0 ; k< _nodes.size() ; k++)       
+        send(ADD_OBJECT, file_digest, DIGEST_LENGTH, _nodes[k]->get_host(), _nodes[k]->get_port());
+    populate_additions( file_digest );
+    
+    if( !wait_additions() ){
+        for(size_t i = 0; i<former_chunks.size() ; i++)
+            delete former_chunks[i];
+        return false;
+    }
+
+    
     clear_objects();
     
     Timer t6;
@@ -404,6 +400,60 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
     printf("metadata building %lf in %d\n", t6.elapsed(), bb);
     return true;
 }
+
+struct ChunkAsc{
+    bool operator() (Chunk* lhs, Chunk* rhs) const{
+        return memcmp(lhs->get_digest(), rhs->get_digest(), DIGEST_LENGTH )<0 ;
+    }
+};
+
+//bool Client::bsave(const char* name, const char* location, fs::path path_dir){
+    //char file_digest[DIGEST_LENGTH];
+    //if( dedup_by_file(location, file_digest) )
+        //return true;
+
+    //vector<Chunk*> former_chunks;
+    //vector<Chunk*> chunks;
+    //unordered_map<string, bool> mem_chunks; //local dedup
+    //unordered_map<string, Chunk*> chunks_map; 
+    //unordered_map<uint64_t, list< list<Chunk*> > > buffers; //node_id => chunks of this node
+    
+    //int pos =0;
+    //while( cf->next(location, former_chunks, 3000) ){
+        //dedup_chunks(former_chunks, chunks, mem_chunks, pos);
+    //}
+    
+    //std::sort( chunks.begin(), chunks.end(), ChunkAsc() ); //ameliorer dedup local à l'aide de l'ordre
+    //char* bin = new char[ (1+chunks.size()) * DIGEST_LENGTH];
+    //for( size_t i = 0; i<chunks.size(); i++)
+        //memcpy(bin + (i +1) * DIGEST_LENGTH, chunks[i]->get_digest(), DIGEST_LENGTH);
+    ////memcpy(bin_id, bin+(hunks.size()-1)*DIGEST_LENGTH, DIGEST_LENGTH);
+    
+    ////un seul big msg 
+    ////si un seul big msg faut augmenter la taille max des buffers. => 256Mo ??
+    
+    ////format bin : bin_id|data
+    //for(size_t i=0 ; i < min( BIN_R, chunks.size()) ; i++){
+        //memcpy(bin, chunks[chunks.size()-1-i]->get_digest(), DIGEST_LENGTH);
+        //Node* node = nodes->rallocate( chunks[chunks.size()-1-i]->get_digest(), DIGEST_LENGTH );
+        //send(EXISTS_BIN, bin, (1+chunks.size()) * DIGEST_LENGTH, node->get_host(), node->get_port());
+    //}
+    
+    //Timer t3;
+    //if( !wait_objects( chunks.size() ) || !wait_bin() ){
+        //for(size_t i = 0; i<former_chunks.size() ; i++)
+            //delete former_chunks[i];
+        //printf("fucked!!!\n");
+        //return false;
+    //}
+    //printf("Waiting chunks1 %lf\n", t3.elapsed());
+    ////on attent la liste de chunks à deduplique ou un msg donnant l'ensemble du bin à dédupliquer
+    
+    ////on store
+    
+    ////on envoit fichier et bin
+    
+//}
 
 bool Client::load(const char* name, const char* location, fs::path path_dir){
     ofstream os( location, ios::binary);    

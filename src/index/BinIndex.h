@@ -13,6 +13,7 @@
 
 #include "../utility/hash.cpp"
 #include "../utility/filesystem.cpp"
+#include "../Chunk.h"
 #include "DynamicIndex.h"
 
 class BinBlock : public Block{

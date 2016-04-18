@@ -13,8 +13,10 @@
 #include <fstream>
 #include <iostream>
 #include <list>
+#include <algorithm>
 
 #include <sys/mman.h>
+#include "../index/BinIndex.h"
 #include "../Metadata.h"
 #include "../utility/bench.cpp"
 
@@ -31,6 +33,9 @@ using namespace std;
 #define TIME_OUT 10000000000
 #define BUFFER_MAX_SIZE (1<<24)
 
+
+#define BIN_W 2 //see extreme binning
+#define BIN_R 2
 
 class TCPClientServer : public TCPServer{
     protected:
@@ -96,7 +101,11 @@ class Client : public TCPHandler{
         
         ///true : file already exists, else not
         bool dedup_by_file(const char* location, char* file_digest);
+        
         bool save(const char* name, const char* location, fs::path path_dir);
+        
+        ///use bin 
+        bool bsave(const char* name, const char* location, fs::path path_dir);
         
         bool save_bench(const char* name, const char* location, fs::path path_dir){
             Timer t;
