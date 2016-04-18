@@ -27,7 +27,7 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
         char* end = data + sizeof(uint64_t);
         uint64_t num = strtoull(data, &end, 0);
         
-        char *buf = new char[ DIGEST_LENGTH * num + num + HEADER_LENGTH + uint64_s ];
+        char *buf = new char[ DIGEST_LENGTH * num + HEADER_LENGTH + uint64_s ];
         char *buffer = buf + HEADER_LENGTH;
         sprintf(buffer, "%" PRIu64 "", num);
         buffer+=uint64_s;
@@ -37,13 +37,13 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
         
         m_chunks->lock();
         for(int i = 0 ; i<num; i++, data+=DIGEST_LENGTH, 
-        pos += DIGEST_LENGTH + 1){
-            memcpy(buffer + pos, data, DIGEST_LENGTH);
-            buffer[pos + DIGEST_LENGTH] = chunks->exists_digest( data );
+        pos += DIGEST_LENGTH){
+            if( !chunks->exists_digest( data ) )
+                memcpy(buffer + pos, data, DIGEST_LENGTH);
         }
         m_chunks->unlock();
 
-        handler->send(CHUNKS, buf, DIGEST_LENGTH * num + num + HEADER_LENGTH);//transfert ownership
+        handler->send(CHUNKS, buf, DIGEST_LENGTH * num + HEADER_LENGTH);//transfert ownership
         register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
     }else if( type == ADD_OBJECT ){
         char *buff = new char[DIGEST_LENGTH + HEADER_LENGTH];

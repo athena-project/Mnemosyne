@@ -9,7 +9,8 @@ void TCPClientServer::wcallback(Handler* handler, msg_t type){
         TCPServer::wcallback(handler, type);
     }
 }
-//update protocol : on ne doit envoyer/recevoir que les chunks à dedupliquer
+
+///we  only received chunks to store
 void TCPClientServer::rcallback(Handler* handler, msg_t type){  
     char* data = handler->get_in_data();
  
@@ -25,11 +26,9 @@ void TCPClientServer::rcallback(Handler* handler, msg_t type){
         num = strtoull(data, &end, 0);
 
         data += uint64_s;
-        for(int i = 0 ; i<num; i++, data+=sizeof(char)+DIGEST_LENGTH){
-            char exists = data[DIGEST_LENGTH];
-
+        for(int i = 0 ; i<num; i++, data+=DIGEST_LENGTH){
             m_objects->lock();
-            objects->push_back( make_pair(digest_to_string(data), exists) );
+            objects->push_back( make_pair( digest_to_string(data), true) );
             m_objects->unlock();
         }
     }else if( type == OBJECT_ADDED ){
