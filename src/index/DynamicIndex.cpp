@@ -207,7 +207,7 @@ void Block::print(int step){
     printf("\n\n*************************************************************\n");
     for(int i=0; i<step; i++)
         printf("|   ");
-    printf("Block %08X name=%d size=%d id:%s\n", reinterpret_cast<intptr_t>(this), name, size, id); 
+    printf("Block %" PRIxPTR " name=%zu size=%zu id:%s\n", reinterpret_cast<intptr_t>(this), name, size, id); 
     if( step ==0)
     printf("\n\n*************************************************************\n");
 }
@@ -255,9 +255,9 @@ void LRU::remove(Block* item){
         Block* tmp = *(it->second);
         tmp->store();
         tmp->clean();
-        
-        items_map.erase( it );
+
         items.erase( it->second );
+        items_map.erase( it );
     }
 }
 
@@ -556,7 +556,7 @@ Block* BNode::lost_greatest_block(){
     size_b--;//size_b >d ie size_b-1>1
     //printf("id_%s\n", id);
     if( blocks[size_b-1] == NULL )
-        printf("what's the fuck %d\n", size_b);
+        printf("what's the fuck %zu\n", size_b);
     //printf("blockid_%s\n", blocks[size_b]->get_id());
     memcpy( id, blocks[size_b-1]->get_id(), DIGEST_LENGTH);
     return tmp;
@@ -765,7 +765,7 @@ if( step ==0)
     
     for(int i=0; i<step; i++)
         printf("|   ");
-    printf("BNode %08X size_b=%d size_c=%d leaf:%s id:%s\n", reinterpret_cast<intptr_t>(this), size_b, size_c, leaf ? "true" : "false", id); 
+    printf("BNode %" PRIxPTR " size_b=%zu size_c=%zu leaf:%s id:%s\n", reinterpret_cast<intptr_t>(this), size_b, size_c, leaf ? "true" : "false", id); 
     
     for(int i=0; i<step; i++)
         printf("|   ");
@@ -887,7 +887,7 @@ bool BTree::recover(){
                 root = new BNode(path.c_str(), left, right);
             }
             
-            delete tmp_name;
+            free( tmp_name);
         }
     }
     return true;

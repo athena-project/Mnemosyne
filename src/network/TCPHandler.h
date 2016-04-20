@@ -43,12 +43,17 @@ using namespace std;
 enum msg_t{
     EXISTS_OBJECT, //client->cms value digest
     EXISTS_CHUNKS, //client->cmsvalue nm_objs digst1 digsetn
+    EXISTS_BIN,
     OBJECT, //cms->client value digest exists(true-false : char)
     CHUNKS, //cms->client value nm_objs digest1 exists1(true-false : char) digsetn existsn
+    BIN,
+    WHOLE_BIN,
     ADD_CHUNKS, //client->cmsvalue nm_objs digst1 digsetn
     ADD_OBJECT,
+    ADD_BIN,
     OBJECT_ADDED,
-    CHUNKS_ADDED
+    CHUNKS_ADDED,
+    BIN_ADDED
     };
 
 static const size_t HEADER_LENGTH = 2 * uint64_s;
@@ -85,7 +90,8 @@ class Task{
         }
         
         void print(){
-            printf("%08X Tasks host:%s, port:%d\n", reinterpret_cast<intptr_t>(this), host.c_str(), port);
+            //printf("%08X Tasks host:%s, port:%d\n", reinterpret_cast<intptr_t>(this), host.c_str(), port);
+            printf("%" PRIxPTR " Tasks host:%s, port:%d\n", reinterpret_cast<intptr_t>(this), host.c_str(), port);
         }
         
         bool is_dead(){ return ttl<=0; }
@@ -193,7 +199,8 @@ class Handler{
         void clear();
 
         void print(){
-            printf("%08X Handler host:%s, port:%d\n", reinterpret_cast<intptr_t>(this), host.c_str(), port);
+            //printf("%08X Handler host:%s, port:%d\n", reinterpret_cast<intptr_t>(this), host.c_str(), port);
+            printf("%" PRIxPTR " Handler host:%s, port:%d\n", reinterpret_cast<intptr_t>(this), host.c_str(), port);
         }
 };
 

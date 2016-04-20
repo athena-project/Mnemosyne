@@ -85,15 +85,15 @@ int main(){
     ChunkFactory c("chunks_factory_conf.data");
     vector<Chunk*> chunks;
     while( c.next("/home/severus/Downloads/test_1.avi", chunks, 1000) ){}
-    printf("Nbr chunks %d\n", chunks.size());
+    printf("Nbr chunks %zu\n", chunks.size());
     //Timer t;
     for(int i=0; i<chunks.size(); i++){
         b.add_digest(chunks[i]->ptr_digest());
     }
     //b.print();
-    printf(" number of blocks : %d %d\n", b.number_blocks(), chunks.size());
+    printf(" number of blocks : %zu %zu\n", b.number_blocks(), chunks.size());
     b.split(0.2);
-    printf(" number of blocks : %d %d\n", b.number_blocks(), chunks.size());
+    printf(" number of blocks : %zu %zu\n", b.number_blocks(), chunks.size());
     //b.print();
     //cout<<t.elapsed()<<endl;
     for(int i=0; i<chunks.size(); i++){

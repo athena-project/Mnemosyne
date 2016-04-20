@@ -16,6 +16,11 @@
 #include "../Chunk.h"
 #include "DynamicIndex.h"
 
+/**
+ * Bin transfert protocol :
+ * id_bin|nbr_chunks|chunks
+ */
+
 class BinBlock : public Block{
     protected:
     public:    
@@ -67,6 +72,8 @@ class BinNode : public BNode{
          * @param digest - id of bin
          */
         bool add_bin(BinBlock* bin, const char* digest, LRU* cache);
+        
+        BinBlock* get_bin(const char* digest, LRU* cache);
 };  
 
 class BinTree : public BTree{
@@ -74,5 +81,8 @@ class BinTree : public BTree{
         BinTree(string _path, BinNode* _root=NULL) : BTree( _path, _root){}
         
         bool add_bin( BinBlock* bin);
+        
+        BinBlock* get_bin(const char* digest);
+
 };
 #endif //MNEMOSYNE_INDEX_BININDEX_H

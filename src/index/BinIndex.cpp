@@ -43,11 +43,17 @@ bool BinBlock::load(bool degraded_mod){
 }       
   
 void BinBlock::merge(BinBlock* right){
+    const char* right_buffer = right->get_buffer();
+    ///delete duplicated digets
+    for( size_t k = right->get_size()-1; k >= 0 ; k--){
+        if( exists( right_buffer + k * DIGEST_LENGTH ) )
+            remove( right_buffer + k * DIGEST_LENGTH );
+    }
+    
     if( size == 0 || memcmp(right->get_id(), id, DIGEST_LENGTH) > 0 ) 
         memcpy(id, right->get_id(), DIGEST_LENGTH); 
 
     bool flag = right->get_size() + size > log( size ) * right->get_size();
-    const char* right_buffer = right->get_buffer();
     size_t end_left = size-1;
     size_t begin_end = size + right->get_size()-1;
     buffer = static_cast<char*>(realloc( static_cast<void*>(buffer), size + right->get_size()));
@@ -115,6 +121,22 @@ bool BinNode::add_bin(BinBlock* bin, const char* digest, LRU* cache){
     }
 }
 
+BinBlock* BinNode::get_bin(const char* digest, LRU* cache){
+    if( !leaf ){
+        if( size_c == 0 )
+            return NULL;
+
+        return children[ get_child_pos_s(digest) ]->get_bin( digest, cache);
+    }else{
+        if( size_b == 0 )
+            return NULL;
+
+        BinBlock* current = blocks[ get_block_pos_s(digest) ];
+        cache->add( current );
+        
+        return current;
+    }
+}
 
 /// Begin BinTree
 bool BinTree::add_bin( BinBlock* bin){
@@ -127,4 +149,8 @@ bool BinTree::add_bin( BinBlock* bin){
     }
 
     return flag;
+}
+
+BinBlock* BinTree::get_bin( const char* digest){
+    return static_cast<BinNode*>(root)->get_bin(digest, cache);
 }

@@ -59,7 +59,7 @@ int create_socket(const char* host, int port){
     struct sockaddr_in addr;
     if (sockfd < 0){
         perror("ERROR opening socket");
-        return NULL;
+        return -1;
     }
     
     addr.sin_family = AF_INET;  
@@ -68,16 +68,16 @@ int create_socket(const char* host, int port){
     
     if(connect(sockfd, (sockaddr*)&addr, sizeof(addr)) < 0){
         perror("ERROR connecting");
-        return NULL;
+        return -1;
     }
     
     if( make_non_blocking(sockfd) == -1 ){
         perror("ERROR pcallback");
-        return NULL;
+        return -1;
     }
     
     if( !set_keepalive(sockfd) ){
-        return NULL;
+        return -1;
     }
     
     return sockfd;
@@ -94,7 +94,7 @@ int Handler::add_to_in(char* buf, int size){
     //printf("addign %d\n", size);
     if( in_offset+size > in_length){
         if( 2*in_length > MAX_SIZE_IN ){
-            printf("realloc failed 1 for %d\n", in_length<<1);
+            printf("realloc failed 1 for %zu\n", in_length<<1);
             return -2;
         }
         //char* tmp = new char[ 2 * in_length ];
@@ -102,7 +102,7 @@ int Handler::add_to_in(char* buf, int size){
         char* tmp = static_cast<char*>(realloc(in_data, in_length<<1 ));
         
         if( tmp == NULL ){
-            printf("realloc failed for %d\n", in_length<<1);
+            printf("realloc failed for %zu\n", in_length<<1);
             return -1;
         }
        

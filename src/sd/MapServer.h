@@ -10,7 +10,7 @@
 #include "../network/TCPHandler.h"
 #include "../utility/hash.cpp"
 #include "../hrw.cpp"
-#include "../index/DynamicIndex.h"
+#include "../index/BinIndex.h"
 
 using namespace std;
 
@@ -21,6 +21,9 @@ class TCPMapServer : public TCPServer{
         BTree* chunks;
         mutex* m_chunks;
         
+        BinTree* bins;
+        mutex* m_bins;
+        
         unordered_map<string, bool>* objects;
         mutex* m_objects;
     
@@ -28,12 +31,13 @@ class TCPMapServer : public TCPServer{
         TCPMapServer(const char* port, int _pfd, std::atomic<bool>* _alive, 
         list<Task*>* _tasks, mutex* _m_tasks, 
         unordered_map<string, bool>* _objects, mutex* _m_objects,
-        BTree* _chunks, mutex* _m_chunks) : TCPServer(port, _pfd, _alive, _tasks, _m_tasks){
+        BTree* _chunks, mutex* _m_chunks, BinTree* _bins, mutex* _m_bins) : TCPServer(port, _pfd, _alive, _tasks, _m_tasks){
             objects = _objects;
             m_objects = _m_objects;
             chunks = _chunks;
-            chunks->print();
             m_chunks = _m_chunks;
+            bins = _bins;
+            m_bins = _m_bins;
         }
         
         //called when finished to read
@@ -49,6 +53,9 @@ class MapServer : TCPHandler{
 
         BTree* chunks;
         mutex m_chunks;
+        
+        BinTree* bins;
+        mutex m_bins;
         
         unordered_map<string, bool> objects;
         mutex m_objects;

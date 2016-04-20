@@ -32,7 +32,7 @@ using namespace std;
  * Condition : d > 2, if(d=2 : we will obtained a binary tree)
  */
 //#define d 10 //>1
-#define d 5 //>1
+#define d 5
 
 /**
  * Number of blocks that can be loaded into cache( in RAM)
@@ -147,12 +147,12 @@ class Block{
          * Load the data of the block in RAM ie in buffer
          * @param degraded_mod - if we are trying to restore data after a crash
          */
-        bool load(bool degraded_mod=false);
+        virtual bool load(bool degraded_mod=false);
         
         /**
          * Store the  data( in buffer) in the file( see. attribute location)
          */
-        bool store();
+        virtual bool store();
         
         /**
          * Retrun the potential position of the digest in buffer for a get 
