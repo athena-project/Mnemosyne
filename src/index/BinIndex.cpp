@@ -1,6 +1,5 @@
 #include "BinIndex.h"
 
-
 ///Begin BinBlock
 BinBlock::BinBlock(const char* _path, const char* data, uint64_t _size){
     name =  BinBlock::alpha_id++;
@@ -44,23 +43,34 @@ bool BinBlock::load(bool degraded_mod){
   
 void BinBlock::merge(BinBlock* right){
     const char* right_buffer = right->get_buffer();
-    ///delete duplicated digets
-    for( size_t k = right->get_size()-1; k >= 0 ; k--){
-        if( exists( right_buffer + k * DIGEST_LENGTH ) )
-            remove( right_buffer + k * DIGEST_LENGTH );
-    }
-    
-    if( size == 0 || memcmp(right->get_id(), id, DIGEST_LENGTH) > 0 ) 
-        memcpy(id, right->get_id(), DIGEST_LENGTH); 
-
     bool flag = right->get_size() + size > log( size ) * right->get_size();
     size_t end_left = size-1;
     size_t begin_end = size + right->get_size()-1;
-    buffer = static_cast<char*>(realloc( static_cast<void*>(buffer), size + right->get_size()));
     size = size + right->get_size();
+    printf("size of %zu\n",size);
     
+    if( memcmp(right_buffer, buffer, right->get_size() * DIGEST_LENGTH) ==0)
+        printf("Fuck\n");
+    ///delete duplicated digets
+    for( int k = 0; k < right->get_size(); k++){
+        printf("k=%d\n",k);
+        if( exists( right_buffer + k * DIGEST_LENGTH ) )
+            size--;
+    }   //ici faut calculer la nouvelle taille on evite la supressio  on gagne un * log n
+    printf("size of %zu\n",size);
+    if( size == 0 || memcmp(right->get_id(), id, DIGEST_LENGTH) > 0 ) 
+        memcpy(id, right->get_id(), DIGEST_LENGTH); 
+
+    buffer = static_cast<char*>(realloc( static_cast<void*>(buffer), (size + right->get_size()) * DIGEST_LENGTH ));
+    if( !buffer ){
+        perror("realloc failed");
+        return;
+    }
     
-    for( size_t k = right->get_size()-1; k >= 0 ; k--){
+    for( int k = right->get_size()-1; k >= 0 ; k--){
+        if( exists( right_buffer + k * DIGEST_LENGTH ) )
+            continue;
+            
         size_t pos = end_left;
         if( flag )//insertion
             pos = get_pos_i(right_buffer + k * DIGEST_LENGTH, get_pos_s(right_buffer + k * DIGEST_LENGTH));
@@ -76,8 +86,8 @@ void BinBlock::merge(BinBlock* right){
         
         memcpy(buffer+pos, right_buffer + k * DIGEST_LENGTH, DIGEST_LENGTH);
     }
+    printf("coucou\n");
 }
-
 
 /// Begin BinNode
 bool BinNode::add_bin(BinBlock* bin, const char* digest, LRU* cache){
@@ -86,25 +96,25 @@ bool BinNode::add_bin(BinBlock* bin, const char* digest, LRU* cache){
     
     if( leaf ){
         int pos_b = get_block_pos_s( digest );            
-        
-        if( size_b > 0 && memcmp(blocks[pos_b]->get_id(), digest, DIGEST_LENGTH) == 0){
-            cache->add( blocks[pos_b] );
+        if( size_b > 0 && memcmp(static_cast<BinBlock*>(blocks[pos_b])->get_id(), digest, DIGEST_LENGTH) == 0){
+            cache->add( static_cast<BinBlock*>(blocks[pos_b]) );
             cache->add( bin );
             
-            blocks[ pos_b ]->merge( bin );
+            static_cast<BinBlock*>(blocks[ pos_b ])->merge( bin );
         }else{
             if( size_b != 0)
                 memmove(&blocks[pos_b+1], &blocks[pos_b], (size_b-pos_b) * sizeof(Block*)); 
                 
             blocks[pos_b] = new BinBlock( path, bin->get_buffer(), bin->get_size());
+            static_cast<BinBlock*>(blocks[pos_b])->set_id( bin->get_id() );
             size_b++;
         }
-        
+        printf("fuchkkkk\n");
         return true;
     }else{
         int pos_c = get_child_pos_s( digest );
 
-        BinNode* current_c = children[ pos_c ];
+        BinNode* current_c = static_cast<BinNode*>( children[ pos_c ] );
         if( !current_c->add_bin( bin, digest, cache) )
             return false;
             
@@ -112,7 +122,7 @@ bool BinNode::add_bin(BinBlock* bin, const char* digest, LRU* cache){
                 BinNode* right = static_cast<BinNode*>(current_c->split());
 
             if( size_c != 0 && pos_c!=2*d)
-                memmove(&children[pos_c+2], &children[pos_c+1], (size_c-pos_c-1) * sizeof(BNode*)); //+1 tjs garantie par la gestion de is_full
+                memmove(&children[pos_c+2], &children[pos_c+1], (size_c-pos_c-1) * sizeof(BinNode*)); //+1 tjs garantie par la gestion de is_full
 
             children[pos_c+1] = right;
             size_c++;
@@ -126,12 +136,12 @@ BinBlock* BinNode::get_bin(const char* digest, LRU* cache){
         if( size_c == 0 )
             return NULL;
 
-        return children[ get_child_pos_s(digest) ]->get_bin( digest, cache);
+        return static_cast<BinNode*>(children[ get_child_pos_s(digest) ])->get_bin( digest, cache);
     }else{
         if( size_b == 0 )
             return NULL;
 
-        BinBlock* current = blocks[ get_block_pos_s(digest) ];
+        BinBlock* current = static_cast<BinBlock*>(blocks[ get_block_pos_s(digest) ]);
         cache->add( current );
         
         return current;
@@ -147,7 +157,8 @@ bool BinTree::add_bin( BinBlock* bin){
         BinNode* left = static_cast<BinNode*>(root);
         root = new BinNode(path.c_str(), left, right);
     }
-
+    printf("end add bin\n");
+    print();
     return flag;
 }
 

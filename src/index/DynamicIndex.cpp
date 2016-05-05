@@ -187,6 +187,7 @@ bool Block::remove(const char* digest){
 
 bool Block::exists(const char* digest){
     int pos = get_pos_s( digest ) * DIGEST_LENGTH;
+    printf("exists %d\n", get_pos_s( digest ));
     if( size > 0 && memcmp(digest, buffer + pos, DIGEST_LENGTH) == 0 )
         return true;
     return false;
@@ -765,7 +766,7 @@ if( step ==0)
     
     for(int i=0; i<step; i++)
         printf("|   ");
-    printf("BNode %" PRIxPTR " size_b=%zu size_c=%zu leaf:%s id:%s\n", reinterpret_cast<intptr_t>(this), size_b, size_c, leaf ? "true" : "false", id); 
+    printf("BNode %" PRIxPTR " size_b=%zu size_c=%zu leaf:%s id:%s\n", reinterpret_cast<intptr_t>(this), size_b, size_c, leaf ? "true" : "false", id==NULL ? "NULL" : id); 
     
     for(int i=0; i<step; i++)
         printf("|   ");

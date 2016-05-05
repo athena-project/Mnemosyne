@@ -323,19 +323,62 @@ void Client::build_to_dedup(list<Chunk*>& to_dedup, unordered_map<string, Chunk*
     m_objects.unlock();
 }
 
+void Client::build_to_dedup_b(list<Chunk*>& to_dedup, vector<Chunk*>& chunks){//o(nlog(n))
+    //we will do kind of intersectiob
+    unordered_map<string,bool> m_chunks;  //to dedup eventually
+    unordered_map<string,bool> tmp_chunks;  //to dedup eventually
+    
+    m_bins.lock();
+
+    for( map<string, list<string> >::iterator it = bins.begin(); it!= bins.end(); it++)
+        if( it->second.front() == "")
+            bins.erase( it );
+            
+    if( bins.size() == 0){ //case where all bins ""
+        for( size_t i=0; i<chunks.size() ; ++i)
+            to_dedup.push_back( chunks[i] );
+        return;
+    }
+    
+    for( list<string>::iterator it2 = (bins.begin()->second).begin() ; it2 != (bins.begin()->second).end() ; it2++)
+        m_chunks[ *it2 ] = true;
+        
+    for( map<string, list<string> >::iterator it = bins.begin()++; it!= bins.end(); it++){
+        tmp_chunks.clear();
+        
+        for( list<string>::iterator it2 = it->second.begin() ; it2 != it->second.end() ; it2++)
+            tmp_chunks[ *it2 ] = true;
+    
+        for( unordered_map<string,bool>::iterator it2 = m_chunks.begin() ; it2 != m_chunks.end() ; it2++){
+            if( tmp_chunks.find( it2->first ) == tmp_chunks.end() )
+                m_chunks.erase( it2);
+        }
+    }
+    m_bins.unlock();
+
+    //m_chunks//to les ids des chunks a conserver
+    for( size_t i=0; i<chunks.size() ; ++i)
+        if( m_chunks.find( chunks[i]->str_digest() ) != m_chunks.end() )
+            to_dedup.push_back( chunks[i] );
+    return;
+}
+
 bool Client::store_chunks(list<Chunk*>& to_dedup, const char* location, fs::path path_dir){
-    if( to_dedup.size() > 0)
+    printf("trying to store chunks %zu\n", to_dedup.size()); 
+    if( to_dedup.size() == 0)
         return false;
         
     if( to_dedup.front()->get_data() != NULL ){ ///Chunks' cache enable 
+        printf("hello storing chunks\n");   
         for(list<Chunk*>::iterator it = to_dedup.begin() ; //maybe we can compress chunk ?
         it != to_dedup.end(); it++){    
             string tmp=(path_dir/fs::path((*it)->str_digest())).string();
             ofstream c_file(tmp.c_str(), ios::binary);
             c_file.write( (*it)->get_data(), (*it)->get_length() );
         }
-    }
-    else{   ///Chunks' cache not enable : file too big
+    }else{   ///Chunks' cache not enable : file too big
+                printf("hello storing chunks 55\n");   
+
         char *src;
         int fd = open(location, O_RDONLY);
         uint64_t size_file = size_of_file(fd);
@@ -503,10 +546,12 @@ bool Client::bsave(const char* name, const char* location, fs::path path_dir){
     //si un seul big msg faut augmenter la taille max des buffers. => 256Mo ??    
     list<string> waiting_bins;
     for(size_t i=0 ; i < min( (size_t)BIN_R, chunks.size()) ; i++){
+        printf("sending bins\n");
         memcpy(bin, chunks[chunks.size()-1-i]->ptr_digest(), DIGEST_LENGTH);//id of current bin
         Node* node = nodes->rallocate( bin, DIGEST_LENGTH );
         send(EXISTS_BIN, bin, (1+chunks.size()) * DIGEST_LENGTH, node->get_host(), node->get_port());
         waiting_bins.push_back( digest_to_string(bin));
+        printf("bins send to %s %d\n", chunks[chunks.size()-1-i]->ptr_digest() ,node->get_port());
     }
     
     Timer t3;
@@ -521,7 +566,7 @@ bool Client::bsave(const char* name, const char* location, fs::path path_dir){
     //on store
     Timer t4;
     list<Chunk*> to_dedup;
-    build_to_dedup(to_dedup, chunks_map);
+    build_to_dedup_b(to_dedup, chunks);
     printf("dedup chunks %lf\n", t4.elapsed());
     
     if( !store_chunks(to_dedup, location, path_dir) ){

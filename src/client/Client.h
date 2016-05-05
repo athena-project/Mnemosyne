@@ -113,6 +113,7 @@ class Client : public TCPHandler{
         bool dedup_by_file(const char* location, char* file_digest);
         
         void build_to_dedup(list<Chunk*>& to_dedup, unordered_map<string, Chunk*>& chunks_map);
+        void build_to_dedup_b(list<Chunk*>& to_dedup, vector<Chunk*>& chunks);//for bins
         
         bool store_chunks(list<Chunk*>& to_dedup, const char* location, fs::path path_dir);
         
@@ -124,6 +125,17 @@ class Client : public TCPHandler{
         bool save_bench(const char* name, const char* location, fs::path path_dir){
             Timer t;
             bool flag = save(name, location, path_dir);
+            double delay = t.elapsed();
+            printf("\nSave operation : \n \
+                       time : %lf\n  \
+                       size : %" PRIu64 "\n", delay, size_of_file(location));
+            
+            return flag;
+        }
+        
+        bool bsave_bench(const char* name, const char* location, fs::path path_dir){
+            Timer t;
+            bool flag = bsave(name, location, path_dir);
             double delay = t.elapsed();
             printf("\nSave operation : \n \
                        time : %lf\n  \

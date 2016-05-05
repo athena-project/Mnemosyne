@@ -23,7 +23,6 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
         handler->send(OBJECT, buff, DIGEST_LENGTH+1); //transfert ownership
         register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
     }else if( type == EXISTS_CHUNKS ){
-                printf("Received\n");
         char* end = data + sizeof(uint64_t);
         uint64_t num = strtoull(data, &end, 0);
         
@@ -46,6 +45,7 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
         handler->send(CHUNKS, buf, DIGEST_LENGTH * num + num + HEADER_LENGTH);//transfert ownership
         register_event(handler, EPOLLOUT, EPOLL_CTL_MOD);
     }else if( type == EXISTS_BIN ){
+        printf("coucou\n");
         char* end = data + sizeof(uint64_t) + DIGEST_LENGTH;
         uint64_t num = strtoull(data + DIGEST_LENGTH, &end, 0);
         uint64_t number = 0;// chunks to send back
@@ -78,7 +78,7 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
             
             for(int i = 0 ; i<num; i++, data+=DIGEST_LENGTH, 
             buffer += DIGEST_LENGTH){
-                if( !bin->exists( data ) )
+                if( !bin->exists( data ) )//on envoit que ce qui doit être sauvegardé
                     memcpy(buffer, data, DIGEST_LENGTH);
             }
             
@@ -131,6 +131,8 @@ void TCPMapServer::rcallback(Handler* handler, msg_t type){
         uint64_t num = strtoull(data + DIGEST_LENGTH, &end, 0);
 
         BinBlock bin("", data + DIGEST_LENGTH + uint64_s, num);
+        bin.set_id( data );
+        
         m_bins->lock();
         bins->add_bin(&bin);
         m_bins->unlock();
