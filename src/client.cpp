@@ -26,7 +26,7 @@ int main(){
     std::thread t2(fct, &ms2);
     std::thread t3(fct, &ms3);
     
-    if( client.bsave_bench("a1", "/home/severus/Downloads/test_1.pdf", fs::path("/home/severus/test_storage")) )
+    if( client.save_bench("a1", "/home/severus/Downloads/test_1.pdf", fs::path("/home/severus/test_storage")) )
         cout<<"a1 - saved successfully"<<endl;
     else
         cout<<"a1 - saved error"<<endl;

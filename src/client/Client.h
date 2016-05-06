@@ -34,7 +34,7 @@ using namespace std;
 #define BUFFER_MAX_SIZE (1<<24)
 
 
-#define BIN_W 2 //see extreme binning
+#define BIN_W 2 //see parallel binning
 #define BIN_R 2
 
 class TCPClientServer : public TCPServer{

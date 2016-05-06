@@ -62,7 +62,6 @@ class NodeMap{
         
         /////for lecture, pick the prime
         Node* rallocate(uint64_t key){
-            printf("hrw %" PRIu64 "\n", key);
             Node* current = NULL;
             uint64_t weight = 0;
             uint64_t tmp = 0;
@@ -85,23 +84,14 @@ class NodeMap{
         
         Node* rallocate(char* key, size_t s){//troncature si trop long
             char* end = key + 1;//(s>16 ? 16 : s);
-            printf("incomming %s\n", key);
             
-            uint64_t i_key=0; //bits à choisir aléatoirement une première fois ??, on ourrait (key[i]+key[j])<<
-            i_key += (uint64_t) key[0];
-            printf("ikey %" PRIu64 "\n", i_key);
+            uint64_t i_key = (uint64_t) key[0]; //bits à choisir aléatoirement une première fois ??, on ourrait (key[i]+key[j])<<
             i_key += ((uint64_t) key[1])<<8;
-            printf("ikey %" PRIu64 "\n", i_key);
             i_key += ((uint64_t) key[2])<<16;
-            printf("ikey %" PRIu64 "\n", i_key);
             i_key += ((uint64_t) key[3])<<24;
-            printf("ikey %" PRIu64 "\n", i_key);
             i_key += ((uint64_t) key[4])<<32;
-            printf("ikey %" PRIu64 "\n", i_key);
             i_key += ((uint64_t) key[11])<<40;
-            printf("ikey %" PRIu64 "\n", i_key);
             i_key += ((uint64_t) key[6])<<48;
-            printf("ikey %" PRIu64 "\n", i_key);
             i_key += ((uint64_t) key[7])<<56;
             return rallocate( i_key);
         }

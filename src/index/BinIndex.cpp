@@ -109,7 +109,6 @@ bool BinNode::add_bin(BinBlock* bin, const char* digest, LRU* cache){
             static_cast<BinBlock*>(blocks[pos_b])->set_id( bin->get_id() );
             size_b++;
         }
-        printf("fuchkkkk\n");
         return true;
     }else{
         int pos_c = get_child_pos_s( digest );
@@ -157,8 +156,6 @@ bool BinTree::add_bin( BinBlock* bin){
         BinNode* left = static_cast<BinNode*>(root);
         root = new BinNode(path.c_str(), left, right);
     }
-    printf("end add bin\n");
-    print();
     return flag;
 }
 

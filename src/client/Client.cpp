@@ -365,11 +365,12 @@ void Client::build_to_dedup_b(list<Chunk*>& to_dedup, vector<Chunk*>& chunks){//
 
 bool Client::store_chunks(list<Chunk*>& to_dedup, const char* location, fs::path path_dir){
     printf("trying to store chunks %zu\n", to_dedup.size()); 
+    Timer t;
+
     if( to_dedup.size() == 0)
         return false;
         
     if( to_dedup.front()->get_data() != NULL ){ ///Chunks' cache enable 
-        printf("hello storing chunks\n");   
         for(list<Chunk*>::iterator it = to_dedup.begin() ; //maybe we can compress chunk ?
         it != to_dedup.end(); it++){    
             string tmp=(path_dir/fs::path((*it)->str_digest())).string();
@@ -377,8 +378,6 @@ bool Client::store_chunks(list<Chunk*>& to_dedup, const char* location, fs::path
             c_file.write( (*it)->get_data(), (*it)->get_length() );
         }
     }else{   ///Chunks' cache not enable : file too big
-                printf("hello storing chunks 55\n");   
-
         char *src;
         int fd = open(location, O_RDONLY);
         uint64_t size_file = size_of_file(fd);
@@ -398,6 +397,8 @@ bool Client::store_chunks(list<Chunk*>& to_dedup, const char* location, fs::path
         munmap( src, size_file);
         close( fd );    
     }
+    
+    printf("Saving chunks %lf\n", t.elapsed()); 
     return true;
 }
 
@@ -442,7 +443,6 @@ bool Client::save(const char* name, const char* location, fs::path path_dir){
     if( !wait_objects( chunks.size() ) ){
         for(size_t i = 0; i<former_chunks.size() ; i++)
             delete former_chunks[i];
-        printf("fucked!!!\n");
         return false;
     }
     printf("Waiting chunks1 %lf\n", t3.elapsed());
@@ -546,19 +546,16 @@ bool Client::bsave(const char* name, const char* location, fs::path path_dir){
     //si un seul big msg faut augmenter la taille max des buffers. => 256Mo ??    
     list<string> waiting_bins;
     for(size_t i=0 ; i < min( (size_t)BIN_R, chunks.size()) ; i++){
-        printf("sending bins\n");
         memcpy(bin, chunks[chunks.size()-1-i]->ptr_digest(), DIGEST_LENGTH);//id of current bin
         Node* node = nodes->rallocate( bin, DIGEST_LENGTH );
         send(EXISTS_BIN, bin, (1+chunks.size()) * DIGEST_LENGTH, node->get_host(), node->get_port());
         waiting_bins.push_back( digest_to_string(bin));
-        printf("bins send to %s %d\n", chunks[chunks.size()-1-i]->ptr_digest() ,node->get_port());
     }
     
     Timer t3;
     if( !wait_bins( waiting_bins ) ){
         for(size_t i = 0; i<former_chunks.size() ; i++)
             delete former_chunks[i];
-        printf("fucked!!!\n");
         return false;
     }
     printf("Waiting chunks1 %lf\n", t3.elapsed());
@@ -574,13 +571,14 @@ bool Client::bsave(const char* name, const char* location, fs::path path_dir){
             delete former_chunks[i];
         return false;
     }
-    
+
     for(size_t i=0 ; i < min( (size_t)BIN_W, chunks.size()) ; i++){
         memcpy(bin, chunks[chunks.size()-1-i]->ptr_digest(), DIGEST_LENGTH); //id of current bin
         vector<Node*> _nodes = nodes->wallocate( bin, DIGEST_LENGTH );
         for(size_t j=0 ; j < _nodes.size() ; j++)
             send(ADD_BIN, bin, (1+chunks.size()) * DIGEST_LENGTH, _nodes[j]->get_host(), _nodes[j]->get_port());
         populate_additions( bin );
+        for(int j=0; j<100000;j++){} //du fait de ob d'envoie de msg, see bug list
     }
     
     ///Send file digest
@@ -588,7 +586,7 @@ bool Client::bsave(const char* name, const char* location, fs::path path_dir){
     for(int k=0 ; k< _nodes.size() ; k++)       
         send(ADD_OBJECT, file_digest, DIGEST_LENGTH, _nodes[k]->get_host(), _nodes[k]->get_port());
     populate_additions( file_digest );
-    
+
     if( !wait_additions() ){
         for(size_t i = 0; i<former_chunks.size() ; i++)
             delete former_chunks[i];
