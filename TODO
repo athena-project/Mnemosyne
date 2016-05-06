@@ -1,6 +1,3 @@
-Bugs :
-    -> si deux paquets tcp arrivent collés(<10ms) alors lu comme un seul msg
-
 Features :
     -> Mise en cache LRU/LFU TCPHandler
     -> DIGEST_LENGTH => double de la taille necessaire

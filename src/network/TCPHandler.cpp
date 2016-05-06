@@ -459,7 +459,12 @@ int TCPServer::run(){
                 while (1){
                     ssize_t count;
                     char buf[BUFF_SIZE];
-                    count = read(handler->get_fd(), buf, sizeof buf);
+                    //count = read(handler->get_fd(), buf, sizeof buf);
+                    if( handler->get_in_offset() == 0 )
+                        count = read(handler->get_fd(), buf, HEADER_LENGTH);
+                    else
+                        count = read(handler->get_fd(), buf, min( (uint64_t) BUFF_SIZE, handler->get_expected_in_length()-handler->get_in_offset()));
+                        
                     if(handler->get_in_offset() == handler->get_expected_in_length()){//All data read
                         done = 1;
                         break;

@@ -539,7 +539,8 @@ bool Client::bsave(const char* name, const char* location, fs::path path_dir){
     std::sort( chunks.begin(), chunks.end(), ChunkAsc() ); //ameliorer dedup local à l'aide de l'ordre
     char* bin = new char[ (1+chunks.size()) * DIGEST_LENGTH + sizeof(uint64_t)];
     sprintf(bin+sizeof(uint64_t), "%" PRIu64 "", chunks.size());
-
+    //printf("number of chunks %" PRIu64 ", in bytes %" PRIu64 "\n", chunks.size(), chunks.size() * DIGEST_LENGTH);
+    //return false;
     for( size_t i = 0; i<chunks.size(); i++)
         memcpy(bin + sizeof(uint64_t) + (i +1) * DIGEST_LENGTH, chunks[i]->ptr_digest(), DIGEST_LENGTH);
     
@@ -578,7 +579,7 @@ bool Client::bsave(const char* name, const char* location, fs::path path_dir){
         for(size_t j=0 ; j < _nodes.size() ; j++)
             send(ADD_BIN, bin, (1+chunks.size()) * DIGEST_LENGTH, _nodes[j]->get_host(), _nodes[j]->get_port());
         populate_additions( bin );
-        for(int j=0; j<100000;j++){} //du fait de ob d'envoie de msg, see bug list
+        //for(int j=0; j<100000;j++){} //du fait de ob d'envoie de msg, see bug list
     }
     
     ///Send file digest

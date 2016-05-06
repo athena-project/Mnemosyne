@@ -3,7 +3,8 @@
 
 #define MAXEVENTS 64
 #define BUFF_SIZE 16384
-#define MAX_SIZE_IN 65536
+//#define MAX_SIZE_IN 65536
+#define MAX_SIZE_IN (1<<24)
 
 //max send en même temps
 #define EPOLL_TIMEOUT 1

@@ -11,4 +11,6 @@ a fast, decentralized, scalable and memory-efficient deduplication system
 ###Needed dependencies
  - Boost
   
+###Config
+ - For binning : we must define a MAX_SIZE_IN(in TCPHandler.h) > max size of a bin
 
